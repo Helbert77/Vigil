@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Card from '../common/Card';
 import Avatar from '../common/Avatar';
 import { TRENDING_TOPICS, USERS_TO_FOLLOW } from '../../constants';
@@ -7,18 +7,11 @@ import { User } from '../../types';
 interface RightbarProps {
   onViewTag: (tag: string) => void;
   onViewProfile: (userId: string) => void;
+  followedUserIds: string[];
+  onFollowToggle: (userId: string) => void;
 }
 
-const Rightbar: React.FC<RightbarProps> = ({ onViewTag, onViewProfile }) => {
-  const [followedUsers, setFollowedUsers] = useState<string[]>([]);
-
-  const handleFollowToggle = (userId: string) => {
-    setFollowedUsers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
-    );
-  };
+const Rightbar: React.FC<RightbarProps> = ({ onViewTag, onViewProfile, followedUserIds, onFollowToggle }) => {
 
   return (
     <div className="sticky top-20 space-y-6">
@@ -42,7 +35,7 @@ const Rightbar: React.FC<RightbarProps> = ({ onViewTag, onViewProfile }) => {
         <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Who to Follow</h2>
         <div className="space-y-4">
           {USERS_TO_FOLLOW.map((user) => {
-            const isFollowing = followedUsers.includes(user.id);
+            const isFollowing = followedUserIds.includes(user.id);
             return (
               <div key={user.id} className="flex items-center justify-between">
                 <div 
@@ -56,7 +49,7 @@ const Rightbar: React.FC<RightbarProps> = ({ onViewTag, onViewProfile }) => {
                   </div>
                 </div>
                 <button 
-                  onClick={() => handleFollowToggle(user.id)}
+                  onClick={() => onFollowToggle(user.id)}
                   className={`font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 ${
                     isFollowing 
                       ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'

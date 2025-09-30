@@ -27,6 +27,8 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User>(MOCK_USER);
   const [viewedUserId, setViewedUserId] = useState<string | null>(null);
   const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
+  const [followedUserIds, setFollowedUserIds] = useState<string[]>([]);
+
   const [savedPostIds, setSavedPostIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('savedPostIds');
@@ -46,7 +48,6 @@ const App: React.FC = () => {
   };
 
   const handleAddPost = (text: string, imageUrl?: string, videoUrl?: string, poll?: Poll) => {
-    // A post must have text or some media/poll.
     if (!text.trim() && !imageUrl && !videoUrl && !poll) return;
     
     const newPost: Post = {
@@ -62,7 +63,6 @@ const App: React.FC = () => {
       shares: 0,
     };
     setPosts([newPost, ...posts]);
-    // Switch to home page to see the new post if we are on another page
     if (currentPage !== 'Home') {
       setCurrentPage('Home');
     }
@@ -78,6 +78,19 @@ const App: React.FC = () => {
         ? prev.filter(id => id !== postId)
         : [...prev, postId]
     );
+  };
+
+  const handleFollowToggle = (userId: string) => {
+    const isFollowing = followedUserIds.includes(userId);
+    setFollowedUserIds(prev => 
+      isFollowing 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+    setUser(prevUser => ({
+      ...prevUser,
+      followingCount: isFollowing ? prevUser.followingCount - 1 : prevUser.followingCount + 1
+    }));
   };
 
   const handleViewPost = (postId: string) => {
@@ -127,7 +140,6 @@ const App: React.FC = () => {
       case 'Profile': {
         const userToView = viewedUserId ? MOCK_ALL_USERS.find(u => u.id === viewedUserId) : user;
         if (!userToView) {
-            // Fallback for invalid user ID
             setCurrentPage('Home');
             return null;
         }
@@ -153,7 +165,6 @@ const App: React.FC = () => {
       case 'PostDetail': {
         const post = posts.find(p => p.id === activePostId);
         if (!post) {
-            // Fallback if post not found, go back to notifications
             setCurrentPage('Notifications');
             return <Notifications onViewPost={handleViewPost} />;
         }
@@ -169,7 +180,6 @@ const App: React.FC = () => {
       case 'CommunityDetail': {
         const community = MOCK_COMMUNITIES.find(c => c.id === activeCommunityId);
         if (!community) {
-            // Fallback if community not found
             setCurrentPage('Communities');
             return <Communities onViewCommunity={handleViewCommunity} />;
         }
@@ -210,7 +220,12 @@ const App: React.FC = () => {
           {renderPage()}
         </main>
         <aside className="hidden lg:block lg:col-span-3">
-          <Rightbar onViewTag={setActiveTag} onViewProfile={handleViewProfile} />
+          <Rightbar 
+            onViewTag={setActiveTag} 
+            onViewProfile={handleViewProfile}
+            followedUserIds={followedUserIds}
+            onFollowToggle={handleFollowToggle}
+          />
         </aside>
       </div>
     </div>
