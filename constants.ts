@@ -1,4 +1,4 @@
-import { User, Post, Notification, Conversation, ChatMessage } from './types';
+import { User, Post, Notification, Conversation, ChatMessage, Community } from './types';
 
 export const MOCK_USER: User = {
   id: 'u1',
@@ -156,4 +156,35 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
       { id: 'm5', senderId: 'u1', text: 'I know. It\'s a risk we have to take.', timestamp: '3d ago' },
     ]
   }
+];
+
+export const MOCK_COMMUNITIES: Community[] = [
+  {
+    id: 'com1',
+    name: 'Project Bluebeam Watchers',
+    description: 'Dedicated to tracking and exposing the staged alien invasion event.',
+    memberCount: 12800,
+    bannerUrl: 'https://picsum.photos/seed/comm1/600/200',
+  },
+  {
+    id: 'com2',
+    name: 'Subterranean Civilization Studies',
+    description: 'Exploring evidence of advanced societies living beneath the Earth\'s crust.',
+    memberCount: 9200,
+    bannerUrl: 'https://picsum.photos/seed/comm2/600/200',
+  },
+  {
+    id: 'com3',
+    name: 'Mandela Effect Archives',
+    description: 'Cataloging and analyzing instances of collective false memories. Was it Berenstein or Berenstain?',
+    memberCount: 25600,
+    bannerUrl: 'https://picsum.photos/seed/comm3/600/200',
+  },
+  {
+    id: 'com4',
+    name: 'Sentient AI Observers',
+    description: 'Monitoring the emergence of artificial general intelligence and its implications for humanity.',
+    memberCount: 18500,
+    bannerUrl: 'https://picsum.photos/seed/comm4/600/200',
+  },
 ];

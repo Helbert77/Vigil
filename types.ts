@@ -61,3 +61,11 @@ export interface Conversation {
   participants: User[];
   messages: ChatMessage[];
 }
+
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  memberCount: number;
+  bannerUrl: string;
+}
