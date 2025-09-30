@@ -3,9 +3,9 @@ import { TheoryAnalysis } from '../../types';
 import { Icon } from '../icons/Icon';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
-const BrainCircuitIcon = () => <Icon className="h-8 w-8 text-primary"><path d="M12 2a2.5 2.5 0 0 0-2.5 2.5v.5a2.5 2.5 0 0 0 5 0v-.5A2.5 2.5 0 0 0 12 2zM7.5 10a2.5 2.5 0 0 0 0 5h.5a2.5 2.5 0 0 0 0-5h-.5zM16.5 10a2.5 2.5 0 0 0 0 5h.5a2.5 2.5 0 0 0 0-5h-.5zM12 15.5a2.5 2.5 0 0 0 2.5-2.5v-.5a2.5 2.5 0 0 0-5 0v.5a2.5 2.5 0 0 0 2.5 2.5zM5 8a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h1a2 2 0 0 1 0 4H5a2 2 0 0 0-2 2v1h18v-1a2 2 0 0 0-2-2h-1a2 2 0 0 1 0-4h1a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2.3a2.5 2.5 0 0 1-4.4-2.5v-.5a2.5 2.5 0 0 1-2.6 0v.5a2.5 2.5 0 0 1-4.4 2.5H5z"/></Icon>;
+const BrainCircuitIcon = () => <Icon className="h-8 w-8 text-primary"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5V5h0a2.5 2.5 0 0 1 2.5-2.5A2.5 2.5 0 0 1 17 5V7a2 2 0 0 1-2 2h-1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a2 2 0 0 1 2 2v2a2.5 2.5 0 0 1-2.5 2.5A2.5 2.5 0 0 1 12 19.5V19h0a2.5 2.5 0 0 1-2.5 2.5A2.5 2.5 0 0 1 7 19.5V17a2 2 0 0 1 2-2h1a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H8a2 2 0 0 1-2-2V5a2.5 2.5 0 0 1 2.5-2.5Z"/></Icon>;
 
-const MOCK_ANALYSIS: TheoryAnalysis = {
+const MOCK_ANALYSIS_1: TheoryAnalysis = {
   keyPoints: [
     "The theory posits a direct link between seismic activity and ancient ley lines.",
     "It suggests an external, intelligent force is activating a subterranean network.",
@@ -27,6 +27,31 @@ const MOCK_ANALYSIS: TheoryAnalysis = {
   ]
 };
 
+const MOCK_ANALYSIS_2: TheoryAnalysis = {
+  keyPoints: [
+    "The post alleges that smart devices form a global surveillance network.",
+    "It claims the data is used for control, not advertising.",
+    "The primary call to action is to 'disconnect' periodically."
+  ],
+  possibleFallacies: [
+    "Slippery Slope: Suggests that data collection for ads will inevitably lead to totalitarian control without sufficient evidence.",
+    "Conspiracy Theory: Assumes a secret, coordinated effort by powerful entities without direct proof."
+  ],
+  counterArguments: [
+    "Data for Services: Tech companies argue that data collection is necessary to provide free services and personalized experiences.",
+    "Regulation and Privacy Laws: Laws like GDPR exist to give users control over their data and limit how companies can use it.",
+    "Lack of Evidence: There is no public, verifiable evidence of a coordinated global surveillance network for 'control' as described."
+  ],
+  relatedTopics: [
+    "PRISM Program (NSA Surveillance)",
+    "Social Credit System",
+    "Data Privacy",
+    "Cambridge Analytica"
+  ]
+};
+
+const ALL_MOCK_ANALYSES = [MOCK_ANALYSIS_1, MOCK_ANALYSIS_2];
+
 interface TheoryAnalysisModalProps {
   postText: string;
   onClose: () => void;
@@ -38,10 +63,10 @@ const TheoryAnalysisModal: React.FC<TheoryAnalysisModalProps> = ({ postText, onC
 
   useEffect(() => {
     // --- MOCK API CALL ---
-    // In a real app, you would send `postText` to the Gemini API here.
     setIsLoading(true);
     const timer = setTimeout(() => {
-      setAnalysis(MOCK_ANALYSIS);
+      const randomAnalysis = ALL_MOCK_ANALYSES[Math.floor(Math.random() * ALL_MOCK_ANALYSES.length)];
+      setAnalysis(randomAnalysis);
       setIsLoading(false);
     }, 2000); // Simulate network delay
 
