@@ -19,7 +19,7 @@ const BookmarkIcon = ({ filled }: { filled: boolean }) => (
         <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
     </Icon>
 );
-const AnalyzeIcon = () => <Icon><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5V5h0a2.5 2.5 0 0 1 2.5-2.5A2.5 2.5 0 0 1 17 5V7a2 2 0 0 1-2 2h-1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h1a2 2 0 0 1 2 2v2a2.5 2.5 0 0 1-2.5 2.5A2.5 2.5 0 0 1 12 19.5V19h0a2.5 2.5 0 0 1-2.5 2.5A2.5 2.5 0 0 1 7 19.5V17a2 2 0 0 1 2-2h1a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H8a2 2 0 0 1-2-2V5a2.5 2.5 0 0 1 2.5-2.5Z"/></Icon>;
+const AnalyzeIcon = () => <img src="/Analise.png" alt="Analyze Theory" className="h-6 w-6" />;
 
 // Icons for Share Menu
 const LinkIcon = () => <Icon className="h-5 w-5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></Icon>;
@@ -326,7 +326,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
            <button onClick={() => onToggleSave(post.id)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-500 transition-colors duration-200 transform active:scale-110">
             <BookmarkIcon filled={isSaved} />
           </button>
-          <button onClick={() => setIsAnalysisModalOpen(true)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-500 transition-colors duration-200 transform active:scale-110" title="Analyze Theory">
+          <button onClick={() => setIsAnalysisModalOpen(true)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 transition-transform duration-200 transform hover:scale-110 active:scale-100" title="Analyze Theory">
             <AnalyzeIcon />
           </button>
         </div>

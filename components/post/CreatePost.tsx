@@ -4,13 +4,13 @@ import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
 import { Poll, PollOption, User } from '../../types';
 
-const ImageIcon = () => <Icon className="text-blue-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
-const VideoIcon = () => <Icon className="text-green-500"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></Icon>;
-const PollIcon = () => <Icon className="text-orange-500"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
-const SmileIcon = () => <Icon className="text-yellow-500"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></Icon>;
+const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
+const VideoIcon = () => <Icon><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></Icon>;
+const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
+const SmileIcon = () => <Icon><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></Icon>;
 const XIcon = () => <Icon className="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
-const AiWriteIcon = () => <Icon className="text-purple-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m12 12-1.5 3L9 12l-3 1.5L9 15l1.5 3L12 15l3-1.5-1.5-3z"/></Icon>;
-const AiImageIcon = () => <Icon className="text-purple-500"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><path d="m18 3 3 3m-3 15 3-3"/></Icon>;
+const AiWriteIcon = () => <Icon><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m12 12-1.5 3L9 12l-3 1.5L9 15l1.5 3L12 15l3-1.5-1.5-3z"/></Icon>;
+const AiImageIcon = () => <img src="/Imagem.png" alt="Generate AI Image" className="h-6 w-6" />;
 
 interface CreatePostProps {
   onAddPost: (text: string, imageUrl?: string, videoUrl?: string, poll?: Poll) => void;
@@ -253,23 +253,23 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
           )}
 
           <div className="flex items-center justify-between mt-2 pt-2">
-             <div className="flex items-center space-x-1 relative">
-                <button onClick={() => handleMediaButtonClick('image')} disabled={!!mediaType && mediaType !== 'image'} className="p-2 hover:bg-blue-500/20 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add image">
+             <div className="flex items-center space-x-1 relative text-gray-500 dark:text-gray-400">
+                <button onClick={() => handleMediaButtonClick('image')} disabled={!!mediaType && mediaType !== 'image'} className="p-2 hover:text-blue-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add image">
                     <ImageIcon />
                 </button>
-                 <button onClick={() => handleMediaButtonClick('video')} disabled={!!mediaType && mediaType !== 'video'} className="p-2 hover:bg-green-500/20 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add video">
+                 <button onClick={() => handleMediaButtonClick('video')} disabled={!!mediaType && mediaType !== 'video'} className="p-2 hover:text-green-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add video">
                     <VideoIcon />
                 </button>
-                 <button onClick={() => handleMediaButtonClick('poll')} disabled={!!mediaType && mediaType !== 'poll'} className="p-2 hover:bg-orange-500/20 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add poll">
+                 <button onClick={() => handleMediaButtonClick('poll')} disabled={!!mediaType && mediaType !== 'poll'} className="p-2 hover:text-orange-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add poll">
                     <PollIcon />
                 </button>
-                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 hover:bg-yellow-500/20 rounded-full" aria-label="Add emoji">
+                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 hover:text-yellow-500 rounded-full" aria-label="Add emoji">
                     <SmileIcon />
                 </button>
-                <button onClick={() => setShowAssistant(showAssistant === 'text' ? false : 'text')} disabled={!!mediaType} className="p-2 hover:bg-purple-500/20 rounded-full disabled:opacity-50" aria-label="AI Assistant">
+                <button onClick={() => setShowAssistant(showAssistant === 'text' ? false : 'text')} disabled={!!mediaType} className="p-2 hover:text-purple-500 rounded-full disabled:opacity-50" aria-label="AI Assistant">
                     <AiWriteIcon />
                 </button>
-                <button onClick={() => setShowAssistant(showAssistant === 'image' ? false : 'image')} disabled={!!mediaType && mediaType !== 'image'} className="p-2 hover:bg-purple-500/20 rounded-full disabled:opacity-50" aria-label="Generate Image">
+                <button onClick={() => setShowAssistant(showAssistant === 'image' ? false : 'image')} disabled={!!mediaType && mediaType !== 'image'} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full disabled:opacity-50" aria-label="Generate Image">
                     <AiImageIcon />
                 </button>
                 {showEmojiPicker && (
