@@ -4,6 +4,7 @@ import Card from '../common/Card';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
 import ShareDmModal from './ShareDmModal';
+import { useToast } from '../../hooks/useToast';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Icon className={filled ? 'text-red-500' : ''} fill={filled ? 'currentColor' : 'none'}>
@@ -129,6 +130,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
   const [commentText, setCommentText] = useState('');
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showDmModal, setShowDmModal] = useState(false);
+  const { addToast } = useToast();
 
   const shareContainerRef = useRef<HTMLDivElement>(null);
 
@@ -160,7 +162,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
     if (navigator.clipboard && window.isSecureContext) {
       return navigator.clipboard.writeText(text);
     } else {
-      // Fallback for older browsers or insecure contexts
       return new Promise((resolve, reject) => {
         try {
           const textArea = document.createElement('textarea');
@@ -205,21 +206,21 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
       case 'instagram':
         copyToClipboard(postUrl)
           .then(() => {
-            alert('Post link copied! Best for sharing in Instagram Stories or bio.');
+            addToast('Post link copied! Best for sharing in Instagram Stories or bio.', 'success');
           })
           .catch(err => {
             console.error('Failed to copy for Instagram:', err);
-            alert('Could not copy link. Please try again.');
+            addToast('Could not copy link. Please try again.', 'error');
           });
         break;
       case 'copy':
         copyToClipboard(postUrl)
           .then(() => {
-            alert('Post link copied to clipboard!');
+            addToast('Post link copied to clipboard!', 'success');
           })
           .catch(err => {
             console.error('Failed to copy link:', err);
-            alert('Could not copy link. Please try again.');
+            addToast('Could not copy link. Please try again.', 'error');
           });
         break;
     }

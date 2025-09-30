@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-// FIX: Removed 'Partial' from import as it's a built-in TypeScript utility type.
 import { Post, User } from '../../types';
 import { MOCK_FOLLOWERS } from '../../constants';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
+import { useToast } from '../../hooks/useToast';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 
@@ -16,6 +16,7 @@ interface ShareDmModalProps {
 const ShareDmModal: React.FC<ShareDmModalProps> = ({ post, onClose, onUpdatePost }) => {
   const [search, setSearch] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const { addToast } = useToast();
 
   const filteredFollowers = MOCK_FOLLOWERS.filter(
     (follower) =>
@@ -33,13 +34,13 @@ const ShareDmModal: React.FC<ShareDmModalProps> = ({ post, onClose, onUpdatePost
 
   const handleSend = () => {
     if (selectedUsers.length === 0) {
-      alert("Please select at least one follower to share with.");
+      addToast("Please select at least one follower to share with.", "info");
       return;
     }
     // In a real app, this would trigger an API call to send DMs
     console.log(`Sharing post ${post.id} with users: ${selectedUsers.join(', ')}`);
     onUpdatePost(post.id, { shares: post.shares + 1 });
-    alert(`Post shared with ${selectedUsers.length} follower(s)!`);
+    addToast(`Post shared with ${selectedUsers.length} follower(s)!`, 'success');
     onClose();
   };
 

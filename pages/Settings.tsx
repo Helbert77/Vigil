@@ -2,6 +2,7 @@ import React from 'react';
 import Card from '../components/common/Card';
 import { useTheme } from '../hooks/useTheme';
 import { User } from '../types';
+import { useToast } from '../hooks/useToast';
 
 const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -30,6 +31,8 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ user }) => {
+  const { addToast } = useToast();
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Settings</h1>
@@ -64,7 +67,7 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
             </div>
             <div className="pt-2">
                 <button 
-                  onClick={() => alert('Logged out successfully! (mocked)')}
+                  onClick={() => addToast('Logged out successfully! (mocked)', 'info')}
                   className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
                   Log Out
                 </button>
@@ -80,8 +83,8 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
                 <button
                     onClick={() => {
                         localStorage.clear();
-                        alert('Local data has been cleared. The page will now reload.');
-                        window.location.reload();
+                        addToast('Local data has been cleared. The page will now reload.', 'info');
+                        setTimeout(() => window.location.reload(), 1500);
                     }}
                     className="w-full sm:w-auto border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
                     >

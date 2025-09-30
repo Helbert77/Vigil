@@ -12,6 +12,7 @@ import Communities from './pages/Communities';
 import PostDetail from './pages/PostDetail';
 import Search from './pages/Search';
 import CommunityDetail from './pages/CommunityDetail';
+import ToastContainer from './components/common/ToastContainer';
 import { MOCK_USER, MOCK_POSTS, MOCK_CONVERSATIONS, MOCK_ALL_USERS, MOCK_COMMUNITIES } from './constants';
 import { Post, Poll, Conversation, User } from './types';
 
@@ -211,6 +212,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      <ToastContainer />
       <Header user={user} onNavigateProfile={() => handleNavigation('Profile')} onSearch={handleSearch} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-8 pt-20">
         <aside className="md:col-span-3 lg:col-span-2">
