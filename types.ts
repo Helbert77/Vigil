@@ -70,3 +70,10 @@ export interface Community {
   bannerUrl: string;
   tag: string;
 }
+
+export interface TheoryAnalysis {
+  keyPoints: string[];
+  possibleFallacies: string[];
+  counterArguments: string[];
+  relatedTopics: string[];
+}

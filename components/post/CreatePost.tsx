@@ -9,6 +9,8 @@ const VideoIcon = () => <Icon className="text-green-500"><polygon points="23 7 1
 const PollIcon = () => <Icon className="text-orange-500"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
 const SmileIcon = () => <Icon className="text-yellow-500"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></Icon>;
 const XIcon = () => <Icon className="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
+const WandIcon = () => <Icon className="text-purple-500"><path d="m9.06 2.23 1.9-1.9a2.12 2.12 0 0 1 3 3l-1.9 1.9"></path><path d="m12.09 3.72 3.18 3.18"></path><path d="m3.6 12.5-2.1 2.1a2.12 2.12 0 0 0 3 3l2.1-2.1"></path><path d="m6.63 15.56 3.18 3.18"></path><path d="M12 8.83v6.34"></path><path d="m8.83 12h6.34"></path></Icon>;
+const SparklesIcon = () => <Icon className="text-purple-500"><path d="m12 3-1.9 4.8-4.8 1.9 4.8 1.9L12 21l1.9-4.8 4.8-1.9-4.8-1.9L12 3z"/></Icon>;
 
 interface CreatePostProps {
   onAddPost: (text: string, imageUrl?: string, videoUrl?: string, poll?: Poll) => void;
@@ -28,6 +30,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
   const [pollMinutes, setPollMinutes] = useState(0);
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +50,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
     setPollHours(0);
     setPollMinutes(0);
     setShowEmojiPicker(false);
+    setShowAssistant(false);
+    setAssistantPrompt('');
     if (imageInputRef.current) imageInputRef.current.value = '';
     if (videoInputRef.current) videoInputRef.current.value = '';
   };
@@ -89,7 +96,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
         setImageUrl(`https://picsum.photos/seed/${randomId}/600/400`);
         setMediaType('image');
       } else {
-        // Mock video URL, as we can't display random videos easily
         setVideoUrl('https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4');
         setMediaType('video');
       }
@@ -136,6 +142,26 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
     }
   };
 
+  const handleGenerate = (type: 'text' | 'image') => {
+    if (!assistantPrompt.trim()) return;
+    setIsGenerating(true);
+
+    // --- MOCK API CALL ---
+    setTimeout(() => {
+      if (type === 'text') {
+        const generatedText = `The patterns are undeniable. My research into "${assistantPrompt}" reveals a clear convergence of data points that the mainstream refuses to acknowledge. We're seeing coordinated efforts to suppress this information, but the truth has a way of surfacing. What are they really hiding? #WakeUp`;
+        setText(prev => prev ? `${prev}\n\n${generatedText}` : generatedText);
+      } else { // image
+        const seed = assistantPrompt.split(' ').join('-');
+        setImageUrl(`https://picsum.photos/seed/${seed}/600/400`);
+        setMediaType('image');
+      }
+      setIsGenerating(false);
+      setShowAssistant(false);
+      setAssistantPrompt('');
+    }, 1500);
+  };
+
   const isPostDisabled = !text.trim() && !mediaType;
 
   return (
@@ -152,6 +178,24 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
           ></textarea>
+
+          {showAssistant && (
+            <div className="mt-2 p-2 bg-light-bg dark:bg-dark-bg rounded-lg">
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{showAssistant === 'text' ? 'Truth Weaver AI Assistant' : 'AI Image Generator'}</label>
+              <div className="flex items-center space-x-2 mt-1">
+                <input
+                  type="text"
+                  placeholder={showAssistant === 'text' ? "e.g., 'structures on Mars'" : "e.g., 'a mysterious monolith in the desert'"}
+                  value={assistantPrompt}
+                  onChange={(e) => setAssistantPrompt(e.target.value)}
+                  className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md py-1 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button onClick={() => handleGenerate(showAssistant)} disabled={isGenerating} className="bg-primary text-white px-3 py-1 rounded-md font-semibold disabled:bg-gray-400">
+                  {isGenerating ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {mediaType === 'image' && imageUrl && (
             <div className="mt-2 relative">
@@ -216,6 +260,12 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user }) => {
                 </button>
                 <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 hover:bg-yellow-500/20 rounded-full" aria-label="Add emoji">
                     <SmileIcon />
+                </button>
+                <button onClick={() => setShowAssistant(showAssistant === 'text' ? false : 'text')} disabled={!!mediaType} className="p-2 hover:bg-purple-500/20 rounded-full disabled:opacity-50" aria-label="AI Assistant">
+                    <WandIcon />
+                </button>
+                <button onClick={() => setShowAssistant(showAssistant === 'image' ? false : 'image')} disabled={!!mediaType && mediaType !== 'image'} className="p-2 hover:bg-purple-500/20 rounded-full disabled:opacity-50" aria-label="Generate Image">
+                    <SparklesIcon />
                 </button>
                 {showEmojiPicker && (
                     <div className="absolute top-full left-0 mt-2 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg p-2 flex flex-wrap w-48 z-10">
