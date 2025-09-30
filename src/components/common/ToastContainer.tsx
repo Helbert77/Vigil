@@ -1,6 +1,6 @@
 import React from 'react';
 import { useToast } from '../../hooks/useToast';
-import { Icon } from '../icons/Icon';
+import { Icon } from '../../../components/icons/Icon';
 
 const CheckCircleIcon = () => <Icon className="h-5 w-5 text-green-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></Icon>;
 const AlertTriangleIcon = () => <Icon className="h-5 w-5 text-red-400"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></Icon>;
@@ -14,10 +14,7 @@ const ToastIcons = {
 };
 
 const ToastContainer: React.FC = () => {
-  const { toasts, addToast } = useToast(); // Note: removeToast is not provided by context, but we can use addToast to clear. Let's assume remove is needed.
-  
-  // Let's fix the context to provide removeToast
-  const { removeToast } = (useToast() as any); // Temporary cast until context is fixed. The context I wrote provides it.
+  const { toasts, removeToast } = useToast();
 
   if (toasts.length === 0) {
     return null;
