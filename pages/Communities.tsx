@@ -2,7 +2,11 @@ import React from 'react';
 import { MOCK_COMMUNITIES } from '../constants';
 import CommunityCard from '../components/communities/CommunityCard';
 
-const Communities: React.FC = () => {
+interface CommunitiesProps {
+  onViewCommunity: (communityId: string) => void;
+}
+
+const Communities: React.FC<CommunitiesProps> = ({ onViewCommunity }) => {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Communities</h1>
@@ -11,7 +15,7 @@ const Communities: React.FC = () => {
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {MOCK_COMMUNITIES.map(community => (
-          <CommunityCard key={community.id} community={community} />
+          <CommunityCard key={community.id} community={community} onViewCommunity={onViewCommunity} />
         ))}
       </div>
     </div>

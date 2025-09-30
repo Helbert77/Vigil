@@ -11,10 +11,11 @@ import Saved from './pages/Saved';
 import Communities from './pages/Communities';
 import PostDetail from './pages/PostDetail';
 import Search from './pages/Search';
-import { MOCK_USER, MOCK_POSTS, MOCK_CONVERSATIONS, MOCK_ALL_USERS } from './constants';
+import CommunityDetail from './pages/CommunityDetail';
+import { MOCK_USER, MOCK_POSTS, MOCK_CONVERSATIONS, MOCK_ALL_USERS, MOCK_COMMUNITIES } from './constants';
 import { Post, Poll, Conversation, User } from './types';
 
-type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'PostDetail' | 'Search';
+type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'PostDetail' | 'Search' | 'CommunityDetail';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('Home');
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
   const [user, setUser] = useState<User>(MOCK_USER);
   const [viewedUserId, setViewedUserId] = useState<string | null>(null);
+  const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
   const [savedPostIds, setSavedPostIds] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('savedPostIds');
@@ -88,6 +90,11 @@ const App: React.FC = () => {
     setCurrentPage('Profile');
   };
   
+  const handleViewCommunity = (communityId: string) => {
+    setActiveCommunityId(communityId);
+    setCurrentPage('CommunityDetail');
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage('Search');
@@ -142,7 +149,7 @@ const App: React.FC = () => {
       case 'Saved':
         return <Saved user={user} posts={posts} savedPostIds={savedPostIds} onUpdatePost={handleUpdatePost} onToggleSave={handleToggleSavePost} />;
       case 'Communities':
-        return <Communities />;
+        return <Communities onViewCommunity={handleViewCommunity} />;
       case 'PostDetail': {
         const post = posts.find(p => p.id === activePostId);
         if (!post) {
@@ -157,6 +164,23 @@ const App: React.FC = () => {
             savedPostIds={savedPostIds}
             onToggleSave={handleToggleSavePost}
             onNavigateBack={() => setCurrentPage('Notifications')}
+        />;
+      }
+      case 'CommunityDetail': {
+        const community = MOCK_COMMUNITIES.find(c => c.id === activeCommunityId);
+        if (!community) {
+            // Fallback if community not found
+            setCurrentPage('Communities');
+            return <Communities onViewCommunity={handleViewCommunity} />;
+        }
+        return <CommunityDetail
+            community={community}
+            posts={posts}
+            onUpdatePost={handleUpdatePost}
+            savedPostIds={savedPostIds}
+            onToggleSave={handleToggleSavePost}
+            onNavigateBack={() => setCurrentPage('Communities')}
+            user={user}
         />;
       }
       case 'Search':

@@ -165,6 +165,7 @@ export const MOCK_COMMUNITIES: Community[] = [
     description: 'Dedicated to tracking and exposing the staged alien invasion event.',
     memberCount: 12800,
     bannerUrl: 'https://picsum.photos/seed/comm1/600/200',
+    tag: 'ProjectBluebeam',
   },
   {
     id: 'com2',
@@ -172,6 +173,7 @@ export const MOCK_COMMUNITIES: Community[] = [
     description: 'Exploring evidence of advanced societies living beneath the Earth\'s crust.',
     memberCount: 9200,
     bannerUrl: 'https://picsum.photos/seed/comm2/600/200',
+    tag: 'SubterraneanCivilizations',
   },
   {
     id: 'com3',
@@ -179,6 +181,7 @@ export const MOCK_COMMUNITIES: Community[] = [
     description: 'Cataloging and analyzing instances of collective false memories. Was it Berenstein or Berenstain?',
     memberCount: 25600,
     bannerUrl: 'https://picsum.photos/seed/comm3/600/200',
+    tag: 'MandelaEffect',
   },
   {
     id: 'com4',
@@ -186,5 +189,6 @@ export const MOCK_COMMUNITIES: Community[] = [
     description: 'Monitoring the emergence of artificial general intelligence and its implications for humanity.',
     memberCount: 18500,
     bannerUrl: 'https://picsum.photos/seed/comm4/600/200',
+    tag: 'AI_Sentience',
   },
 ];

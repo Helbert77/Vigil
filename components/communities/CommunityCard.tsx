@@ -7,39 +7,43 @@ const UsersIcon = () => <Icon className="h-4 w-4 mr-1"><path d="M16 21v-2a4 4 0 
 
 interface CommunityCardProps {
   community: Community;
+  onViewCommunity: (communityId: string) => void;
 }
 
-const CommunityCard: React.FC<CommunityCardProps> = ({ community }) => {
+const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunity }) => {
   const [isJoined, setIsJoined] = useState(false);
 
-  const handleJoinToggle = () => {
+  const handleJoinToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking the button
     setIsJoined(!isJoined);
   };
 
   return (
-    <Card className="p-0 sm:p-0 overflow-hidden flex flex-col">
-      <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-24 w-full object-cover" />
-      <div className="p-4 flex-grow flex flex-col">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{community.name}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex-grow">{community.description}</p>
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <UsersIcon />
-            <span>{community.memberCount.toLocaleString()} members</span>
-          </div>
-          <button
-            onClick={handleJoinToggle}
-            className={`font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 ${
-              isJoined
-                ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
-                : 'bg-primary hover:bg-gray-600 text-white'
-            }`}
-          >
-            {isJoined ? 'Joined' : 'Join'}
-          </button>
+    <div onClick={() => onViewCommunity(community.id)} className="cursor-pointer h-full">
+        <Card className="p-0 sm:p-0 overflow-hidden flex flex-col h-full hover:border-primary dark:hover:border-primary transition-colors">
+        <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-24 w-full object-cover" />
+        <div className="p-4 flex-grow flex flex-col">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{community.name}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex-grow">{community.description}</p>
+            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <UsersIcon />
+                <span>{community.memberCount.toLocaleString()} members</span>
+            </div>
+            <button
+                onClick={handleJoinToggle}
+                className={`font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 z-10 ${
+                isJoined
+                    ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
+                    : 'bg-primary hover:bg-gray-600 text-white'
+                }`}
+            >
+                {isJoined ? 'Joined' : 'Join'}
+            </button>
+            </div>
         </div>
-      </div>
-    </Card>
+        </Card>
+    </div>
   );
 };
 

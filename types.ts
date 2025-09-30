@@ -68,4 +68,5 @@ export interface Community {
   description: string;
   memberCount: number;
   bannerUrl: string;
+  tag: string;
 }
