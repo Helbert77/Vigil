@@ -155,6 +155,7 @@ const App: React.FC = () => {
                  savedPostIds={savedPostIds} 
                  onToggleSave={handleToggleSavePost} 
                  onUpdateUser={userToView.id === user.id ? handleUpdateUser : undefined}
+                 onViewPost={handleViewPost}
                />;
       }
       case 'Settings':
@@ -237,7 +238,7 @@ const App: React.FC = () => {
         <aside className="md:col-span-3 lg:col-span-2">
           <Sidebar currentPage={currentPage} setCurrentPage={handleNavigation} />
         </aside>
-        <main className="md:col-span-9 lg:col-span-7">
+        <main className="md:col-span-9 lg:col-span-7 animate-fade-in-down" key={currentPage}>
           {renderPage()}
         </main>
         <aside className="hidden lg:block lg:col-span-3">

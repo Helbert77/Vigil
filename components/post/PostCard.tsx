@@ -278,16 +278,16 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
         </div>
 
         <div className="flex justify-around mt-4 pt-2 border-t border-light-border dark:border-dark-border">
-          <button onClick={handleLike} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-500 transition-colors duration-200">
+          <button onClick={handleLike} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-500 transition-colors duration-200 transform active:scale-110">
             <HeartIcon filled={isLiked} />
             <span>{post.likes}</span>
           </button>
-          <button onClick={() => setShowComments(!showComments)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-500 transition-colors duration-200">
+          <button onClick={() => setShowComments(!showComments)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-500 transition-colors duration-200 transform active:scale-110">
             <MessageCircleIcon />
             <span>{post.comments.length}</span>
           </button>
           <div className="relative" ref={shareContainerRef}>
-            <button onClick={() => setShowShareMenu(!showShareMenu)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-500 transition-colors duration-200">
+            <button onClick={() => setShowShareMenu(!showShareMenu)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-500 transition-colors duration-200 transform active:scale-110">
               <ShareIcon />
               <span>{post.shares}</span>
             </button>
@@ -320,7 +320,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
               </div>
             )}
           </div>
-           <button onClick={() => onToggleSave(post.id)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-500 transition-colors duration-200">
+           <button onClick={() => onToggleSave(post.id)} className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-500 transition-colors duration-200 transform active:scale-110">
             <BookmarkIcon filled={isSaved} />
           </button>
         </div>
