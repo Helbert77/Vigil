@@ -12,11 +12,12 @@ import Communities from './pages/Communities';
 import PostDetail from './pages/PostDetail';
 import Search from './pages/Search';
 import CommunityDetail from './pages/CommunityDetail';
+import TopicDetail from './pages/TopicDetail';
 import ToastContainer from './components/common/ToastContainer';
 import { MOCK_USER, MOCK_POSTS, MOCK_CONVERSATIONS, MOCK_ALL_USERS, MOCK_COMMUNITIES } from './constants';
 import { Post, Poll, Conversation, User } from './types';
 
-type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'PostDetail' | 'Search' | 'CommunityDetail';
+type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('Home');
@@ -109,6 +110,11 @@ const App: React.FC = () => {
     setCurrentPage('CommunityDetail');
   };
 
+  const handleViewTag = (tag: string) => {
+    setActiveTag(tag);
+    setCurrentPage('TopicDetail');
+  };
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     setCurrentPage('Search');
@@ -135,8 +141,6 @@ const App: React.FC = () => {
                   onUpdatePost={handleUpdatePost} 
                   savedPostIds={savedPostIds} 
                   onToggleSave={handleToggleSavePost} 
-                  activeTag={activeTag}
-                  setActiveTag={setActiveTag}
                 />;
       case 'Profile': {
         const userToView = viewedUserId ? MOCK_ALL_USERS.find(u => u.id === viewedUserId) : user;
@@ -194,6 +198,21 @@ const App: React.FC = () => {
             user={user}
         />;
       }
+      case 'TopicDetail': {
+        if (!activeTag) {
+            setCurrentPage('Home');
+            return null;
+        }
+        return <TopicDetail
+            tag={activeTag}
+            posts={posts}
+            onUpdatePost={handleUpdatePost}
+            savedPostIds={savedPostIds}
+            onToggleSave={handleToggleSavePost}
+            onNavigateBack={() => setCurrentPage('Home')}
+            user={user}
+        />;
+      }
       case 'Search':
         return <Search 
                   query={searchQuery}
@@ -206,7 +225,7 @@ const App: React.FC = () => {
                   onSearch={handleSearch}
                 />;
       default:
-        return <Home user={user} posts={posts} onAddPost={handleAddPost} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} activeTag={activeTag} setActiveTag={setActiveTag} />;
+        return <Home user={user} posts={posts} onAddPost={handleAddPost} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} />;
     }
   };
 
@@ -223,7 +242,7 @@ const App: React.FC = () => {
         </main>
         <aside className="hidden lg:block lg:col-span-3">
           <Rightbar 
-            onViewTag={setActiveTag} 
+            onViewTag={handleViewTag} 
             onViewProfile={handleViewProfile}
             followedUserIds={followedUserIds}
             onFollowToggle={handleFollowToggle}

@@ -11,30 +11,15 @@ interface HomeProps {
   savedPostIds: string[];
   onToggleSave: (postId: string) => void;
   user: User;
-  activeTag: string | null;
-  setActiveTag: (tag: string | null) => void;
 }
 
-const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostIds, onToggleSave, user, activeTag, setActiveTag }) => {
-  const displayedPosts = activeTag 
-    ? posts.filter(post => post.text.toLowerCase().includes(`#${activeTag.toLowerCase()}`))
-    : posts;
-
+const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostIds, onToggleSave, user }) => {
   return (
     <div>
-      {activeTag ? (
-        <Card className="mb-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold">Trending: #{activeTag}</h2>
-            <button onClick={() => setActiveTag(null)} className="text-sm font-semibold text-primary hover:underline">Clear filter</button>
-          </div>
-        </Card>
-      ) : (
-        <CreatePost onAddPost={onAddPost} user={user} />
-      )}
+      <CreatePost onAddPost={onAddPost} user={user} />
       
       <div>
-        {displayedPosts.length > 0 ? displayedPosts.map((post) => (
+        {posts.length > 0 ? posts.map((post) => (
           <PostCard 
             key={post.id} 
             post={post} 
@@ -46,7 +31,7 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
         )) : (
           <Card>
             <p className="text-center text-gray-500 dark:text-gray-400 p-4">
-              No posts found for #{activeTag}. Be the first to uncover the truth!
+              No posts yet. Be the first to uncover the truth!
             </p>
           </Card>
         )}
