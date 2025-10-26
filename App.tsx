@@ -1,0 +1,457 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Sidebar from '@/components/layout/Sidebar';
+import Rightbar from '@/components/layout/Rightbar';
+import Home from '@/pages/Home';
+import Profile from '@/pages/Profile';
+import Header from '@/components/layout/Header';
+import Settings from '@/pages/Settings';
+import Notifications from '@/pages/Notifications';
+import Messages from '@/pages/Messages';
+import Saved from '@/pages/Saved';
+import Communities from '@/pages/Communities';
+import PostDetail from '@/pages/PostDetail';
+import Search from '@/pages/Search';
+import CommunityDetail from '@/pages/CommunityDetail';
+import TopicDetail from '@/pages/TopicDetail';
+import About from '@/pages/About';
+import TermsOfService from '@/pages/TermsOfService';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import CookiePolicy from '@/pages/CookiePolicy';
+import Disclaimer from '@/pages/Disclaimer';
+import Accessibility from '@/pages/Accessibility';
+import PremiumPage from '@/src/pages/PremiumPage';
+import ToastContainer from '@/components/common/ToastContainer';
+import { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
+import { useSession } from '@/contexts/SessionContext';
+import Login from '@/pages/Login';
+import UpdatePassword from '@/pages/UpdatePassword';
+import FollowListModal from '@/components/profile/FollowListModal';
+import { UsersProvider } from '@/contexts/UsersContext';
+import { useUserData } from '@/src/hooks/useUserData';
+import { usePosts } from '@/src/hooks/usePosts';
+import { useCommunities } from '@/src/hooks/useCommunities';
+import { useNotifications } from '@/src/hooks/useNotifications';
+import { useConversations } from '@/src/hooks/useConversations';
+import { useModerationData } from '@/src/hooks/useModerationData';
+import * as api from '@/src/services/api';
+import SplashScreen from '@/pages/SplashScreen';
+import Timeline from '@/pages/Timeline';
+import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
+import Moderation from '@/pages/admin/Moderation';
+import Dashboard from '@/components/admin/Dashboard';
+import Appeals from '@/pages/admin/Appeals';
+import TrendingTopicsPage from '@/pages/TrendingTopics';
+import ExploreUsers from '@/components/ExploreUsers';
+
+type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
+
+const App: React.FC = () => {
+  const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
+  
+  // State for navigation and UI
+  const [currentPage, setCurrentPage] = useState<Page>('Home');
+  const [previousPage, setPreviousPage] = useState<Page>('Home');
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [viewedUserId, setViewedUserId] = useState<string | null>(null);
+  const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
+  const [isFollowModalOpen, setIsFollowModalOpen] = useState(false);
+  const [followModalData, setFollowModalData] = useState<{ user: User; initialFollowers: User[]; initialFollowing: User[]; initialTab: 'followers' | 'following'; } | null>(null);
+  const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([]);
+  const mainContentRef = useRef<HTMLElement>(null);
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const previousUserRef = useRef<User | null>(null);
+
+  // Custom Hooks for data logic
+  const { allUsers, followedUserIds, blockedUserIds, blockedUsersList, usersToFollow, handleFollowToggle, handleBlockToggle, handleUpdateUser } = useUserData(appUser, refreshUser);
+  const { communities, setCommunities, joinedCommunityIds, trendingTopics, handleJoinCommunityToggle, handleCreateCommunity, fetchTrendingTopics } = useCommunities(appUser);
+  const { posts, isPostsLoading, savedPostIds, handleAddPost, handleDeletePost, handleUpdatePost, handleToggleLike, handleToggleCommentLike, handleToggleSavePost, handleVoteOnPoll, handleAddComment, handleUpdateComment, handleDeleteComment, handleIncrementView } = usePosts(appUser, allUsers, setCommunities, fetchTrendingTopics);
+  const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
+  const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
+  const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
+
+  useEffect(() => {
+    console.log('%c[App.tsx] Estado do usuário atualizado:', 'color: magenta; font-weight: bold;', appUser);
+    if (appUser) {
+      console.log(`%c[App.tsx] A função atual do usuário é: ${appUser.role}`, 'color: magenta; font-weight: bold;');
+    }
+  }, [appUser]);
+
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
+  };
+
+  const handleToggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const handleNavigation = (page: Page) => {
+    if (page === 'Home' && currentPage === 'Home') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    // Não faz scroll automático para a página de mensagens para manter o título visível
+    if (page !== 'Messages') {
+      scrollToTop();
+    }
+    
+    if (page === 'Home') { setActiveTag(null); setSearchQuery(''); }
+    if (page === 'Profile') setViewedUserId(null);
+    if (page === 'Notifications' && unreadNotificationsCount > 0) {
+      markNotificationsAsRead();
+    }
+    if (page === 'Messages' && unreadMessagesCount > 0) {
+      markMessagesAsRead();
+    }
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    // This effect resets the page to Home upon login.
+    // It checks if the user state has transitioned from logged-out to logged-in.
+    if (!previousUserRef.current && appUser) {
+        handleNavigation('Home');
+    }
+    // Store the current user state for the next render comparison.
+    previousUserRef.current = appUser;
+  }, [appUser]);
+
+  const refetchActiveMembers = React.useCallback(async (communityId: string) => {
+    try {
+      const { data, error } = await api.fetchActiveMembers(communityId);
+      if (error) throw error;
+      setActiveMembers(data as ActiveMember[]);
+    } catch (error) {
+      console.error("Failed to refresh active members", error);
+    }
+  }, []);
+
+  const handleAddPostAndUpdate = async (text: string, imageUrl?: string, videoUrl?: string, audioUrl?: string, poll?: Poll, communityId?: string, evidenceBoard?: EvidenceItem[]) => {
+    await handleAddPost(text, imageUrl, videoUrl, audioUrl, poll, communityId, evidenceBoard);
+    if (communityId && communityId === activeCommunityId) {
+      refetchActiveMembers(communityId);
+    }
+  };
+
+  useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    if (params.get('type') === 'recovery') {
+      setCurrentPage('UpdatePassword');
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplashScreen(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleViewPost = (postId: string) => {
+    scrollToTop();
+    setPreviousPage(currentPage);
+    setActivePostId(postId);
+    setActiveCommentId(null);
+    setCurrentPage('PostDetail');
+  };
+
+  const handleViewCommentThread = (commentId: string) => {
+    scrollToTop();
+    const findPostId = (comments: Comment[]): string | null => {
+      for (const c of comments) {
+        if (c.id === commentId) return null;
+        if (c.replies) { const found = findPostId(c.replies); if (found) return found; }
+      }
+      return null;
+    };
+    for (const p of posts) {
+      if (p.comments.some((c: Comment) => c.id === commentId) || findPostId(p.comments)) {
+        setActivePostId(p.id);
+        break;
+      }
+    }
+    setActiveCommentId(commentId);
+    setCurrentPage('PostDetail');
+  };
+
+  const handleViewProfile = (userId: string) => { scrollToTop(); setSearchQuery(''); setViewedUserId(userId); setCurrentPage('Profile'); };
+  const handleViewCommunity = async (communityId: string) => {
+    scrollToTop();
+    setSearchQuery('');
+    setActiveCommunityId(communityId);
+    refetchActiveMembers(communityId);
+    setCurrentPage('CommunityDetail');
+  };
+  const handleViewTag = (tag: string) => { scrollToTop(); setSearchQuery(''); setActiveTag(tag); setCurrentPage('TopicDetail'); };
+  const handleNavigateToAdvancedSearch = (query: string) => { scrollToTop(); setSearchQuery(query); setCurrentPage('Search'); };
+
+  const handleFetchFollows = async (userId: string) => {
+    try {
+      const { followerIds, followingIds } = await api.fetchFollows(userId);
+      return {
+        followers: allUsers.filter((u: User) => followerIds.includes(u.id)),
+        following: allUsers.filter((u: User) => followingIds.includes(u.id)),
+      };
+    } catch (error) {
+      return { followers: [], following: [] };
+    }
+  };
+
+  const handleOpenFollowModal = async (userToView: User, tab: 'followers' | 'following') => {
+    const { followers, following } = await handleFetchFollows(userToView.id);
+    setFollowModalData({ user: userToView, initialFollowers: followers, initialFollowing: following, initialTab: tab });
+    setIsFollowModalOpen(true);
+  };
+
+  const handleLogout = async () => { await api.logout(); };
+
+  const filteredContent = useMemo(() => {
+    const mutedWords = (appUser?.mutedWords || []).map(w => w.trim().toLowerCase()).filter(Boolean);
+    const filterComments = (comments: Comment[]): Comment[] => comments.filter(c => !blockedUserIds.includes(c.user.id) && !mutedWords.some(word => c.text.toLowerCase().includes(word))).map(c => ({ ...c, replies: c.replies ? filterComments(c.replies) : [] }));
+    const filteredPosts = posts.filter((p: Post) => !blockedUserIds.includes(p.user.id) && !mutedWords.some(word => p.text.toLowerCase().includes(word))).map((p: Post) => ({ ...p, comments: filterComments(p.comments) }));
+    const filteredAllUsers = allUsers.filter((u: User) => !blockedUserIds.includes(u.id));
+    const filteredNotifications = notifications.filter((n: Notification) => !blockedUserIds.includes(n.actor.id));
+    const filteredConversations = conversations.filter((c: Conversation) => c.participants.every((p: User) => !blockedUserIds.includes(p.id)));
+    const filteredUsersToFollow = usersToFollow.filter((u: User) => 
+      !blockedUserIds.includes(u.id) && 
+      !followedUserIds.includes(u.id) && 
+      u.id !== appUser?.id
+    );
+    return { filteredPosts, filteredAllUsers, filteredNotifications, filteredConversations, filteredUsersToFollow };
+  }, [posts, allUsers, notifications, conversations, usersToFollow, blockedUserIds, followedUserIds, appUser]);
+
+  if (sessionLoading) return <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div></div>;
+  
+  if (!session && showSplashScreen) {
+    return <SplashScreen />;
+  }
+
+  if (currentPage === 'UpdatePassword') return <><ToastContainer /><UpdatePassword /></>;
+  if (!session || !appUser) return <><ToastContainer /><Login /></>;
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'Home':
+        if (isPostsLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
+        const homePosts = filteredContent.filteredPosts.filter((post: Post) => !post.communityId);
+        return <Home user={appUser} posts={homePosts} onAddPost={handleAddPostAndUpdate} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} communities={communities} joinedCommunityIds={joinedCommunityIds} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onViewProfile={handleViewProfile} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} setCurrentPage={handleNavigation} />;
+      case 'Profile': {
+        const profileUserId = viewedUserId || appUser.id;
+        const userToView = allUsers.find((u: User) => u.id === profileUserId);
+        if (!userToView || blockedUserIds.includes(userToView.id)) { setCurrentPage('Home'); return null; }
+        return <Profile user={userToView} posts={filteredContent.filteredPosts} followers={[]} following={[]} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onUpdateUser={userToView.id === appUser.id ? handleUpdateUser : undefined} onViewPost={handleViewPost} currentUser={appUser} onUpdateCurrentUser={refreshUser} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} blockedUserIds={blockedUserIds} onBlockToggle={handleBlockToggle} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onDeletePost={handleDeletePost} shareableUsers={allUsers} onSendMessage={handleSendMessage} onViewProfile={handleViewProfile} onFetchFollows={handleFetchFollows} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} />;
+      }
+      case 'Settings': return <Settings user={appUser} onUpdateUser={refreshUser} blockedUsers={blockedUsersList} onBlockToggle={handleBlockToggle} onLogout={handleLogout} />;
+      case 'Notifications': return <Notifications notifications={filteredContent.filteredNotifications} onViewPost={handleViewPost} onFollowToggle={handleFollowToggle} followedUserIds={followedUserIds} currentUser={appUser} onViewProfile={handleViewProfile} onOpenFollowModal={handleOpenFollowModal} onClearAll={handleClearNotifications} />;
+      case 'Messages': return <Messages conversations={filteredContent.filteredConversations} handleSendMessage={handleSendMessage} isLoading={isConversationsLoading} followedUsers={allUsers.filter((u: User) => followedUserIds.includes(u.id))} onDeleteConversation={handleDeleteConversation} />;
+      case 'Saved': return <Saved user={appUser} posts={filteredContent.filteredPosts} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onUpdatePost={handleUpdatePost} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onViewProfile={handleViewProfile} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} />;
+      case 'Communities': return <Communities communities={communities} joinedCommunityIds={joinedCommunityIds} onViewCommunity={handleViewCommunity} onJoinCommunityToggle={handleJoinCommunityToggle} onCreateCommunity={async (data) => { const id = await handleCreateCommunity(data); if (id) handleViewCommunity(id); }} user={appUser} setCurrentPage={setCurrentPage} />;
+      case 'Timeline': return <Timeline />;
+      case 'Premium': 
+        return <PremiumPage />;
+      case 'Moderation': return <Moderation queue={moderationQueue} isLoading={isLoadingModeration} onDataChange={refetchModerationData} />;
+      case 'Dashboard': return <Dashboard />;
+      case 'Appeals': return <Appeals appeals={appealsQueue} isLoading={isLoadingModeration} onDataChange={refetchModerationData} />;
+      case 'PostDetail': {
+        const post = posts.find((p: Post) => p.id === activePostId);
+        if (!post || blockedUserIds.includes(post.user.id)) { setCurrentPage('Home'); return null; }
+        return <PostDetail 
+          user={appUser} 
+          post={post} 
+          activeCommentId={activeCommentId} 
+          onUpdatePost={handleUpdatePost} 
+          savedPostIds={savedPostIds} 
+          onToggleSave={handleToggleSavePost} 
+          onNavigateBack={() => { setCurrentPage(previousPage); setActivePostId(null); setActiveCommentId(null); }} 
+          onAddComment={handleAddComment} 
+          pageTitle="Thread" 
+          onToggleLike={handleToggleLike} 
+          onToggleCommentLike={handleToggleCommentLike} 
+          onToggleSaveComment={() => {}} 
+          savedCommentIds={[]} 
+          onIncrementView={handleIncrementView} 
+          onViewPost={handleViewPost} 
+          onViewCommentThread={handleViewCommentThread} 
+          onDeletePost={handleDeletePost} 
+          onBlockToggle={handleBlockToggle} 
+          blockedUserIds={blockedUserIds} 
+          shareableUsers={allUsers} 
+          onSendMessage={handleSendMessage} 
+          followedUserIds={followedUserIds} 
+          onViewProfile={handleViewProfile} // Adicionado
+          onFollowToggle={handleFollowToggle} 
+          onOpenFollowModal={handleOpenFollowModal} 
+          onVoteOnPoll={handleVoteOnPoll} 
+          onUpdateComment={handleUpdateComment} 
+          onDeleteComment={handleDeleteComment} 
+          allUsers={allUsers} 
+        />;
+      }
+      case 'CommunityDetail': {
+        const community = communities.find((c: Community) => c.id === activeCommunityId);
+        if (!community) { setCurrentPage('Communities'); return null; }
+        return <CommunityDetail community={community} posts={filteredContent.filteredPosts} activeMembers={activeMembers} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onNavigateBack={() => setCurrentPage('Communities')} onViewProfile={handleViewProfile} user={appUser} isJoined={joinedCommunityIds.includes(community.id)} onJoinCommunityToggle={handleJoinCommunityToggle} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onAddPost={handleAddPostAndUpdate} communities={communities} joinedCommunityIds={joinedCommunityIds} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} setCurrentPage={handleNavigation} />;
+      }
+      case 'TopicDetail': {
+        if (!activeTag) { setCurrentPage('Home'); return null; }
+        return <TopicDetail 
+          tag={activeTag} 
+          posts={filteredContent.filteredPosts} 
+          onUpdatePost={handleUpdatePost} 
+          savedPostIds={savedPostIds} 
+          onToggleSave={handleToggleSavePost} 
+          onNavigateBack={() => setCurrentPage('Home')} 
+          user={appUser} 
+          onToggleLike={handleToggleLike} 
+          onIncrementView={handleIncrementView} 
+          onViewPost={handleViewPost} 
+          onDeletePost={handleDeletePost} 
+          onBlockToggle={handleBlockToggle} 
+          blockedUserIds={blockedUserIds} 
+          shareableUsers={allUsers} 
+          onSendMessage={handleSendMessage} 
+          followedUserIds={followedUserIds} 
+          onViewProfile={handleViewProfile}
+          onFollowToggle={handleFollowToggle} 
+          onOpenFollowModal={handleOpenFollowModal} 
+          onVoteOnPoll={handleVoteOnPoll} 
+          allUsers={allUsers} 
+        />;
+      }
+      case 'Search': return <Search query={searchQuery} posts={filteredContent.filteredPosts} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onViewProfile={handleViewProfile} currentUser={appUser} onSearch={setSearchQuery} allUsers={filteredContent.filteredAllUsers} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} communities={communities} joinedCommunityIds={joinedCommunityIds} />;
+      case 'TrendingTopics': return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => setCurrentPage(previousPage)} />;
+      case 'ExploreUsers': return <ExploreUsers currentUser={appUser} followedUserIds={followedUserIds} usersToFollow={filteredContent.filteredUsersToFollow} onFollowToggle={handleFollowToggle} onViewProfile={handleViewProfile} onOpenFollowModal={handleOpenFollowModal} onGoBack={() => setCurrentPage(previousPage)} />;
+      case 'About': return <About />;
+      case 'TermsOfService': return <TermsOfService />;
+      case 'PrivacyPolicy': return <PrivacyPolicy />;
+      case 'CookiePolicy': return <CookiePolicy />;
+      case 'Disclaimer': return <Disclaimer />;
+      case 'Accessibility': return <Accessibility />;
+      default: return <div />;
+    }
+  };
+
+  return (
+    <UsersProvider users={allUsers}>
+      <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+        <ToastContainer />
+        <Header 
+          user={appUser} 
+          onNavigateProfile={() => handleNavigation('Profile')} 
+          onSearch={setSearchQuery} 
+          onNavigateHome={() => handleNavigation('Home')} 
+          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch} 
+          query={searchQuery} 
+          allUsers={filteredContent.filteredAllUsers} 
+          communities={communities} 
+          trendingTopics={trendingTopics} 
+          onNavigateToUser={(id) => { handleViewProfile(id); setSearchQuery(''); }} 
+          onNavigateToCommunity={(id) => { handleViewCommunity(id); setSearchQuery(''); }} 
+          onNavigateToTopic={(tag) => { handleViewTag(tag); setSearchQuery(''); }}
+          onToggleMobileSidebar={handleToggleMobileSidebar}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+          onLogout={handleLogout}
+        />
+        
+        {/* Mobile Sidebar Overlay */}
+        {isMobileSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+        
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
+          {/* Mobile Sidebar */}
+          <aside className={`fixed top-16 left-0 w-64 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <Sidebar 
+              user={appUser}
+              currentPage={currentPage} 
+              setCurrentPage={(page) => {
+                handleNavigation(page);
+                setIsMobileSidebarOpen(false);
+              }} 
+              unreadNotificationsCount={unreadNotificationsCount} 
+              unreadMessagesCount={unreadMessagesCount} 
+              isCollapsed={false}
+              pendingModerationCount={pendingModerationCount}
+              pendingAppealsCount={pendingAppealsCount}
+            />
+          </aside>
+          
+          {/* Desktop Sidebar */}
+          <aside className={`hidden md:block relative transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-1' : 'md:col-span-3 lg:col-span-2'}`}>
+            <Sidebar 
+              user={appUser}
+              currentPage={currentPage} 
+              setCurrentPage={handleNavigation} 
+              unreadNotificationsCount={unreadNotificationsCount} 
+              unreadMessagesCount={unreadMessagesCount} 
+              isCollapsed={isSidebarCollapsed}
+              pendingModerationCount={pendingModerationCount}
+              pendingAppealsCount={pendingAppealsCount}
+            />
+            <button 
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+              className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+            </button>
+          </aside>
+          
+          <main ref={mainContentRef} id="main-content" className={`transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-11 lg:col-span-8' : 'md:col-span-9 lg:col-span-7'}`}>
+            {renderPage()}
+          </main>
+          
+          <aside className="hidden lg:block lg:col-span-3">
+            <Rightbar 
+              trendingTopics={trendingTopics} 
+              usersToFollow={filteredContent.filteredUsersToFollow} 
+              onViewTag={handleViewTag} 
+              onViewProfile={handleViewProfile} 
+              followedUserIds={followedUserIds} 
+              onFollowToggle={handleFollowToggle} 
+              onNavigateAbout={() => handleNavigation('About')} 
+              onNavigateTerms={() => handleNavigation('TermsOfService')} 
+              onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')} 
+              onNavigateCookies={() => handleNavigation('CookiePolicy')} 
+              onNavigateDisclaimer={() => handleNavigation('Disclaimer')} 
+              onNavigateAccessibility={() => handleNavigation('Accessibility')} 
+              onOpenFollowModal={handleOpenFollowModal} 
+              currentUser={appUser!} 
+              onNavigatePremium={() => handleNavigation('Premium')} 
+              onNavigateTrendingTopics={() => handleNavigation('TrendingTopics')}
+              onNavigateExploreUsers={() => handleNavigation('ExploreUsers')}
+            />
+          </aside>
+        </div>
+        
+        {isFollowModalOpen && followModalData && (
+          <FollowListModal 
+            isOpen={isFollowModalOpen} 
+            onClose={() => setIsFollowModalOpen(false)} 
+            initialUser={followModalData.user} 
+            initialFollowers={followModalData.initialFollowers} 
+            initialFollowing={followModalData.initialFollowing} 
+            initialTab={followModalData.initialTab} 
+            currentUser={appUser} 
+            followedUserIds={followedUserIds} 
+            onFollowToggle={handleFollowToggle} 
+            onViewProfile={(id) => { setIsFollowModalOpen(false); handleViewProfile(id); }} 
+            onFetchFollows={handleFetchFollows} 
+          />
+        )}
+      </div>
+    </UsersProvider>
+  );
+};
+
+export default App;

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vigil - The Conspiracy Network</title>
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#6B7280', // Gray-500
+              'secondary': '#3b82f6', // Blue
+              'dark-bg': '#0a0a0a',
+              'dark-card': '#181818',
+              'dark-border': '#272727',
+              'light-bg': '#eff6ff', // Blue-50
+              'light-card': '#ffffff',
+              'light-border': '#e5e7eb', // Gray 200
+            },
+            keyframes: {
+              'fade-in-down': {
+                '0%': {
+                    opacity: '0',
+                    transform: 'translateY(-10px)'
+                },
+                '100%': {
+                    opacity: '1',
+                    transform: 'translateY(0)'
+                },
+              },
+              'pulse-glow': { // Adicionado o keyframe pulse-glow
+                '0%, 100%': { boxShadow: '0 0 20px rgba(34, 211, 238, 0.3)' },
+                '50%': { boxShadow: '0 0 40px rgba(34, 211, 238, 0.6)' },
+              }
+            },
+            animation: {
+              'fade-in-down': 'fade-in-down 0.5s ease-out',
+              'pulse-glow': 'pulse-glow 2s infinite', // Adicionada a animação pulse-glow
+            }
+          }
+        },
+        plugins: [
+          tailwind.plugin(function({ addUtilities }) {
+            const newUtilities = {
+              '.line-clamp-3': {
+                display: '-webkit-box',
+                '-webkit-line-clamp': '3',
+                '-webkit-box-orient': 'vertical',
+                overflow: 'hidden',
+              }
+            };
+            addUtilities(newUtilities);
+          })
+        ]
+      }
+    </script>
+    <style>
+      /* Oculta o conteúdo até que o React esteja carregado */
+      #root:empty {
+        display: none;
+      }
+      
+      /* Previne flash de conteúdo não estilizado */
+      body {
+        visibility: hidden;
+      }
+      
+      body.loaded {
+        visibility: visible;
+      }
+    </style>
+    <link rel="stylesheet" href="/index.css">
+  </head>
+  <body class="bg-light-bg dark:bg-dark-bg">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,336 @@
+import React, { useState, useEffect } from 'react';
+import Card from '@/components/common/Card';
+import { useTheme } from '@/hooks/useTheme';
+import { User } from '@/types';
+import { useToast } from '@/hooks/useToast';
+import SettingsToggle from '@/components/settings/SettingsToggle';
+import MutedWordsInput from '@/components/settings/MutedWordsInput';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
+import BlockedUsersList from '@/components/settings/BlockedUsersList';
+import GenericModal from '@/src/components/common/GenericModal';
+import * as api from '@/src/services/api';
+import { useSession } from '@/contexts/SessionContext';
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
+import AccountStatus from '@/components/settings/AccountStatus';
+
+const ThemeToggle: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-gray-700 dark:text-gray-300">Tema</span>
+      <button
+        onClick={toggleTheme}
+        className={`relative inline-flex flex-shrink-0 items-center h-6 rounded-full w-11 transition-colors ${
+          theme === 'dark' ? 'bg-secondary' : 'bg-gray-300 dark:bg-gray-600'
+        } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary dark:focus:ring-offset-dark-card`}
+        role="switch"
+        aria-checked={theme === 'dark'}
+      >
+        <span
+          className={`${
+            theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
+          } inline-block w-4 h-4 transform bg-white rounded-full transition-transform`}
+        />
+      </button>
+    </div>
+  );
+};
+
+interface SettingsProps {
+    user: User;
+    onUpdateUser: () => Promise<void>;
+    blockedUsers: User[];
+    onBlockToggle: (userId: string) => void;
+}
+
+const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, onBlockToggle }) => {
+  const { session } = useSession();
+  const { addToast } = useToast();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBlockedListModalOpen, setIsBlockedListModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleNotificationToggle = async (key: keyof NonNullable<User['notifications']>) => {
+    const currentNotifications = user.notifications || { likes: true, comments: true, newFollowers: false, messages: true };
+    const newNotifications = { ...currentNotifications, [key]: !currentNotifications[key] };
+    
+    try {
+      const { error } = await api.updateUser(user.id, { notifications_settings: newNotifications });
+      if (error) throw error;
+      await onUpdateUser();
+      addToast('Configuração de notificação salva!', 'success');
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      addToast('Falha ao salvar a configuração.', 'error');
+    }
+  };
+
+  const handleAddMutedWord = async (word: string) => {
+    const currentWords = user.mutedWords || [];
+    if (!currentWords.includes(word)) {
+      const newMutedWords = [...currentWords, word];
+      try {
+        const { error } = await api.updateUser(user.id, { muted_words: newMutedWords });
+        if (error) throw error;
+        await onUpdateUser();
+        addToast('Palavra silenciada adicionada.', 'success');
+      } catch (error) {
+        addToast('Falha ao adicionar palavra.', 'error');
+      }
+    }
+  };
+
+  const handleRemoveMutedWord = async (word: string) => {
+    const newMutedWords = (user.mutedWords || []).filter((w: string) => w !== word);
+    try {
+        const { error } = await api.updateUser(user.id, { muted_words: newMutedWords });
+        if (error) throw error;
+        await onUpdateUser();
+        addToast('Palavra removida.', 'success');
+    } catch (error) {
+        addToast('Falha ao remover palavra.', 'error');
+    }
+  };
+  
+  const handleSensitiveContentToggle = async () => {
+    const newValue = !user.showSensitiveContent;
+    try {
+        const { error } = await api.updateUser(user.id, { show_sensitive_content: newValue });
+        if (error) throw error;
+        await onUpdateUser();
+        addToast('Configuração salva.', 'success');
+    } catch (error) {
+        addToast('Falha ao salvar configuração.', 'error');
+    }
+  };
+
+  const handleActivityStatusToggle = async () => {
+    const newValue = !user.showActivityStatus;
+    try {
+        const { error } = await api.updateUser(user.id, { show_activity_status: newValue });
+        if (error) throw error;
+        await onUpdateUser();
+        addToast('Configuração salva.', 'success');
+    } catch (error) {
+        addToast('Falha ao salvar configuração.', 'error');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      const { error } = await api.deleteUserAccount();
+      if (error) throw error;
+      addToast('Sua conta foi excluída permanentemente.', 'success');
+      await api.logout();
+    } catch (error: any) {
+      let errorMessage = 'Ocorreu um erro ao excluir sua conta.';
+      if (error instanceof FunctionsHttpError) {
+        try {
+          const { error: functionError } = await error.context.json();
+          errorMessage = `Erro do servidor: ${functionError || error.message}`;
+        } catch {
+          errorMessage = `Erro do servidor: ${error.message}`;
+        }
+      } else if (error instanceof FunctionsRelayError) {
+        errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error instanceof FunctionsFetchError) {
+        errorMessage = 'Não foi possível conectar ao servidor para excluir a conta.';
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      addToast(errorMessage, 'error');
+    } finally {
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (newPassword.length < 6) {
+      addToast('A senha deve ter pelo menos 6 caracteres.', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      addToast('As senhas não coincidem.', 'error');
+      return;
+    }
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await api.updateUserPassword(newPassword);
+      if (error) throw error;
+      addToast('Senha atualizada com sucesso!', 'success');
+      setIsPasswordModalOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      addToast(`Erro ao atualizar a senha: ${error.message}`, 'error');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  return (
+    <>
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
+        </div>
+        <div className="space-y-8">
+          <Card>
+            <h2 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">Aparência</h2>
+            <ThemeToggle />
+          </Card>
+
+          <Card>
+            <h2 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">Notificações</h2>
+            <div className="divide-y divide-light-border dark:divide-dark-border">
+              <SettingsToggle
+                label="Curtidas"
+                description="Notificar quando alguém curtir seu post."
+                isEnabled={user.notifications?.likes ?? true}
+                onToggle={() => handleNotificationToggle('likes')}
+              />
+              <SettingsToggle
+                label="Comentários e Posts"
+                description="Notificar quando alguém responder ou mencionar você."
+                isEnabled={user.notifications?.comments ?? true}
+                onToggle={() => handleNotificationToggle('comments')}
+              />
+              <SettingsToggle
+                label="Novos seguidores"
+                description="Notificar quando alguém começar a seguir você."
+                isEnabled={user.notifications?.newFollowers ?? false}
+                onToggle={() => handleNotificationToggle('newFollowers')}
+              />
+              <SettingsToggle
+                label="Mensagens Diretas"
+                description="Notificar quando você receber uma nova mensagem."
+                isEnabled={user.notifications?.messages ?? true}
+                onToggle={() => handleNotificationToggle('messages')}
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Privacidade e Conteúdo</h2>
+            <div className="divide-y divide-light-border dark:divide-dark-border">
+              <SettingsToggle
+                label="Mostrar Conteúdo Sensível"
+                description="Exibir mídias que possam conter conteúdo gráfico ou perturbador sem aviso prévio."
+                isEnabled={user.showSensitiveContent ?? false}
+                onToggle={handleSensitiveContentToggle}
+              />
+              <SettingsToggle
+                label="Status de Atividade"
+                description="Permitir que outros usuários vejam quando você está online ou esteve ativo recentemente."
+                isEnabled={user.showActivityStatus ?? true}
+                onToggle={handleActivityStatusToggle}
+              />
+              <div className="py-4">
+                <MutedWordsInput
+                  mutedWords={user.mutedWords || []}
+                  onAddWord={handleAddMutedWord}
+                  onRemoveWord={handleRemoveMutedWord}
+                />
+              </div>
+              <div className="py-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="font-medium text-gray-800 dark:text-gray-200">Contas Bloqueadas</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Gerencie as contas que você bloqueou.</p>
+                    </div>
+                    <button onClick={() => setIsBlockedListModalOpen(true)} className="text-sm font-semibold text-primary hover:underline">
+                        Ver Lista ({blockedUsers.length})
+                    </button>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200">Conta</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-gray-700 dark:text-gray-300">Email</span>
+                <span className="text-gray-500 dark:text-gray-400">{session?.user.email}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-gray-700 dark:text-gray-300">Senha</span>
+                <button onClick={() => setIsPasswordModalOpen(true)} className="text-sm font-semibold text-primary hover:underline">
+                  Alterar Senha
+                </button>
+              </div>
+              <div className="pt-4 border-t border-light-border dark:border-dark-border">
+                <AccountStatus user={user} />
+              </div>
+              <div className="pt-4 border-t border-light-border dark:border-dark-border">
+                  <button
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      className="w-full sm:w-auto border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
+                      >
+                      Excluir Conta Permanentemente
+                  </button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteAccount}
+        title="Excluir sua conta?"
+        message="Esta ação é irreversível. Todos os seus posts, comentários e dados de perfil serão permanentemente excluídos. Tem certeza de que deseja continuar?"
+        confirmText="Sim, excluir minha conta"
+        isDestructive={true}
+      />
+      <GenericModal
+        isOpen={isBlockedListModalOpen}
+        onClose={() => setIsBlockedListModalOpen(false)}
+        title="Contas Bloqueadas"
+      >
+        <BlockedUsersList blockedUsers={blockedUsers} onUnblock={onBlockToggle} />
+      </GenericModal>
+      <GenericModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        title="Alterar Senha"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nova Senha</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar Nova Senha</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={handlePasswordChange}
+              disabled={isUpdatingPassword}
+              className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-colors disabled:bg-gray-400"
+            >
+              {isUpdatingPassword ? 'Salvando...' : 'Salvar Nova Senha'}
+            </button>
+          </div>
+        </div>
+      </GenericModal>
+    </>
+  );
+};
+
+export default Settings;

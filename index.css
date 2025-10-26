@@ -1,0 +1,457 @@
+/* Timeline Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Removido: @keyframes pulse-glow, agora definido em index.html */
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Timeline specific styles */
+.timeline-event {
+  animation: slide-in-up 0.6s ease-out forwards;
+}
+
+.timeline-event:nth-child(1) { animation-delay: 0.1s; }
+.timeline-event:nth-child(2) { animation-delay: 0.2s; }
+.timeline-event:nth-child(3) { animation-delay: 0.3s; }
+.timeline-event:nth-child(4) { animation-delay: 0.4s; }
+
+.floating-element {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.5);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.7);
+}
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient {
+  background: linear-gradient(-45deg, #06b6d4, #3b82f6, #8b5cf6, #ec4899);
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Backdrop blur enhancement */
+.backdrop-blur-enhanced {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Timeline line glow effect */
+.timeline-line {
+  position: relative;
+}
+
+.timeline-line::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(34, 211, 238, 0.3) 20%, 
+    rgba(34, 211, 238, 0.8) 50%, 
+    rgba(34, 211, 238, 0.3) 80%, 
+    transparent 100%
+  );
+  transform: translateY(-50%);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timeline-event {
+    margin-bottom: 2rem;
+  }
+  
+  .event-circle {
+    width: 120px !important;
+    height: 120px !important;
+  }
+}
+
+/* Loading animation */
+.loading-spinner {
+  border: 3px solid rgba(34, 211, 238, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid #06b6d4;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* Hide scrollbars for elements with no-scrollbar */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Hide scrollbars for rightbar */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* CSS global para scrollbar invisível - mantém funcionalidade de scroll vertical */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Media queries para dispositivos móveis - Layout Flexbox responsivo */
+@media (max-width: 768px) {
+  /* Container principal do header mobile */
+  .profile-mobile-header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 3rem; /* 48px - altura mínima para centralização vertical */
+    gap: 1rem; /* Espaçamento consistente entre elementos */
+    padding: 0.5rem 0; /* Padding vertical para melhor espaçamento */
+  }
+  
+  /* Seção do nome de usuário - alinhada à esquerda */
+  .profile-mobile-name-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1; /* Ocupa espaço disponível */
+    min-width: 0; /* Permite quebra de texto se necessário */
+  }
+  
+  /* Nome de usuário */
+  .profile-mobile-name {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    line-height: 2rem; /* 32px */
+    color: rgb(17 24 39); /* gray-900 */
+    margin: 0;
+    word-wrap: break-word; /* Quebra texto longo */
+    max-width: 100%;
+  }
+  
+  .dark .profile-mobile-name {
+    color: rgb(255 255 255); /* white no modo escuro */
+  }
+  
+  /* Seção do botão - alinhada à direita */
+  .profile-mobile-button-section {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0; /* Não encolhe */
+    gap: 0.5rem; /* Espaçamento entre botões múltiplos */
+  }
+  
+  /* Estilos base para botões mobile */
+  .profile-mobile-button {
+    font-weight: 700;
+    padding: 0.5rem 1rem; /* 8px 16px */
+    border-radius: 9999px; /* rounded-full */
+    font-size: 0.875rem; /* 14px */
+    transition: all 0.2s ease-in-out;
+    transform: scale(1);
+    white-space: nowrap; /* Evita quebra de linha */
+    min-width: fit-content;
+  }
+  
+  .profile-mobile-button:active {
+    transform: scale(0.95);
+  }
+  
+  /* Botão de editar perfil */
+  .profile-mobile-button-edit {
+    background-color: rgb(59 130 246); /* primary */
+    color: white;
+    border: none;
+  }
+  
+  .profile-mobile-button-edit:hover {
+    background-color: rgb(75 85 99); /* gray-600 */
+  }
+  
+  /* Botão de cancelar */
+  .profile-mobile-button-cancel {
+    background-color: transparent;
+    color: rgb(75 85 99); /* gray-600 */
+    border: 1px solid rgb(209 213 219); /* gray-300 */
+  }
+  
+  .profile-mobile-button-cancel:hover {
+    background-color: rgb(229 231 235); /* gray-200 */
+  }
+  
+  .dark .profile-mobile-button-cancel:hover {
+    background-color: rgb(55 65 81); /* gray-700 */
+  }
+  
+  /* Botão de salvar */
+  .profile-mobile-button-save {
+    background-color: rgb(59 130 246); /* primary */
+    color: white;
+    border: none;
+  }
+  
+  .profile-mobile-button-save:hover {
+    background-color: rgb(75 85 99); /* gray-600 */
+  }
+  
+  /* Botão de seguir */
+  .profile-mobile-button-follow {
+    background-color: rgb(59 130 246); /* primary */
+    color: white;
+    border: none;
+  }
+  
+  .profile-mobile-button-follow:hover {
+    background-color: rgb(75 85 99); /* gray-600 */
+  }
+  
+  /* Botão de seguindo */
+  .profile-mobile-button-following {
+    background-color: transparent;
+    color: rgb(59 130 246); /* primary */
+    border: 1px solid rgb(59 130 246); /* primary */
+  }
+  
+  .profile-mobile-button-following:hover {
+    background-color: rgba(59, 130, 246, 0.1); /* primary/10 */
+  }
+  
+  /* Seção de seguidores mobile */
+  .profile-mobile-followers {
+    margin-top: 1.5rem; /* 24px conforme especificado */
+    gap: 1rem; /* 16px entre elementos */
+  }
+}
+
+/* Media queries específicas para telas muito pequenas */
+@media (max-width: 480px) {
+  .profile-mobile-header-container {
+    gap: 0.75rem; /* Reduz gap em telas menores */
+  }
+  
+  .profile-mobile-name {
+    font-size: 1.25rem; /* 20px em telas pequenas */
+    line-height: 1.75rem; /* 28px */
+  }
+  
+  .profile-mobile-button {
+    padding: 0.375rem 0.75rem; /* 6px 12px em telas pequenas */
+    font-size: 0.8125rem; /* 13px */
+  }
+}
+
+/* Media queries para orientação paisagem em dispositivos móveis */
+@media (max-width: 768px) and (orientation: landscape) {
+  .profile-mobile-header-container {
+    min-height: 2.5rem; /* 40px - altura reduzida em paisagem */
+  }
+  
+  .profile-mobile-name {
+    font-size: 1.375rem; /* 22px */
+    line-height: 1.875rem; /* 30px */
+  }
+}
+
+/* PostCard Mobile Optimizations - Botões e Ícones Reduzidos */
+@media (max-width: 640px) {
+  /* Botões de ação principais do PostCard - redução de 20% */
+  .postcard-actions button {
+    padding: 0.4rem 0.6rem; /* Reduzido de 0.5rem 0.75rem */
+    min-height: 2rem; /* Reduzido de 2.5rem */
+  }
+  
+  /* Ícones dos botões de ação principais - redução proporcional */
+  .postcard-actions button svg {
+    width: 1rem !important; /* Reduzido de 1.25rem (20px para 16px) */
+    height: 1rem !important;
+  }
+  
+  /* Texto dos contadores nos botões - redução proporcional */
+  .postcard-actions button span {
+    font-size: 0.7rem !important; /* Reduzido de 0.875rem (14px para 11.2px) */
+  }
+  
+  /* Menu de compartilhamento - botões menores */
+  .share-menu-mobile button {
+    padding: 0.4rem 0.6rem !important; /* Reduzido de 0.5rem 0.75rem */
+    font-size: 0.7rem !important; /* Reduzido de 0.875rem */
+  }
+  
+  /* Ícones do menu de compartilhamento */
+  .share-menu-mobile button svg {
+    width: 0.9rem !important; /* Reduzido de 1.125rem (18px para 14.4px) */
+    height: 0.9rem !important;
+  }
+  
+  /* Evidence Board - ícones menores */
+  .evidence-board-mobile .evidence-item svg {
+    width: 0.9rem !important; /* Reduzido de 1.125rem */
+    height: 0.9rem !important;
+  }
+  
+  /* Poll - ícones de check menores */
+  .poll-mobile svg {
+    width: 0.9rem !important; /* Reduzido de 1.125rem */
+    height: 0.9rem !important;
+  }
+  
+  /* Elemento de visualizações - redução proporcional igual aos botões */
+  .postcard-actions .views-mobile {
+    padding: 0.4rem 0.6rem; /* Mesmo padding dos botões */
+    min-height: 2rem; /* Mesma altura mínima dos botões */
+  }
+  
+  /* Ícone do elemento de visualizações */
+  .postcard-actions .views-mobile svg {
+    width: 1rem !important; /* Mesmo tamanho dos ícones dos botões */
+    height: 1rem !important;
+  }
+  
+  /* Texto do contador de visualizações */
+  .postcard-actions .views-mobile span {
+    font-size: 0.7rem !important; /* Mesmo tamanho do texto dos botões */
+  }
+  
+  /* Tooltips - texto menor para mobile */
+  .tooltip-mobile {
+    font-size: 0.65rem !important; /* Reduzido de 0.75rem */
+    padding: 0.25rem 0.4rem !important; /* Reduzido de 0.375rem 0.5rem */
+  }
+}
+
+/* Ajustes específicos para telas muito pequenas (smartphones pequenos) */
+@media (max-width: 480px) {
+  /* Redução adicional para telas muito pequenas */
+  .postcard-actions button {
+    padding: 0.3rem 0.5rem;
+    min-height: 1.8rem;
+  }
+  
+  .postcard-actions button svg {
+    width: 0.9rem !important; /* 14.4px */
+    height: 0.9rem !important;
+  }
+  
+  .postcard-actions button span {
+    font-size: 0.65rem !important; /* 10.4px */
+  }
+  
+  .share-menu-mobile button {
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.65rem !important;
+  }
+  
+  .share-menu-mobile button svg {
+    width: 0.8rem !important; /* 12.8px */
+    height: 0.8rem !important;
+  }
+}
+
+/* Prevent horizontal scrollbars on mobile */
+@media (max-width: 768px) {
+  body, html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  .container {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure grid doesn't cause horizontal overflow */
+  .grid {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Prevent any element from causing horizontal scroll */
+  * {
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+}
+
+/* Date/Time element styles */
+time.cursor-help {
+  transition: color 0.2s ease-in-out;
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+}
+
+time.cursor-help:hover {
+  color: #3b82f6; /* blue-500 */
+  border-bottom-color: #3b82f6;
+}
+
+/* Dark mode support for time element */
+.dark time.cursor-help:hover {
+  color: #60a5fa; /* blue-400 */
+  border-bottom-color: #60a5fa;
+}
+
