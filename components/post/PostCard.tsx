@@ -377,41 +377,89 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
           <div className="flex-1 min-w-0">
             <div className="flex items-start">
               <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <UserLink
-                      user={post.user}
-                      isFollowing={isFollowing}
-                      onFollowToggle={onFollowToggle}
-                      onViewProfile={onViewProfile}
-                      isCurrentUser={isCurrentUser}
-                      onOpenFollowModal={onOpenFollowModal}
-                    >
-                      <p className="font-bold text-gray-900 dark:text-white text-sm md:text-base truncate">{post.user.name}</p>
-                    </UserLink>
-                    {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
-                    {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
-                  </div>
-                  <div className="flex items-center space-x-1 sm:space-x-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                    <UserLink
-                      user={post.user}
-                      isFollowing={isFollowing}
-                      onFollowToggle={onFollowToggle}
-                      onViewProfile={onViewProfile}
-                      isCurrentUser={isCurrentUser}
-                      onOpenFollowModal={onOpenFollowModal}
-                    >
-                      <p className="truncate">@{post.user.username}</p>
-                    </UserLink>
-                    <span className="hidden sm:inline">·</span>
-                    <Tooltip text={formatTimeOnly(post.timestamp) || 'Horário indisponível'}>
-                      <time 
-                        className="truncate cursor-help" 
-                        dateTime={post.timestamp}
+                {/* Layout para mobile (< 480px) */}
+                <div className="block max-[479px]:block min-[480px]:hidden">
+                  {/* Linha superior: Nome + Badges + Data */}
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="flex items-center gap-1 flex-wrap min-w-0">
+                      <UserLink
+                        user={post.user}
+                        isFollowing={isFollowing}
+                        onFollowToggle={onFollowToggle}
+                        onViewProfile={onViewProfile}
+                        isCurrentUser={isCurrentUser}
+                        onOpenFollowModal={onOpenFollowModal}
                       >
-                        {formatDateDayMonth(post.timestamp) || 'Data indisponível'}
-                      </time>
-                    </Tooltip>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{post.user.name}</p>
+                      </UserLink>
+                      {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 flex-shrink-0" />}
+                      {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />}
+                    </div>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs">·</span>
+                    <div className="flex-shrink-0">
+                      <Tooltip text={formatTimeOnly(post.timestamp) || 'Horário indisponível'}>
+                        <time 
+                          className="text-xs text-gray-500 dark:text-gray-400 cursor-help" 
+                          dateTime={post.timestamp}
+                        >
+                          {formatDateDayMonth(post.timestamp) || 'Data indisponível'}
+                        </time>
+                      </Tooltip>
+                    </div>
+                  </div>
+                  {/* Linha inferior: Username */}
+                  <div className="flex items-center">
+                    <UserLink
+                      user={post.user}
+                      isFollowing={isFollowing}
+                      onFollowToggle={onFollowToggle}
+                      onViewProfile={onViewProfile}
+                      isCurrentUser={isCurrentUser}
+                      onOpenFollowModal={onOpenFollowModal}
+                    >
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{post.user.username}</p>
+                    </UserLink>
+                  </div>
+                </div>
+
+                {/* Layout para desktop (>= 480px) */}
+                <div className="hidden min-[480px]:block">
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <UserLink
+                        user={post.user}
+                        isFollowing={isFollowing}
+                        onFollowToggle={onFollowToggle}
+                        onViewProfile={onViewProfile}
+                        isCurrentUser={isCurrentUser}
+                        onOpenFollowModal={onOpenFollowModal}
+                      >
+                        <p className="font-bold text-gray-900 dark:text-white text-sm md:text-base truncate">{post.user.name}</p>
+                      </UserLink>
+                      {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                      {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    </div>
+                    <div className="flex items-center space-x-1 sm:space-x-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                      <UserLink
+                        user={post.user}
+                        isFollowing={isFollowing}
+                        onFollowToggle={onFollowToggle}
+                        onViewProfile={onViewProfile}
+                        isCurrentUser={isCurrentUser}
+                        onOpenFollowModal={onOpenFollowModal}
+                      >
+                        <p className="truncate">@{post.user.username}</p>
+                      </UserLink>
+                      <span className="hidden sm:inline">·</span>
+                      <Tooltip text={formatTimeOnly(post.timestamp) || 'Horário indisponível'}>
+                        <time 
+                          className="truncate cursor-help" 
+                          dateTime={post.timestamp}
+                        >
+                          {formatDateDayMonth(post.timestamp) || 'Data indisponível'}
+                        </time>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
                 {isEditing ? (

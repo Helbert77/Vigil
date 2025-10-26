@@ -11,14 +11,17 @@ const UpdatePassword: React.FC = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Detecta quando a senha é atualizada com sucesso e a sessão é estabelecida/atualizada
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      // Detecta quando a senha é atualizada com sucesso
+      if (event === 'USER_UPDATED') {
         if (session) {
           addToast('Sua senha foi atualizada com sucesso!', 'success');
-          // Redirecionar para a página inicial após a atualização bem-sucedida
-          window.location.href = '/';
+          // Redirecionar para a página de login após a atualização bem-sucedida
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
         }
       }
+      // Removido o tratamento de 'SIGNED_IN' para evitar login automático durante recovery
     });
 
     return () => subscription.unsubscribe();

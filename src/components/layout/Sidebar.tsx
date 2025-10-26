@@ -13,7 +13,6 @@ const MailIcon = () => <Icon><rect width="20" height="16" x="2" y="4" rx="2"></r
 const BookmarkIcon = () => <Icon><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></Icon>;
 const UsersIcon = () => <Icon><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
 const SettingsIcon = () => <Icon><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></Icon>;
-const LogOutIcon = () => <Icon><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></Icon>;
 const TimelineIcon = () => <Icon><path d="M3 3v18h18"></path><path d="M7 12h10"></path><path d="M7 8h7"></path><path d="M7 16h4"></path></Icon>;
 const ShieldIcon = () => <Icon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></Icon>;
 const DashboardIcon = () => <Icon><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></Icon>;
@@ -25,13 +24,12 @@ interface SidebarProps {
   setCurrentPage: (page: any) => void;
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
-  onLogout: () => void;
   isCollapsed: boolean;
   pendingModerationCount: number;
   pendingAppealsCount: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, onLogout, isCollapsed, pendingModerationCount, pendingAppealsCount }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount }) => {
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
 
   const handlePostClick = () => {
@@ -83,16 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
             </button>
           )}
         </div>
-      </div>
-      <div className="mt-auto w-full">
-        <button 
-          onClick={onLogout} 
-          className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 text-gray-600 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-500 ${isCollapsed ? 'justify-center' : ''}`}
-          title={isCollapsed ? 'Sair' : ''}
-        >
-          <LogOutIcon />
-          {!isCollapsed && <span className="hidden md:inline font-bold">Sair</span>}
-        </button>
       </div>
     </div>
   );

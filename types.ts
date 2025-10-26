@@ -78,6 +78,7 @@ export interface Post {
   user_voted_option?: number | null; // Novo campo para rastrear o voto do usuário
   media_is_sensitive?: boolean; // Novo campo para conteúdo sensível
   mediaIsSensitive?: boolean;
+  tags?: string[];
 }
 
 export interface Notification {

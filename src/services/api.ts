@@ -2,7 +2,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Poll, EvidenceItem, User } from '@/types';
 
 // --- Auth API ---
-export const logout = () => supabase.auth.signOut();
+export const logout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    // Tratar AuthSessionMissingError como um sucesso, pois o usuário já está deslogado
+    if (error && error.name !== 'AuthSessionMissingError') {
+      console.warn('Erro no logout do Supabase (não crítico):', error);
+      // Mesmo com outros erros, retornar um objeto de erro para o App.tsx decidir o que fazer
+      return { error };
+    }
+    
+    // Se não houver erro ou for AuthSessionMissingError, considerar sucesso
+    return { error: null };
+
+  } catch (networkError) {
+    console.error('Erro de rede durante o logout:', networkError);
+    // Retornar erro para que o App.tsx possa forçar a limpeza local
+    return { error: networkError };
+  }
+};
 export const updateUserPassword = (newPassword: string) => 
   supabase.auth.updateUser({ password: newPassword });
 

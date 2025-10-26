@@ -23,6 +23,8 @@ import PremiumPage from '@/src/pages/PremiumPage';
 import ToastContainer from '@/components/common/ToastContainer';
 import { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
 import { useSession } from '@/contexts/SessionContext';
+
+
 import Login from '@/pages/Login';
 import UpdatePassword from '@/pages/UpdatePassword';
 import FollowListModal from '@/components/profile/FollowListModal';
@@ -210,7 +212,50 @@ const App: React.FC = () => {
     setIsFollowModalOpen(true);
   };
 
-  const handleLogout = async () => { await api.logout(); };
+  const forceWebBrowserLogout = () => {
+    console.log("Forçando logout no ambiente de navegador web...");
+
+    // Limpar localStorage e sessionStorage
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Limpar todos os cookies do domínio
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+    }
+
+    console.log("Limpeza de dados do cliente concluída.");
+    window.location.href = '/';
+  };
+
+  const handleLogout = async () => {
+    // Detecção do ambiente Trae (exemplo)
+    const isTraeEnvironment = navigator.userAgent.includes("Trae");
+
+    if (isTraeEnvironment) {
+      forceWebBrowserLogout();
+      return;
+    }
+
+    try {
+      const { error } = await api.logout();
+
+      if (error) {
+        console.warn('Ocorreu um erro durante o logout, forçando a limpeza local e redirecionamento.', error);
+      } else {
+        console.log('Logout bem-sucedido, redirecionando...');
+      }
+
+    } catch (e) {
+      console.error('Erro crítico no handleLogout, forçando redirecionamento:', e);
+    } finally {
+      window.location.href = '/';
+    }
+  };
 
   const filteredContent = useMemo(() => {
     const mutedWords = (appUser?.mutedWords || []).map(w => w.trim().toLowerCase()).filter(Boolean);
@@ -237,107 +282,316 @@ const App: React.FC = () => {
   if (!session || !appUser) return <><ToastContainer /><Login /></>;
 
   const renderPage = () => {
+    if (!session) {
+      const hash = window.location.hash;
+      if (hash.includes('type=recovery')) {
+        return <UpdatePassword />;
+      }
+      return <Login />;
+    }
     switch (currentPage) {
       case 'Home':
-        if (isPostsLoading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
-        const homePosts = filteredContent.filteredPosts.filter((post: Post) => !post.communityId);
-        return <Home user={appUser} posts={homePosts} onAddPost={handleAddPostAndUpdate} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} communities={communities} joinedCommunityIds={joinedCommunityIds} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onViewProfile={handleViewProfile} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} setCurrentPage={handleNavigation} />;
-      case 'Profile': {
-        const profileUserId = viewedUserId || appUser.id;
-        const userToView = allUsers.find((u: User) => u.id === profileUserId);
-        if (!userToView || blockedUserIds.includes(userToView.id)) { setCurrentPage('Home'); return null; }
-        return <Profile user={userToView} posts={filteredContent.filteredPosts} followers={[]} following={[]} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onUpdateUser={userToView.id === appUser.id ? handleUpdateUser : undefined} onViewPost={handleViewPost} currentUser={appUser} onUpdateCurrentUser={refreshUser} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} blockedUserIds={blockedUserIds} onBlockToggle={handleBlockToggle} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onDeletePost={handleDeletePost} shareableUsers={allUsers} onSendMessage={handleSendMessage} onViewProfile={handleViewProfile} onFetchFollows={handleFetchFollows} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} />;
-      }
-      case 'Settings': return <Settings user={appUser} onUpdateUser={refreshUser} blockedUsers={blockedUsersList} onBlockToggle={handleBlockToggle} onLogout={handleLogout} />;
-      case 'Notifications': return <Notifications notifications={filteredContent.filteredNotifications} onViewPost={handleViewPost} onFollowToggle={handleFollowToggle} followedUserIds={followedUserIds} currentUser={appUser} onViewProfile={handleViewProfile} onOpenFollowModal={handleOpenFollowModal} onClearAll={handleClearNotifications} />;
-      case 'Messages': return <Messages conversations={filteredContent.filteredConversations} handleSendMessage={handleSendMessage} isLoading={isConversationsLoading} followedUsers={allUsers.filter((u: User) => followedUserIds.includes(u.id))} onDeleteConversation={handleDeleteConversation} />;
-      case 'Saved': return <Saved user={appUser} posts={filteredContent.filteredPosts} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onUpdatePost={handleUpdatePost} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onViewProfile={handleViewProfile} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} />;
-      case 'Communities': return <Communities communities={communities} joinedCommunityIds={joinedCommunityIds} onViewCommunity={handleViewCommunity} onJoinCommunityToggle={handleJoinCommunityToggle} onCreateCommunity={async (data) => { const id = await handleCreateCommunity(data); if (id) handleViewCommunity(id); }} user={appUser} setCurrentPage={setCurrentPage} />;
-      case 'Timeline': return <Timeline />;
-      case 'Premium': 
-        return <PremiumPage />;
-      case 'Moderation': return <Moderation queue={moderationQueue} isLoading={isLoadingModeration} onDataChange={refetchModerationData} />;
-      case 'Dashboard': return <Dashboard />;
-      case 'Appeals': return <Appeals appeals={appealsQueue} isLoading={isLoadingModeration} onDataChange={refetchModerationData} />;
-      case 'PostDetail': {
-        const post = posts.find((p: Post) => p.id === activePostId);
-        if (!post || blockedUserIds.includes(post.user.id)) { setCurrentPage('Home'); return null; }
-        return <PostDetail 
-          user={appUser} 
-          post={post} 
-          activeCommentId={activeCommentId} 
-          onUpdatePost={handleUpdatePost} 
-          savedPostIds={savedPostIds} 
-          onToggleSave={handleToggleSavePost} 
-          onNavigateBack={() => { setCurrentPage(previousPage); setActivePostId(null); setActiveCommentId(null); }} 
-          onAddComment={handleAddComment} 
-          pageTitle="Thread" 
-          onToggleLike={handleToggleLike} 
-          onToggleCommentLike={handleToggleCommentLike} 
-          onToggleSaveComment={() => {}} 
-          savedCommentIds={[]} 
-          onIncrementView={handleIncrementView} 
-          onViewPost={handleViewPost} 
-          onViewCommentThread={handleViewCommentThread} 
-          onDeletePost={handleDeletePost} 
-          onBlockToggle={handleBlockToggle} 
-          blockedUserIds={blockedUserIds} 
-          shareableUsers={allUsers} 
-          onSendMessage={handleSendMessage} 
-          followedUserIds={followedUserIds} 
-          onViewProfile={handleViewProfile} // Adicionado
+        return <Home 
+          posts={filteredContent.filteredPosts} 
           onFollowToggle={handleFollowToggle} 
-          onOpenFollowModal={handleOpenFollowModal} 
-          onVoteOnPoll={handleVoteOnPoll} 
+          onToggleLike={handleToggleLike} 
+          onToggleSave={handleToggleSavePost} 
+          onAddComment={handleAddComment} 
           onUpdateComment={handleUpdateComment} 
           onDeleteComment={handleDeleteComment} 
-          allUsers={allUsers} 
-        />;
-      }
-      case 'CommunityDetail': {
-        const community = communities.find((c: Community) => c.id === activeCommunityId);
-        if (!community) { setCurrentPage('Communities'); return null; }
-        return <CommunityDetail community={community} posts={filteredContent.filteredPosts} activeMembers={activeMembers} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onNavigateBack={() => setCurrentPage('Communities')} onViewProfile={handleViewProfile} user={appUser} isJoined={joinedCommunityIds.includes(community.id)} onJoinCommunityToggle={handleJoinCommunityToggle} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onAddPost={handleAddPostAndUpdate} communities={communities} joinedCommunityIds={joinedCommunityIds} onVoteOnPoll={handleVoteOnPoll} allUsers={allUsers} setCurrentPage={handleNavigation} />;
-      }
-      case 'TopicDetail': {
-        if (!activeTag) { setCurrentPage('Home'); return null; }
-        return <TopicDetail 
-          tag={activeTag} 
-          posts={filteredContent.filteredPosts} 
-          onUpdatePost={handleUpdatePost} 
-          savedPostIds={savedPostIds} 
-          onToggleSave={handleToggleSavePost} 
-          onNavigateBack={() => setCurrentPage('Home')} 
-          user={appUser} 
-          onToggleLike={handleToggleLike} 
-          onIncrementView={handleIncrementView} 
+          onToggleCommentLike={handleToggleCommentLike} 
+          onVoteOnPoll={handleVoteOnPoll} 
           onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          onOpenFollowModal={handleOpenFollowModal} 
+          onIncrementView={handleIncrementView} 
+          onAddPost={handleAddPostAndUpdate} 
+          onUpdatePost={handleUpdatePost} 
           onDeletePost={handleDeletePost} 
-          onBlockToggle={handleBlockToggle} 
+          usersToFollow={filteredContent.filteredUsersToFollow} 
+          trendingTopics={trendingTopics} 
+          onJoinCommunity={handleJoinCommunityToggle} 
+          user={appUser} 
+          communities={communities} 
+          joinedCommunityIds={joinedCommunityIds} 
           blockedUserIds={blockedUserIds} 
           shareableUsers={allUsers} 
           onSendMessage={handleSendMessage} 
           followedUserIds={followedUserIds} 
-          onViewProfile={handleViewProfile}
-          onFollowToggle={handleFollowToggle} 
-          onOpenFollowModal={handleOpenFollowModal} 
-          onVoteOnPoll={handleVoteOnPoll} 
           allUsers={allUsers} 
+          setCurrentPage={setCurrentPage}
+          onViewCommunity={handleViewCommunity}
+          onViewTag={handleViewTag}
+          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
+          savedPostIds={savedPostIds}
         />;
-      }
-      case 'Search': return <Search query={searchQuery} posts={filteredContent.filteredPosts} onUpdatePost={handleUpdatePost} savedPostIds={savedPostIds} onToggleSave={handleToggleSavePost} onViewProfile={handleViewProfile} currentUser={appUser} onSearch={setSearchQuery} allUsers={filteredContent.filteredAllUsers} onToggleLike={handleToggleLike} onIncrementView={handleIncrementView} onViewPost={handleViewPost} onDeletePost={handleDeletePost} onBlockToggle={handleBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={allUsers} onSendMessage={handleSendMessage} followedUserIds={followedUserIds} onFollowToggle={handleFollowToggle} onOpenFollowModal={handleOpenFollowModal} onVoteOnPoll={handleVoteOnPoll} communities={communities} joinedCommunityIds={joinedCommunityIds} />;
-      case 'TrendingTopics': return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => setCurrentPage(previousPage)} />;
-      case 'ExploreUsers': return <ExploreUsers currentUser={appUser} followedUserIds={followedUserIds} usersToFollow={filteredContent.filteredUsersToFollow} onFollowToggle={handleFollowToggle} onViewProfile={handleViewProfile} onOpenFollowModal={handleOpenFollowModal} onGoBack={() => setCurrentPage(previousPage)} />;
-      case 'About': return <About />;
-      case 'TermsOfService': return <TermsOfService />;
-      case 'PrivacyPolicy': return <PrivacyPolicy />;
-      case 'CookiePolicy': return <CookiePolicy />;
-      case 'Disclaimer': return <Disclaimer />;
-      case 'Accessibility': return <Accessibility />;
-      default: return <div />;
+      case 'Profile':
+        const userToView = viewedUserId ? allUsers.find(u => u.id === viewedUserId) : appUser;
+        if (!userToView) return null;
+        return <Profile 
+          user={userToView} 
+          posts={posts.filter(p => p.user.id === userToView.id)}
+          followers={[]} 
+          following={[]} 
+          onUpdatePost={handleUpdatePost}
+          savedPostIds={savedPostIds}
+          onToggleSave={handleToggleSavePost}
+          onUpdateUser={userToView.id === appUser.id ? handleUpdateUser : undefined}
+          onViewPost={handleViewPost}
+          currentUser={appUser}
+          onUpdateCurrentUser={handleUpdateUser}
+          followedUserIds={followedUserIds}
+          onFollowToggle={handleFollowToggle}
+          blockedUserIds={blockedUserIds}
+          onBlockToggle={handleBlockToggle}
+          onToggleLike={handleToggleLike}
+          onIncrementView={handleIncrementView}
+          onDeletePost={handleDeletePost}
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          onViewProfile={handleViewProfile}
+          onFetchFollows={handleFetchFollows}
+          onOpenFollowModal={handleOpenFollowModal}
+          onVoteOnPoll={handleVoteOnPoll}
+          allUsers={allUsers}
+        />;
+      case 'Settings':
+        return <Settings 
+          onLogout={handleLogout} 
+          user={appUser} 
+          onUpdateUser={() => handleUpdateUser({})} 
+          blockedUsers={blockedUsersList} 
+          onBlockToggle={handleBlockToggle} 
+        />;
+      case 'Notifications':
+        return <Notifications 
+          notifications={filteredContent.filteredNotifications} 
+          onClearAll={handleClearNotifications} 
+          onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          onFollowToggle={handleFollowToggle}
+          followedUserIds={followedUserIds}
+          currentUser={appUser}
+          onOpenFollowModal={handleOpenFollowModal}
+        />;
+      case 'Messages':
+        return <Messages 
+          conversations={filteredContent.filteredConversations} 
+          handleSendMessage={handleSendMessage} 
+          isLoading={isConversationsLoading} 
+          onDeleteConversation={handleDeleteConversation} 
+          followedUsers={allUsers.filter(u => followedUserIds.includes(u.id))}
+        />;
+      case 'Saved':
+        return <Saved 
+          savedPostIds={savedPostIds} 
+          posts={posts} 
+          onToggleSave={handleToggleSavePost} 
+          onViewPost={handleViewPost} 
+          user={appUser}
+          onToggleLike={handleToggleLike}
+          onIncrementView={handleIncrementView}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+          onBlockToggle={handleBlockToggle}
+          blockedUserIds={blockedUserIds}
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          onViewProfile={handleViewProfile}
+          onFollowToggle={handleFollowToggle}
+          onOpenFollowModal={handleOpenFollowModal}
+          onVoteOnPoll={handleVoteOnPoll}
+          allUsers={allUsers}
+        />;
+      case 'Communities':
+        return <Communities 
+          communities={communities} 
+          joinedCommunityIds={joinedCommunityIds} 
+          onJoinCommunityToggle={handleJoinCommunityToggle} 
+          onCreateCommunity={handleCreateCommunity} 
+          onViewCommunity={handleViewCommunity}
+          user={appUser}
+          setCurrentPage={setCurrentPage}
+        />;
+      case 'Timeline':
+        return <Timeline />;
+      case 'PostDetail':
+        const post = posts.find(p => p.id === activePostId);
+        if (!post) return null;
+        return <PostDetail 
+          post={post} 
+          onFollowToggle={handleFollowToggle} 
+          onToggleLike={handleToggleLike} 
+          onToggleSave={handleToggleSavePost} 
+          onAddComment={handleAddComment} 
+          onUpdateComment={handleUpdateComment} 
+          onDeleteComment={handleDeleteComment} 
+          onToggleCommentLike={handleToggleCommentLike} 
+          onVoteOnPoll={handleVoteOnPoll} 
+          onViewProfile={handleViewProfile} 
+          onOpenFollowModal={handleOpenFollowModal} 
+          onIncrementView={handleIncrementView} 
+          onUpdatePost={handleUpdatePost} 
+          onDeletePost={handleDeletePost} 
+          activeCommentId={activeCommentId} 
+          onNavigateToCommentThread={handleViewCommentThread}
+          user={appUser}
+          onBlockUser={handleBlockToggle}
+          onSendMessage={handleSendMessage}
+          shareableUsers={allUsers}
+        />;
+      case 'Search':
+        return <Search 
+          onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          onSearch={setSearchQuery}
+          query={searchQuery}
+          posts={filteredContent.filteredPosts}
+          onUpdatePost={handleUpdatePost}
+          savedPostIds={savedPostIds}
+          onToggleSave={handleToggleSavePost}
+          currentUser={appUser}
+          allUsers={allUsers}
+          onToggleLike={handleToggleLike}
+          onIncrementView={handleIncrementView}
+          onDeletePost={handleDeletePost}
+          onBlockToggle={handleBlockToggle}
+          blockedUserIds={blockedUserIds}
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          onFollowToggle={handleFollowToggle}
+          onOpenFollowModal={handleOpenFollowModal}
+          onVoteOnPoll={handleVoteOnPoll}
+          communities={communities}
+          joinedCommunityIds={joinedCommunityIds}
+        />;
+      case 'CommunityDetail':
+        const community = communities.find(c => c.id === activeCommunityId);
+        if (!community) return null;
+        return <CommunityDetail 
+          community={community} 
+          onAddPost={handleAddPostAndUpdate} 
+          onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          onJoinCommunityToggle={handleJoinCommunityToggle} 
+          activeMembers={activeMembers}
+          user={appUser}
+          posts={posts.filter(p => p.communityId === community.id)}
+          onUpdatePost={handleUpdatePost}
+          savedPostIds={savedPostIds}
+          onToggleSave={handleToggleSavePost}
+          onToggleLike={handleToggleLike}
+          onIncrementView={handleIncrementView}
+          onDeletePost={handleDeletePost}
+          onBlockToggle={handleBlockToggle}
+          blockedUserIds={blockedUserIds}
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          onFollowToggle={handleFollowToggle}
+          onOpenFollowModal={handleOpenFollowModal}
+          onVoteOnPoll={handleVoteOnPoll}
+          allUsers={allUsers}
+          isJoined={joinedCommunityIds.includes(community.id)}
+          onNavigateBack={() => setCurrentPage('Communities')}
+          communities={communities}
+          joinedCommunityIds={joinedCommunityIds}
+          setCurrentPage={setCurrentPage}
+        />;
+      case 'TopicDetail':
+        return activeTag ? <TopicDetail 
+          tag={activeTag} 
+          onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          posts={posts.filter(p => p.tags?.includes(activeTag))}
+          onUpdatePost={handleUpdatePost}
+          savedPostIds={savedPostIds}
+          onToggleSave={handleToggleSavePost}
+          user={appUser}
+          onToggleLike={handleToggleLike}
+          onIncrementView={handleIncrementView}
+          onDeletePost={handleDeletePost}
+          onBlockToggle={handleBlockToggle}
+          blockedUserIds={blockedUserIds}
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          onFollowToggle={handleFollowToggle}
+          onOpenFollowModal={handleOpenFollowModal}
+          onVoteOnPoll={handleVoteOnPoll}
+          allUsers={allUsers}
+          onNavigateBack={() => setCurrentPage('Home')}
+        /> : null;
+      case 'About':
+        return <About />;
+      case 'TermsOfService':
+        return <TermsOfService />;
+      case 'PrivacyPolicy':
+        return <PrivacyPolicy />;
+      case 'CookiePolicy':
+        return <CookiePolicy />;
+      case 'Disclaimer':
+        return <Disclaimer />;
+      case 'Accessibility':
+        return <Accessibility />;
+      case 'Moderation':
+        return <Moderation reports={moderationQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
+      case 'Dashboard':
+        return <Dashboard />;
+      case 'Appeals':
+        return <Appeals appeals={appealsQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
+      case 'Premium':
+        return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
+      case 'TrendingTopics':
+        return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => setCurrentPage('Home')} />;
+      case 'ExploreUsers':
+        return <ExploreUsers 
+          usersToFollow={filteredContent.filteredUsersToFollow} 
+          onFollowToggle={handleFollowToggle} 
+          onViewProfile={handleViewProfile} 
+          currentUser={appUser}
+          followedUserIds={followedUserIds}
+          onOpenFollowModal={handleOpenFollowModal}
+          onGoBack={() => setCurrentPage('Home')}
+        />;
+      default:
+        return <Home 
+          posts={filteredContent.filteredPosts} 
+          onFollowToggle={handleFollowToggle} 
+          onToggleLike={handleToggleLike} 
+          onToggleSave={handleToggleSavePost} 
+          onAddComment={handleAddComment} 
+          onUpdateComment={handleUpdateComment} 
+          onDeleteComment={handleDeleteComment} 
+          onToggleCommentLike={handleToggleCommentLike} 
+          onVoteOnPoll={handleVoteOnPoll} 
+          onViewPost={handleViewPost} 
+          onViewProfile={handleViewProfile} 
+          onOpenFollowModal={handleOpenFollowModal} 
+          onIncrementView={handleIncrementView} 
+          onAddPost={handleAddPostAndUpdate} 
+          onUpdatePost={handleUpdatePost} 
+          onDeletePost={handleDeletePost} 
+          usersToFollow={filteredContent.filteredUsersToFollow} 
+          trendingTopics={trendingTopics} 
+          onJoinCommunity={handleJoinCommunityToggle} 
+          user={appUser} 
+          communities={communities} 
+          joinedCommunityIds={joinedCommunityIds} 
+          blockedUserIds={blockedUserIds} 
+          shareableUsers={allUsers} 
+          onSendMessage={handleSendMessage} 
+          followedUserIds={followedUserIds} 
+          allUsers={allUsers} 
+          setCurrentPage={setCurrentPage} 
+          onViewCommunity={handleViewCommunity}
+          onViewTag={handleViewTag}
+          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
+        />;
     }
   };
-
   return (
     <UsersProvider users={allUsers}>
       <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
