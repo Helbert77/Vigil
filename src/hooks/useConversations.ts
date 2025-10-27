@@ -260,7 +260,15 @@ export const useConversations = (appUser: User | null) => {
         try {
           const errorData = await error.context.json();
           console.error('[handleSendMessage] HTTP error details:', errorData);
-          errorMessage = `Erro do servidor: ${errorData.error || error.message}`;
+          
+          // Handle authentication errors specifically
+          if (errorData.error && errorData.error.includes('Authentication failed')) {
+            errorMessage = 'Sua sessão expirou. Faça login novamente para enviar mensagens.';
+          } else if (errorData.error && errorData.error.includes('Session from session_id claim in JWT does not exist')) {
+            errorMessage = 'Sessão inválida. Faça login novamente para continuar.';
+          } else {
+            errorMessage = `Erro do servidor: ${errorData.error || error.message}`;
+          }
         } catch {
           errorMessage = `Erro do servidor: ${error.message}`;
         }
@@ -269,7 +277,12 @@ export const useConversations = (appUser: User | null) => {
       } else if (error instanceof FunctionsFetchError) {
         errorMessage = 'Não foi possível conectar ao servidor de mensagens.';
       } else if (error instanceof Error) {
-        errorMessage = error.message;
+        // Handle our custom authentication error messages
+        if (error.message.includes('Sessão expirada') || error.message.includes('Falha na autenticação')) {
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
       }
       
       addToast(errorMessage, 'error');

@@ -38,7 +38,6 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   // Auto-select first conversation only if no new chat is being created
   useEffect(() => {
     if (!selectedConversationId && conversations.length > 0 && !newChatTargetUser) {
-      console.log('[Messages] Auto-selecting first conversation');
       setSelectedConversationId(conversations[0].id);
     }
   }, [conversations, selectedConversationId, newChatTargetUser]);
@@ -48,13 +47,12 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
     if (newChatTargetUser && conversations.length > 0) {
       const newConvo = conversations.find(c => 
         c.participants.some(p => p.id === newChatTargetUser.id) &&
-        !c.id.startsWith('temp_')
+        c.messages.length > 0
       );
-      
       if (newConvo) {
-        console.log('[Messages] Found newly created conversation:', newConvo.id);
         setSelectedConversationId(newConvo.id);
         setNewChatTargetUser(null);
+        setShowNewChatModal(false);
       }
     }
   }, [conversations, newChatTargetUser]);

@@ -38,6 +38,8 @@ interface PostDetailProps {
   onUpdateComment: (commentId: string, newText: string) => void;
   onDeleteComment: (commentId: string) => void;
   allUsers: User[];
+  onDeleteCommentReply?: (commentId: string, replyId: string) => void;
+  onReportContent?: (contentId: string, contentType: 'post' | 'comment', reason: string) => void;
 }
 
 const findCommentAndParents = (comments: Comment[], targetId: string): { target: Comment | null, parents: Comment[] } => {

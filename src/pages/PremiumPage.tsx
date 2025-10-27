@@ -8,15 +8,22 @@ import PricingComparisonTable from "@/src/components/premium/PricingComparisonTa
 import * as api from '@/src/services/api';
 import CancellationModal from "@/src/components/premium/CancellationModal";
 
-export default function PremiumPage() {
-  const { user, session, refreshUser } = useSession();
+interface PremiumPageProps {
+  user: User;
+  onUpdateUser: (updates: Partial<User>) => Promise<void>;
+}
+
+export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPageProps) {
+  const { session, refreshUser } = useSession();
   const { addToast } = useToast();
   const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   
-  const currentPlan = (user as User)?.plan || 'free';
+  // Use the prop user instead of session user
+  const user = propUser;
+  const currentPlan = user?.plan || 'free';
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'basic' | 'pro' | 'premium'>(currentPlan as any);
 
   useEffect(() => {

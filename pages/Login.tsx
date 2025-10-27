@@ -58,6 +58,28 @@ const Login: React.FC = () => {
       addToast(signInError.message, 'error');
     } else if (data.session) {
       await supabase.auth.setSession(data.session);
+      
+      // Configurar duração da sessão baseada na escolha do usuário
+      if (keepLoggedIn) {
+        // Manter conectado: armazenar preferência no localStorage
+        localStorage.setItem('keepLoggedIn', 'true');
+        localStorage.setItem('sessionExpiry', 'never');
+      } else {
+        // Não manter conectado: configurar timeout de inatividade
+        localStorage.setItem('keepLoggedIn', 'false');
+        const inactivityTimeout = 30 * 60 * 1000; // 30 minutos em millisegundos
+        const expiryTime = Date.now() + inactivityTimeout;
+        localStorage.setItem('sessionExpiry', expiryTime.toString());
+        
+        // Configurar timer para logout automático
+        setTimeout(() => {
+          const currentExpiry = localStorage.getItem('sessionExpiry');
+          if (currentExpiry && currentExpiry !== 'never' && Date.now() >= parseInt(currentExpiry)) {
+            supabase.auth.signOut();
+            addToast('Sessão expirada por inatividade', 'info');
+          }
+        }, inactivityTimeout);
+      }
     }
     setLoading(false);
   };
@@ -209,7 +231,7 @@ const Login: React.FC = () => {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
-            <input id="password" name="password" type="password" required className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <input id="password" name="password" type="password" autoComplete="current-password" required className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center">

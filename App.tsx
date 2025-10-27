@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Sidebar from '@/components/layout/Sidebar';
 import Rightbar from '@/components/layout/Rightbar';
 import Home from '@/pages/Home';
@@ -74,13 +74,20 @@ const App: React.FC = () => {
   const { posts, isPostsLoading, savedPostIds, handleAddPost, handleDeletePost, handleUpdatePost, handleToggleLike, handleToggleCommentLike, handleToggleSavePost, handleVoteOnPoll, handleAddComment, handleUpdateComment, handleDeleteComment, handleIncrementView } = usePosts(appUser, allUsers, setCommunities, fetchTrendingTopics);
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
+  
+  // Saved comments state and handler
+  const [savedCommentIds, setSavedCommentIds] = useState<string[]>([]);
+  const handleToggleSaveComment = useCallback((commentId: string) => {
+    setSavedCommentIds(prev => 
+      prev.includes(commentId) 
+        ? prev.filter(id => id !== commentId)
+        : [...prev, commentId]
+    );
+  }, []);
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
 
   useEffect(() => {
-    console.log('%c[App.tsx] Estado do usuário atualizado:', 'color: magenta; font-weight: bold;', appUser);
-    if (appUser) {
-      console.log(`%c[App.tsx] A função atual do usuário é: ${appUser.role}`, 'color: magenta; font-weight: bold;');
-    }
+    // User state updated
   }, [appUser]);
 
   const scrollToTop = () => {
@@ -155,6 +162,23 @@ const App: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Listener para navegação programática sem recarregamento
+  useEffect(() => {
+    const handleNavigate = (event: CustomEvent) => {
+      const { page } = event.detail;
+      if (page && page !== currentPage) {
+        setCurrentPage(page as Page);
+        scrollToTop();
+      }
+    };
+
+    window.addEventListener('navigate', handleNavigate as EventListener);
+    
+    return () => {
+      window.removeEventListener('navigate', handleNavigate as EventListener);
+    };
+  }, [currentPage]);
 
   const handleViewPost = (postId: string) => {
     scrollToTop();
@@ -324,10 +348,11 @@ const App: React.FC = () => {
           onViewTag={handleViewTag}
           onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
           savedPostIds={savedPostIds}
+          onBlockToggle={handleBlockToggle}
         />;
       case 'Profile':
         const userToView = viewedUserId ? allUsers.find(u => u.id === viewedUserId) : appUser;
-        if (!userToView) return null;
+        if (!userToView || !appUser) return null;
         return <Profile 
           user={userToView} 
           posts={posts.filter(p => p.user.id === userToView.id)}
@@ -435,11 +460,19 @@ const App: React.FC = () => {
           onUpdatePost={handleUpdatePost} 
           onDeletePost={handleDeletePost} 
           activeCommentId={activeCommentId} 
-          onNavigateToCommentThread={handleViewCommentThread}
+          onViewCommentThread={handleViewCommentThread}
           user={appUser}
-          onBlockUser={handleBlockToggle}
+          onBlockToggle={handleBlockToggle}
           onSendMessage={handleSendMessage}
           shareableUsers={allUsers}
+          savedPostIds={savedPostIds}
+          savedCommentIds={savedCommentIds}
+          onToggleSaveComment={handleToggleSaveComment}
+          blockedUserIds={blockedUserIds}
+          onNavigateBack={() => setCurrentPage('Home')}
+          onViewPost={handleViewPost}
+          followedUserIds={followedUserIds}
+          allUsers={allUsers}
         />;
       case 'Search':
         return <Search 
@@ -537,7 +570,7 @@ const App: React.FC = () => {
       case 'Accessibility':
         return <Accessibility />;
       case 'Moderation':
-        return <Moderation reports={moderationQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
+        return <Moderation queue={moderationQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
       case 'Dashboard':
         return <Dashboard />;
       case 'Appeals':
@@ -589,6 +622,8 @@ const App: React.FC = () => {
           onViewCommunity={handleViewCommunity}
           onViewTag={handleViewTag}
           onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
+          savedPostIds={savedPostIds}
+          onBlockToggle={handleBlockToggle}
         />;
     }
   };

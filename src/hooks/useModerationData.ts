@@ -48,7 +48,7 @@ export const useModerationData = (appUser: User | null) => {
   }, [fetchModerationQueue, fetchAppealsQueue]);
 
   useEffect(() => {
-    if (!isModerator) {
+    if (!isModerator || !appUser) {
       setIsLoading(false);
       setModerationQueue([]);
       setAppealsQueue([]);
@@ -60,6 +60,7 @@ export const useModerationData = (appUser: User | null) => {
     setIsLoading(true);
     Promise.all([fetchModerationQueue(), fetchAppealsQueue()]).finally(() => setIsLoading(false));
 
+    // Only set up real-time channels if user is authenticated and is a moderator
     const moderationChannel = supabase.channel('moderation-realtime-channel');
     moderationChannel
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'moderation_queue' },
@@ -82,8 +83,10 @@ export const useModerationData = (appUser: User | null) => {
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error(`[Real-time MODERAÇÃO] ❌ Erro de conexão com o canal: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          console.log('[Real-time MODERAÇÃO] ✅ Canal conectado com sucesso');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[Real-time MODERAÇÃO] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
         }
       });
 
@@ -108,8 +111,10 @@ export const useModerationData = (appUser: User | null) => {
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.error(`[Real-time APELAÇÕES] ❌ Erro de conexão com o canal: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          console.log('[Real-time APELAÇÕES] ✅ Canal conectado com sucesso');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[Real-time APELAÇÕES] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
         }
       });
 
@@ -117,7 +122,7 @@ export const useModerationData = (appUser: User | null) => {
       moderationChannel.unsubscribe();
       appealsChannel.unsubscribe();
     };
-  }, [isModerator, addToast, fetchModerationQueue, fetchAppealsQueue]);
+  }, [isModerator, appUser, addToast, fetchModerationQueue, fetchAppealsQueue]);
 
   return {
     moderationQueue,

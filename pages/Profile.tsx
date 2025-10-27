@@ -145,7 +145,91 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6 p-4 -mt-16 sm:-mt-12">
+        {/* Mobile Layout */}
+        <div className="sm:hidden p-4 -mt-16">
+          {/* Avatar centralizado */}
+          <div className="flex justify-center mb-6">
+            <div className="relative border-4 border-light-card dark:border-dark-card rounded-full">
+               <Avatar src={isEditing ? editedUser.avatarUrl || user.avatarUrl : user.avatarUrl} alt={user.name} size="lg" userId={user.id} showStatus={true} />
+               {isEditing && (
+                  <div className="rounded-full overflow-hidden absolute inset-0">
+                      <ImageUploader
+                          userId={user.id}
+                          filePath="avatar"
+                          onUpload={(url: string) => handleImageUpload('avatarUrl', url)}
+                      />
+                  </div>
+               )}
+            </div>
+          </div>
+
+          {/* Container flex para nome (esquerda) e botão editar (direita) */}
+          <div className="flex justify-between items-start mb-4 mt-2">
+            {/* Nome do usuário - lado esquerdo */}
+            <div className="flex-1 pr-4">
+              {isEditing ? (
+                <div className="space-y-3 mt-2">
+                  <input 
+                      type="text"
+                      name="name"
+                      value={editedUser.name || ''}
+                      onChange={handleInputChange}
+                      className="font-bold w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                      placeholder="Your Name"
+                  />
+                   <input 
+                      type="text"
+                      name="username"
+                      value={editedUser.username || ''}
+                      onChange={handleInputChange}
+                      className="text-gray-500 dark:text-gray-400 w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+                      placeholder="Your Username"
+                  />
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
+                    {(user.plan === 'pro' || user.plan === 'premium') && <VerifiedBadgeIcon plan={user.plan} className="h-4 w-4" />}
+                    {user.role && ['admin', 'moderator'].includes(user.role) && <ModeratorBadgeIcon className="h-4 w-4" />}
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">@{user.username}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Botão editar perfil - lado direito */}
+            <div className="flex items-center space-x-2 ml-4">
+              {!isCurrentUserProfile && (
+                <ProfileActionsMenu user={user} isBlocked={isBlocked} onBlockToggle={onBlockToggle} />
+              )}
+              {isCurrentUserProfile ? (
+                isEditing ? (
+                  <div className="flex space-x-2">
+                    <button onClick={handleCancel} className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">Cancel</button>
+                    <button onClick={handleSave} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">Save</button>
+                  </div>
+                ) : (
+                  onUpdateUser && <button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">Edit Profile</button>
+                )
+              ) : (
+                <button 
+                  onClick={handleFollow}
+                  className={`font-bold py-2 px-3 rounded-full text-sm transition-colors duration-200 transform active:scale-95 ${
+                    isFollowing 
+                      ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
+                      : 'bg-primary hover:bg-gray-600 text-white'
+                  }`}
+                >
+                  {isFollowing ? 'Seguindo' : 'Seguir'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex flex-row items-end space-x-6 p-4 -mt-10">
           <div className="relative border-4 border-light-card dark:border-dark-card rounded-full">
              <Avatar src={isEditing ? editedUser.avatarUrl || user.avatarUrl : user.avatarUrl} alt={user.name} size="lg" userId={user.id} showStatus={true} />
              {isEditing && (
@@ -158,15 +242,15 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 </div>
              )}
           </div>
-          <div className="flex-grow text-center sm:text-left pt-4 sm:pt-0">
+          <div className="flex-grow text-left pt-6">
              {isEditing ? (
-                <div className="space-y-2">
+                <div className="space-y-3 mt-2">
                     <input 
                         type="text"
                         name="name"
                         value={editedUser.name || ''}
                         onChange={handleInputChange}
-                        className="text-2xl font-bold w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="font-bold w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
                         placeholder="Your Name"
                     />
                      <input 
@@ -174,18 +258,18 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                         name="username"
                         value={editedUser.username || ''}
                         onChange={handleInputChange}
-                        className="text-gray-500 dark:text-gray-400 w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="text-gray-500 dark:text-gray-400 w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
                         placeholder="Your Username"
                     />
                 </div>
              ) : (
                 <>
-                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                    <div className="flex items-center gap-2 mt-2">
                       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
                       {(user.plan === 'pro' || user.plan === 'premium') && <VerifiedBadgeIcon plan={user.plan} className="h-5 w-5" />}
                       {user.role && ['admin', 'moderator'].includes(user.role) && <ModeratorBadgeIcon className="h-5 w-5" />}
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400">@{user.username}</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">@{user.username}</p>
                 </>
              )}
           </div>
@@ -217,7 +301,44 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-light-border dark:border-dark-border px-4 pb-4">
+        {/* Mobile Bio and Stats Layout */}
+        <div className="sm:hidden mt-4 pt-4 border-t border-light-border dark:border-dark-border px-4 pb-4">
+          {isEditing ? (
+            <textarea
+                name="bio"
+                value={editedUser.bio || ''}
+                onChange={handleInputChange}
+                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
+                rows={3}
+                placeholder="Your bio"
+            />
+          ) : (
+            <>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">{user.bio || 'No bio provided.'}</p>
+              
+              {/* Data de entrada */}
+              <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                  <CalendarIcon />
+                  <span>{user.joinDate}</span>
+              </div>
+              
+              {/* Botões seguindo e seguidores na mesma linha */}
+              <div className="flex items-center gap-6 text-sm">
+                  <button onClick={() => onOpenFollowModal(user, 'following')} className="hover:underline">
+                      <span className="font-bold text-gray-800 dark:text-gray-200">{user.followingCount.toLocaleString()}</span>
+                      <span className="ml-1 text-gray-500 dark:text-gray-400">Seguindo</span>
+                  </button>
+                  <button onClick={() => onOpenFollowModal(user, 'followers')} className="hover:underline">
+                      <span className="font-bold text-gray-800 dark:text-gray-200">{user.followersCount.toLocaleString()}</span>
+                      <span className="ml-1 text-gray-500 dark:text-gray-400">Seguidores</span>
+                  </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Desktop Bio and Stats Layout */}
+        <div className="hidden sm:block mt-4 pt-4 border-t border-light-border dark:border-dark-border px-4 pb-4">
           {isEditing ? (
             <textarea
                 name="bio"

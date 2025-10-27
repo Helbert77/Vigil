@@ -1,9 +1,55 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Poll, EvidenceItem, User } from '@/types';
 
+// --- Session Management ---
+export const ensureValidSession = async () => {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      throw new Error('Falha na autenticação. Faça login novamente.');
+    }
+    
+    if (!session) {
+      throw new Error('Sessão expirada. Faça login novamente.');
+    }
+    
+    // If session is close to expiring (within 5 minutes), refresh it
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = session.expires_at || 0;
+    const timeUntilExpiry = expiresAt - now;
+    
+    if (timeUntilExpiry < 300) { // Less than 5 minutes
+      console.log('Session expiring soon, refreshing...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error('Session refresh error:', refreshError);
+        throw new Error('Falha ao renovar sessão. Faça login novamente.');
+      }
+      
+      if (!refreshedSession) {
+        throw new Error('Não foi possível renovar a sessão. Faça login novamente.');
+      }
+      
+      return refreshedSession;
+    }
+    
+    return session;
+  } catch (error) {
+    console.error('Error ensuring valid session:', error);
+    throw error;
+  }
+};
+
 // --- Auth API ---
 export const logout = async () => {
   try {
+    // Limpar configurações de sessão relacionadas ao "Mantenha-me conectado"
+    localStorage.removeItem('keepLoggedIn');
+    localStorage.removeItem('sessionExpiry');
+    
     const { error } = await supabase.auth.signOut();
     
     // Tratar AuthSessionMissingError como um sucesso, pois o usuário já está deslogado
@@ -347,6 +393,9 @@ export const fetchFullConversations = (conversationIds: string[]) =>
 export const sendMessage = async (messageData: { conversationId?: string, targetUserId?: string, text: string }) => {
   try {
     console.log('API sendMessage called with:', messageData);
+    
+    // Ensure we have a valid session before making the API call
+    await ensureValidSession();
     
     const response = await supabase.functions.invoke('send-message', { 
       body: { 

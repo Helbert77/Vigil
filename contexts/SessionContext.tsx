@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@/types';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { supabase } from '../integrations/supabase/client';
+import { User } from '../types';
 
 interface SessionContextType {
   session: Session | null;
@@ -18,6 +18,24 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const getSessionAndProfile = useCallback(async () => {
+    // Verificar se a sessão expirou antes de buscar
+    const keepLoggedIn = localStorage.getItem('keepLoggedIn');
+    const sessionExpiry = localStorage.getItem('sessionExpiry');
+    
+    if (keepLoggedIn === 'false' && sessionExpiry && sessionExpiry !== 'never') {
+      const expiryTime = parseInt(sessionExpiry);
+      if (Date.now() >= expiryTime) {
+        // Sessão expirou, fazer logout
+        localStorage.removeItem('keepLoggedIn');
+        localStorage.removeItem('sessionExpiry');
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+    }
+    
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     setSession(currentSession);
 
@@ -58,10 +76,38 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setLoading(true);
-    getSessionAndProfile();
+    
+    // Verificar se estamos em um fluxo de recuperação de senha
+    const isPasswordRecovery = () => {
+      const hash = window.location.hash;
+      const params = new URLSearchParams(hash.substring(1));
+      return params.get('type') === 'recovery';
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Só buscar perfil se não estivermos em recuperação de senha
+    if (!isPasswordRecovery()) {
+      getSessionAndProfile();
+    } else {
+      setLoading(false);
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setSession(session);
+      
+      // Durante recuperação de senha, não fazer login automático no SIGNED_IN inicial
+      if (isPasswordRecovery() && _event === 'SIGNED_IN') {
+        setLoading(false);
+        return;
+      }
+      
+      // Para USER_UPDATED durante password recovery, fazer login automático
+      if (_event === 'USER_UPDATED' && isPasswordRecovery()) {
+        // Limpar o hash de recovery da URL para permitir login normal
+        window.history.replaceState({}, document.title, window.location.pathname);
+        getSessionAndProfile();
+        return;
+      }
+      
       if (_event === 'SIGNED_IN' || _event === 'SIGNED_OUT' || _event === 'USER_UPDATED') {
         getSessionAndProfile();
       }
@@ -71,6 +117,72 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, [getSessionAndProfile]);
+
+  // Sistema de monitoramento de inatividade
+  useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+    let lastActivity = Date.now();
+
+    const checkSessionExpiry = () => {
+      const keepLoggedIn = localStorage.getItem('keepLoggedIn');
+      const sessionExpiry = localStorage.getItem('sessionExpiry');
+      
+      if (session && keepLoggedIn === 'false' && sessionExpiry && sessionExpiry !== 'never') {
+        const expiryTime = parseInt(sessionExpiry);
+        if (Date.now() >= expiryTime) {
+          supabase.auth.signOut();
+          localStorage.removeItem('sessionExpiry');
+          localStorage.removeItem('keepLoggedIn');
+        }
+      }
+    };
+
+    const resetInactivityTimer = () => {
+      const keepLoggedIn = localStorage.getItem('keepLoggedIn');
+      
+      if (session && keepLoggedIn === 'false') {
+        lastActivity = Date.now();
+        const inactivityTimeout = 30 * 60 * 1000; // 30 minutos
+        const newExpiryTime = Date.now() + inactivityTimeout;
+        localStorage.setItem('sessionExpiry', newExpiryTime.toString());
+        
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(checkSessionExpiry, inactivityTimeout);
+      }
+    };
+
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    if (session) {
+      // Verificar expiração na inicialização
+      checkSessionExpiry();
+      
+      // Configurar timer se não for "manter conectado"
+      const keepLoggedIn = localStorage.getItem('keepLoggedIn');
+      if (keepLoggedIn === 'false') {
+        resetInactivityTimer();
+        
+        // Monitorar atividade do usuário
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        events.forEach(event => {
+          document.addEventListener(event, handleActivity, true);
+        });
+
+        return () => {
+          clearTimeout(inactivityTimer);
+          events.forEach(event => {
+            document.removeEventListener(event, handleActivity, true);
+          });
+        };
+      }
+    }
+
+    return () => {
+      clearTimeout(inactivityTimer);
+    };
+  }, [session]);
 
   const value = {
     session,
