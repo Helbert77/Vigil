@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
@@ -29,8 +32,16 @@
   },
   "devDependencies": {
     "@dyad-sh/react-vite-component-tagger": "^0.8.0",
+    "@jest/globals": "^30.2.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jsdom": "^27.0.1",
+    "ts-jest": "^29.4.5",
     "typescript": "latest",
     "vite": "^6.2.0"
   }

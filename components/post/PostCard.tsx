@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo, useMemo } from 'react';
 import { Post, Poll, User, EvidenceItem } from '../../types';
 import Card from '../common/Card';
 import Avatar from '../common/Avatar';
@@ -11,9 +11,10 @@ import PostActionsMenu from './PostActionsMenu';
 import ConfirmationModal from '../common/ConfirmationModal';
 import Tooltip from '../common/Tooltip';
 import UserLink from '@/components/common/UserLink';
-import { renderTextWithMentions, formatDateDayMonth, formatTimeOnly } from '@/src/utils/textUtils';
+import { renderTextWithMentions, formatDateDayMonth, formatTimeOnly, formatDateTimeComplete } from '@/src/utils/textUtils';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import { useSimpleTimeAgo } from '../../hooks/useTimeAgoOptimized';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Icon className={filled ? 'text-red-500' : ''} fill={filled ? 'currentColor' : 'none'}>
@@ -45,6 +46,19 @@ const FileTextIcon = ({ className }: { className?: string }) => <Icon className=
 const ImageIcon = ({ className }: { className?: string }) => <Icon className={`h-6 w-6 text-green-500 ${className || ''}`}><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const LinkIconEvidence = ({ className }: { className?: string }) => <Icon className={`h-6 w-6 text-purple-500 ${className || ''}`}><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></Icon>;
 const VideoIconEvidence = ({ className }: { className?: string }) => <Icon className={`h-6 w-6 text-red-500 ${className || ''}`}><g><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></g></Icon>;
+
+// Componente memoizado para exibir o tempo otimizado
+const TimeDisplay = memo(({ timestamp, className }: { timestamp: string; className?: string }) => {
+  const timeAgo = useSimpleTimeAgo(timestamp);
+  
+  return (
+    <span className={className}>
+      {timeAgo}
+    </span>
+  );
+});
+
+TimeDisplay.displayName = 'TimeDisplay';
 
 interface PollDisplayProps {
   poll: Poll;
@@ -197,6 +211,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(post.text);
   const [isMediaVisible, setIsMediaVisible] = useState(false);
+  const [showDateTime, setShowDateTime] = useState(false);
   const { addToast } = useToast();
   const hasBeenViewed = useRef(false);
 
@@ -323,6 +338,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
 
   const handleCardClick = () => {
     if (isClickable && !isEditing) {
+      setShowDateTime(!showDateTime);
       onViewPost(post.id);
     }
   };
@@ -359,13 +375,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
   return (
     <>
       <Card
-        className={`mb-3 md:mb-4 ${isClickable && !isEditing ? 'cursor-pointer' : ''}`}
+        className={`mb-3 md:mb-4 relative ${isClickable && !isEditing ? 'cursor-pointer' : ''}`}
         onClick={handleCardClick}
         role={isClickable ? 'link' : undefined}
         tabIndex={isClickable ? 0 : -1}
         onKeyDown={(e) => {
           if (isClickable && !isEditing && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
+            setShowDateTime(!showDateTime);
             onViewPost(post.id);
           }
         }}
@@ -379,36 +396,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
               <div className="flex-1 min-w-0">
                 {/* Layout para mobile (< 480px) */}
                 <div className="block max-[479px]:block min-[480px]:hidden">
-                  {/* Linha superior: Nome + Badges + Data */}
-                  <div className="flex items-center gap-1 mb-1">
-                    <div className="flex items-center gap-1 flex-wrap min-w-0">
-                      <UserLink
-                        user={post.user}
-                        isFollowing={isFollowing}
-                        onFollowToggle={onFollowToggle}
-                        onViewProfile={onViewProfile}
-                        isCurrentUser={isCurrentUser}
-                        onOpenFollowModal={onOpenFollowModal}
-                      >
-                        <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{post.user.name}</p>
-                      </UserLink>
-                      {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 flex-shrink-0" />}
-                      {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />}
-                    </div>
-                    <span className="text-gray-500 dark:text-gray-400 text-xs">·</span>
-                    <div className="flex-shrink-0">
-                      <Tooltip text={formatTimeOnly(post.timestamp) || 'Horário indisponível'}>
-                        <time 
-                          className="text-xs text-gray-500 dark:text-gray-400 cursor-help" 
-                          dateTime={post.timestamp}
-                        >
-                          {formatDateDayMonth(post.timestamp) || 'Data indisponível'}
-                        </time>
-                      </Tooltip>
-                    </div>
-                  </div>
-                  {/* Linha inferior: Username */}
-                  <div className="flex items-center">
+                  <div className="flex items-center gap-1 flex-wrap">
                     <UserLink
                       user={post.user}
                       isFollowing={isFollowing}
@@ -417,49 +405,52 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                       isCurrentUser={isCurrentUser}
                       onOpenFollowModal={onOpenFollowModal}
                     >
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">@{post.user.username}</p>
+                      <span className="font-bold text-gray-900 dark:text-white text-sm">{post.user.name}</span>
                     </UserLink>
+                    {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 flex-shrink-0" />}
+                    {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />}
+                    <UserLink
+                      user={post.user}
+                      isFollowing={isFollowing}
+                      onFollowToggle={onFollowToggle}
+                      onViewProfile={onViewProfile}
+                      isCurrentUser={isCurrentUser}
+                      onOpenFollowModal={onOpenFollowModal}
+                    >
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">@{post.user.username}</span>
+                    </UserLink>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">-</span>
+                    <TimeDisplay timestamp={post.timestamp} className="text-gray-500 dark:text-gray-400 text-sm" />
                   </div>
                 </div>
 
                 {/* Layout para desktop (>= 480px) */}
                 <div className="hidden min-[480px]:block">
-                  <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <UserLink
-                        user={post.user}
-                        isFollowing={isFollowing}
-                        onFollowToggle={onFollowToggle}
-                        onViewProfile={onViewProfile}
-                        isCurrentUser={isCurrentUser}
-                        onOpenFollowModal={onOpenFollowModal}
-                      >
-                        <p className="font-bold text-gray-900 dark:text-white text-sm md:text-base truncate">{post.user.name}</p>
-                      </UserLink>
-                      {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
-                      {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
-                    </div>
-                    <div className="flex items-center space-x-1 sm:space-x-2 text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                      <UserLink
-                        user={post.user}
-                        isFollowing={isFollowing}
-                        onFollowToggle={onFollowToggle}
-                        onViewProfile={onViewProfile}
-                        isCurrentUser={isCurrentUser}
-                        onOpenFollowModal={onOpenFollowModal}
-                      >
-                        <p className="truncate">@{post.user.username}</p>
-                      </UserLink>
-                      <span className="hidden sm:inline">·</span>
-                      <Tooltip text={formatTimeOnly(post.timestamp) || 'Horário indisponível'}>
-                        <time 
-                          className="truncate cursor-help" 
-                          dateTime={post.timestamp}
-                        >
-                          {formatDateDayMonth(post.timestamp) || 'Data indisponível'}
-                        </time>
-                      </Tooltip>
-                    </div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <UserLink
+                      user={post.user}
+                      isFollowing={isFollowing}
+                      onFollowToggle={onFollowToggle}
+                      onViewProfile={onViewProfile}
+                      isCurrentUser={isCurrentUser}
+                      onOpenFollowModal={onOpenFollowModal}
+                    >
+                      <span className="font-bold text-gray-900 dark:text-white text-sm md:text-base">{post.user.name}</span>
+                    </UserLink>
+                    {(post.user.plan === 'pro' || post.user.plan === 'premium') && <VerifiedBadgeIcon plan={post.user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    {post.user.role && ['admin', 'moderator'].includes(post.user.role) && <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    <UserLink
+                      user={post.user}
+                      isFollowing={isFollowing}
+                      onFollowToggle={onFollowToggle}
+                      onViewProfile={onViewProfile}
+                      isCurrentUser={isCurrentUser}
+                      onOpenFollowModal={onOpenFollowModal}
+                    >
+                      <span className="text-gray-500 dark:text-gray-400 text-sm md:text-base">@{post.user.username}</span>
+                    </UserLink>
+                    <span className="text-gray-500 dark:text-gray-400 text-sm md:text-base">-</span>
+                    <TimeDisplay timestamp={post.timestamp} className="text-gray-500 dark:text-gray-400 text-sm md:text-base" />
                   </div>
                 </div>
                 {isEditing ? (
@@ -615,6 +606,21 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
               </Tooltip>
             </div>
           </>
+        )}
+        
+        {/* Data e hora com posicionamento absoluto */}
+        {showDateTime && (
+          <div 
+            className="absolute bottom-2 left-2 bg-black/70 dark:bg-white/70 text-white dark:text-black px-2 py-1 rounded text-xs font-medium transition-all duration-300 ease-in-out transform opacity-100 scale-100"
+            style={{ 
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)'
+            }}
+            role="tooltip"
+            aria-label="Data e hora do post"
+          >
+            {formatDateTimeComplete(post.timestamp)}
+          </div>
         )}
       </Card>
       {showDmModal && <ShareDmModal post={post} onClose={() => setShowDmModal(false)} onUpdatePost={onUpdatePost} shareableUsers={shareableUsers} onSendMessage={onSendMessage} />}

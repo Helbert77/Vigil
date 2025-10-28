@@ -3,6 +3,7 @@ import { User } from '@/types';
 import UserLink from '@/components/common/UserLink';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatTimeAgo } from './timeUtils';
 
 export const renderTextWithMentions = (
   text: string,
@@ -77,3 +78,34 @@ export const formatTimeOnly = (dateString: string): string | null => {
     return null;
   }
 };
+
+/**
+ * Formata uma data no formato completo 'dd de Mês - hh:mm' (ex: "25 de Janeiro - 14:30")
+ * @param dateString - String de data ISO ou timestamp
+ * @returns String formatada ou null em caso de erro
+ */
+export const formatDateTimeComplete = (dateString: string): string | null => {
+  try {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    
+    return format(date, "dd 'de' MMMM - HH:mm", { locale: ptBR });
+  } catch (error) {
+    console.error('Erro ao formatar data e hora:', error);
+    return null;
+  }
+};
+
+/**
+ * Formata o tempo decorrido desde a criação do post com regras específicas:
+ * - 0-59 minutos: '00m' (ex: '05m', '59m')
+ * - 1-23 horas: '00h' (ex: '1h', '23h') - arredonda para baixo
+ * - 1-6 dias: '0d' (ex: '1d', '6d')
+ * - 1-4 semanas: '0s' (ex: '1s', '4s')
+ * - 1+ meses: '0M' (ex: '1M', '2M')
+ * @param dateString - String de data ISO ou timestamp
+ * @returns String formatada ou null em caso de erro
+ */
+// formatTimeAgo function is now imported from timeUtils.ts
+export { formatTimeAgo };
