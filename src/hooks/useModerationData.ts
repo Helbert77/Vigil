@@ -83,9 +83,7 @@ export const useModerationData = (appUser: User | null) => {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Real-time MODERAÇÃO] ✅ Canal conectado com sucesso');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn(`[Real-time MODERAÇÃO] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
         }
       });
@@ -111,9 +109,7 @@ export const useModerationData = (appUser: User | null) => {
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Real-time APELAÇÕES] ✅ Canal conectado com sucesso');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn(`[Real-time APELAÇÕES] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
         }
       });

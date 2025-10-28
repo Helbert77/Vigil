@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
   };
 
   useEffect(() => {
-    console.log("Sidebar: NavLink 'Premium' renderizado.");
+    // Component mounted
   }, []);
 
   return (

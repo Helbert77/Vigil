@@ -13,6 +13,8 @@ import { useSession } from '@/contexts/SessionContext';
 import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 import AccountStatus from '@/components/settings/AccountStatus';
 import { Icon } from '@/components/icons/Icon';
+import DeleteAccountModal from '@/components/settings/DeleteAccountModal';
+import AccountDeletionStatus from '@/components/settings/AccountDeletionStatus';
 
 const LogOutIcon = () => <Icon className="h-5 w-5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></Icon>;
 
@@ -52,11 +54,38 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
   const { session } = useSession();
   const { addToast } = useToast();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCheckingForDeletion, setIsCheckingForDeletion] = useState(false);
+  const [preDeletionChecks, setPreDeletionChecks] = useState<any>(null);
   const [isBlockedListModalOpen, setIsBlockedListModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleOpenDeleteModal = async () => {
+    setIsCheckingForDeletion(true);
+    try {
+      const { data: subscription } = await api.getUserSubscription(user.id);
+      const hasActiveSubscription = subscription && subscription.plan !== 'free';
+
+      const { count: pendingOperationsCount } = await api.getPendingOperationsSafe(user.id);
+
+      const checks = {
+        hasActiveSubscription,
+        hasPendingOperations: pendingOperationsCount > 0,
+        subscriptionPlan: subscription?.plan,
+        pendingOperationsCount
+      };
+
+      setPreDeletionChecks(checks);
+      setIsDeleteModalOpen(true);
+    } catch (error) {
+      console.error('Error performing pre-deletion checks:', error);
+      addToast('Erro ao verificar status da conta.', 'error');
+    } finally {
+      setIsCheckingForDeletion(false);
+    }
+  };
 
   const handleNotificationToggle = async (key: keyof NonNullable<User['notifications']>) => {
     const currentNotifications = user.notifications || { likes: true, comments: true, newFollowers: false, messages: true };
@@ -272,39 +301,42 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
               <div className="pt-3 border-t border-light-border dark:border-dark-border">
                 <button
                     onClick={onLogout}
-                    className="w-full sm:w-auto flex items-center justify-start gap-2 text-red-500 hover:text-red-600 active:text-red-700 bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 font-bold py-1.5 pl-3 pr-2 rounded-md transition-colors duration-200"
+                    className="w-full sm:w-auto flex items-center justify-start gap-3 text-red-500 hover:text-red-600 active:text-red-700 bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 font-bold py-2 px-3 rounded-md transition-colors duration-200"
                     aria-label="Sair da conta"
-                    style={{ paddingLeft: '12px' }}
                     >
-                    <LogOutIcon />
-                    <span>Sair</span>
+                    <div className="flex-shrink-0 flex items-center justify-center w-5 h-5">
+                      <LogOutIcon />
+                    </div>
+                    <span className="flex items-center">Sair</span>
                 </button>
               </div>
               
               <div className="pt-4 border-t border-light-border dark:border-dark-border">
                 <AccountStatus user={user} />
               </div>
-              <div className="pt-4 border-t border-light-border dark:border-dark-border">
-                  <button
-                      onClick={() => setIsDeleteModalOpen(true)}
-                      className="w-full sm:w-auto border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-md transition-colors duration-200"
-                      >
-                      Excluir Conta Permanentemente
-                  </button>
+              <div className="pt-4 border-t border-light-border dark:border-dark-border space-y-4">
+                <AccountDeletionStatus />
+                <button
+                    onClick={handleOpenDeleteModal}
+                    disabled={isCheckingForDeletion}
+                    className="w-full sm:w-auto border border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                    {isCheckingForDeletion ? 'Verificando...' : 'Excluir Conta'}
+                </button>
               </div>
             </div>
           </Card>
         </div>
       </div>
-      <ConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteAccount}
-        title="Excluir sua conta?"
-        message="Esta ação é irreversível. Todos os seus posts, comentários e dados de perfil serão permanentemente excluídos. Tem certeza de que deseja continuar?"
-        confirmText="Sim, excluir minha conta"
-        isDestructive={true}
-      />
+      {preDeletionChecks && (
+        <DeleteAccountModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteAccount}
+          user={user}
+          preDeletionChecks={preDeletionChecks}
+        />
+      )}
       <GenericModal
         isOpen={isBlockedListModalOpen}
         onClose={() => setIsBlockedListModalOpen(false)}

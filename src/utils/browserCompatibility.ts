@@ -111,24 +111,12 @@ export function addCompatibleEventListener(
 ): () => void {
   const browser = detectBrowser();
   
-  // Log de depuração para Chrome
-  if (browser.isChrome) {
-    console.debug(`[Chrome Debug] Adding event listener: ${event}`, {
-      element: element.tagName,
-      handler: handler.name || 'anonymous',
-      options
-    });
-  }
-  
   try {
     // Tenta usar addEventListener moderno
     element.addEventListener(event, handler, options);
     
     return () => {
       element.removeEventListener(event, handler, options);
-      if (browser.isChrome) {
-        console.debug(`[Chrome Debug] Removed event listener: ${event}`);
-      }
     };
   } catch (error) {
     console.error(`[Browser Compatibility] Failed to add event listener: ${event}`, error);
@@ -168,15 +156,6 @@ export function checkAsyncResourceLoading(): Promise<boolean> {
       const pendingImages = images.filter(img => !img.complete);
       const pendingScripts = scripts.filter(script => !script.src || (script as any).readyState !== 'complete');
       
-      if (browser.isChrome) {
-        console.debug('[Chrome Debug] Resource loading check:', {
-          pendingImages: pendingImages.length,
-          pendingScripts: pendingScripts.length,
-          totalImages: images.length,
-          totalScripts: scripts.length
-        });
-      }
-      
       resolve(pendingImages.length === 0 && pendingScripts.length === 0);
     };
     
@@ -207,15 +186,6 @@ export function handleEventPropagation(
       if ((event as any).cancelBubble !== undefined) {
         (event as any).cancelBubble = true;
       }
-    }
-    
-    if (browser.isChrome) {
-      console.debug('[Chrome Debug] Event propagation handled:', {
-        type: event.type,
-        target: (event.target as Element)?.tagName,
-        stopPropagation,
-        preventDefault
-      });
     }
   } catch (error) {
     console.error('[Browser Compatibility] Event propagation error:', error);
@@ -254,10 +224,6 @@ export function applyCompatibleStyles(element: HTMLElement, styles: Record<strin
       console.warn(`[Browser Compatibility] Failed to apply style ${property}: ${value}`, error);
     }
   });
-  
-  if (browser.isChrome) {
-    console.debug('[Chrome Debug] Applied compatible styles:', styles);
-  }
 }
 
 /**
@@ -266,19 +232,11 @@ export function applyCompatibleStyles(element: HTMLElement, styles: Record<strin
 export function initializeBrowserCompatibility(): void {
   const browser = detectBrowser();
   
-  console.log('[Browser Compatibility] Detected browser:', browser);
-  
   // Aplica classes CSS específicas do navegador
   applyBrowserClasses();
   
   // Configura políticas de segurança específicas do Chrome
   if (browser.isChrome) {
-    // Verifica se há políticas de segurança restritivas
-    const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-    if (csp) {
-      console.debug('[Chrome Debug] CSP detected:', csp.getAttribute('content'));
-    }
-    
     // Monitora erros específicos do Chrome
     window.addEventListener('error', (event) => {
       console.error('[Chrome Debug] Runtime error:', {
@@ -295,10 +253,12 @@ export function initializeBrowserCompatibility(): void {
     });
   }
   
-  // Verifica recursos assíncronos
-  checkAsyncResourceLoading().then((allLoaded) => {
-    if (!allLoaded && browser.isChrome) {
-      console.warn('[Chrome Debug] Some resources are still loading');
-    }
-  });
+  // Verifica recursos assíncronos apenas se necessário
+  if (process.env.NODE_ENV === 'development') {
+    checkAsyncResourceLoading().then((allLoaded) => {
+      if (!allLoaded && browser.isChrome) {
+        console.debug('[Chrome Debug] Some resources are still loading');
+      }
+    });
+  }
 }

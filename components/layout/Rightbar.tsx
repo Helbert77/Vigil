@@ -102,18 +102,9 @@ const Rightbar: React.FC<RightbarProps> = ({
   const browser = detectBrowser();
 
   useEffect(() => {
-    // Inicializa compatibilidade cross-browser
+    // Inicializa compatibilidade cross-browser apenas uma vez
     initializeBrowserCompatibility();
-    
-    if (browser.isChrome) {
-      console.debug('[Chrome Debug] Rightbar component mounted', {
-        trendingTopicsCount: trendingTopics.length,
-        usersToFollowCount: usersToFollow.length,
-        browser: browser.name,
-        version: browser.version
-      });
-    }
-  }, [browser, trendingTopics.length, usersToFollow.length]);
+  }, []); // Remove dependências desnecessárias
 
   return (
     <div className="sticky top-20 space-y-4 md:space-y-6 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto overflow-x-hidden 
@@ -166,12 +157,6 @@ const Rightbar: React.FC<RightbarProps> = ({
                 <div className="pt-2 pb-0.5">
                   <CrossBrowserButton
                     onClick={(e) => {
-                      if (browser.isChrome) {
-                        console.debug('[Chrome Debug] Trending topics "Mostrar mais" clicked', {
-                          timestamp: Date.now(),
-                          event: e.type
-                        });
-                      }
                       onNavigateTrendingTopics?.();
                     }}
                     className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm transition-colors duration-200 w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded px-1"
@@ -218,12 +203,6 @@ const Rightbar: React.FC<RightbarProps> = ({
             <div className="pt-2">
               <CrossBrowserButton
                 onClick={(e) => {
-                  if (browser.isChrome) {
-                    console.debug('[Chrome Debug] Users "Mostrar mais" clicked', {
-                      timestamp: Date.now(),
-                      event: e.type
-                    });
-                  }
                   onNavigateExploreUsers?.();
                 }}
                 className="text-sm font-medium text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded px-1"

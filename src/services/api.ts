@@ -1,4 +1,74 @@
 import { supabase } from '@/integrations/supabase/client';
+
+// Utility function for standardized error handling and logging
+const handleApiError = (error: any, operation: string, context?: any) => {
+  const timestamp = new Date().toISOString();
+  const errorInfo = {
+    timestamp,
+    operation,
+    error: {
+      code: error?.code,
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint
+    },
+    context
+  };
+
+  // Log different error types appropriately
+  if (error?.code === 'PGRST205') {
+    console.warn(`[${timestamp}] Table not found in ${operation}:`, errorInfo);
+  } else if (error?.code === 'PGRST116') {
+    console.warn(`[${timestamp}] Column not found in ${operation}:`, errorInfo);
+  } else if (error?.code === '42703') {
+    console.warn(`[${timestamp}] PostgreSQL column error in ${operation}:`, errorInfo);
+  } else if (error?.message?.includes('JWT')) {
+    console.error(`[${timestamp}] Authentication error in ${operation}:`, errorInfo);
+  } else {
+    console.error(`[${timestamp}] API error in ${operation}:`, errorInfo);
+  }
+
+  return errorInfo;
+};
+
+// Utility function to check if error is related to missing table/column
+const isMissingResourceError = (error: any) => {
+  return error?.code === 'PGRST205' || // Table not found
+         error?.code === 'PGRST116' || // Column not found
+         error?.code === '42703' ||    // PostgreSQL: column does not exist
+         error?.message?.includes('column') ||
+         error?.message?.includes('table') ||
+         error?.message?.includes('relation');
+};
+
+// Cache for table existence checks to avoid repeated API calls
+const tableExistenceCache = new Map<string, boolean>();
+
+// Function to check if a table exists
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  // Check cache first
+  if (tableExistenceCache.has(tableName)) {
+    return tableExistenceCache.get(tableName)!;
+  }
+
+  try {
+    const { error } = await supabase
+      .from(tableName)
+      .select('*')
+      .limit(1);
+    
+    const exists = !error || !isMissingResourceError(error);
+    
+    // Cache the result for 5 minutes
+    tableExistenceCache.set(tableName, exists);
+    setTimeout(() => tableExistenceCache.delete(tableName), 5 * 60 * 1000);
+    
+    return exists;
+  } catch (error) {
+    console.debug(`Table existence check failed for ${tableName}:`, error);
+    return false;
+  }
+};
 import { Poll, EvidenceItem, User } from '@/types';
 
 // --- Session Management ---
@@ -21,7 +91,6 @@ export const ensureValidSession = async () => {
     const timeUntilExpiry = expiresAt - now;
     
     if (timeUntilExpiry < 300) { // Less than 5 minutes
-      console.log('Session expiring soon, refreshing...');
       const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
       
       if (refreshError) {
@@ -70,6 +139,30 @@ export const logout = async () => {
 };
 export const updateUserPassword = (newPassword: string) => 
   supabase.auth.updateUser({ password: newPassword });
+
+export const verifyCurrentPassword = async (currentPassword: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    // Attempt to sign in with current credentials to verify password
+    const { error } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword
+    });
+
+    if (error) {
+      throw new Error('Senha incorreta');
+    }
+
+    return { error: null };
+  } catch (error) {
+    console.error('Error verifying password:', error);
+    return { error };
+  }
+};
 
 // --- Content Moderation API ---
 export const moderateContent = (text: string) =>
@@ -273,6 +366,258 @@ export const updateUserRole = (userId: string, role: 'user' | 'moderator' | 'adm
 export const deleteUserAccount = () =>
   supabase.functions.invoke('delete-user');
 
+export const scheduleAccountDeletion = async (gracePeriodDays: number = 7, reason?: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const error = new Error('Usuário não encontrado');
+      handleApiError(error, 'scheduleAccountDeletion', { step: 'auth_check' });
+      throw error;
+    }
+
+    // Check if table exists before making the query
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      console.debug('Table account_deletion_requests does not exist, cannot schedule deletion');
+      return { data: null, error: new Error('Funcionalidade de agendamento não disponível. Entre em contato com o suporte.') };
+    }
+
+    const deletionDate = new Date();
+    deletionDate.setDate(deletionDate.getDate() + gracePeriodDays);
+
+    const requestData = {
+      user_id: user.id,
+      scheduled_deletion_date: deletionDate.toISOString(),
+      status: 'pending',
+      grace_period_days: gracePeriodDays,
+      reason: reason || null
+    };
+
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .insert(requestData)
+      .select()
+      .single();
+
+    // Handle missing table/column errors gracefully
+    if (error && isMissingResourceError(error)) {
+      handleApiError(error, 'scheduleAccountDeletion', { 
+        user_id: user.id,
+        grace_period_days: gracePeriodDays,
+        suggestion: 'Run migration to create account_deletion_requests table'
+      });
+      return { data: null, error: new Error('Funcionalidade de agendamento não disponível. Entre em contato com o suporte.') };
+    }
+
+    if (error) {
+      handleApiError(error, 'scheduleAccountDeletion', { 
+        user_id: user.id, 
+        grace_period_days: gracePeriodDays 
+      });
+      throw error;
+    }
+
+    console.debug('Account deletion scheduled successfully:', { 
+      user_id: user.id, 
+      scheduled_date: deletionDate.toISOString(),
+      grace_period_days: gracePeriodDays
+    });
+
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'scheduleAccountDeletion');
+    return { data: null, error };
+  }
+};
+
+export const cancelAccountDeletion = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const error = new Error('Usuário não encontrado');
+      handleApiError(error, 'cancelAccountDeletion', { step: 'auth_check' });
+      throw error;
+    }
+
+    // Check if table exists before making the query
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      console.debug('Table account_deletion_requests does not exist, cannot cancel deletion');
+      return { error: new Error('Funcionalidade de cancelamento não disponível. Entre em contato com o suporte.') };
+    }
+
+    const updateData = { 
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('account_deletion_requests')
+      .update(updateData)
+      .eq('user_id', user.id)
+      .eq('status', 'pending');
+
+    // Handle missing table/column errors gracefully
+    if (error && isMissingResourceError(error)) {
+      handleApiError(error, 'cancelAccountDeletion', { 
+        user_id: user.id,
+        suggestion: 'Run migration to create account_deletion_requests table'
+      });
+      return { error: new Error('Funcionalidade de cancelamento não disponível. Entre em contato com o suporte.') };
+    }
+
+    if (error) {
+      handleApiError(error, 'cancelAccountDeletion', { user_id: user.id });
+      throw error;
+    }
+
+    console.debug('Account deletion cancelled successfully:', { 
+      user_id: user.id,
+      cancelled_at: updateData.cancelled_at
+    });
+
+    return { error: null };
+  } catch (error) {
+    handleApiError(error, 'cancelAccountDeletion');
+    return { error };
+  }
+};
+
+export const getAccountDeletionStatus = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      const error = new Error('Usuário não encontrado');
+      handleApiError(error, 'getAccountDeletionStatus', { step: 'auth_check' });
+      throw error;
+    }
+
+    // Check if table exists before making the query
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      console.debug('Table account_deletion_requests does not exist, returning null');
+      return { data: null, error: null };
+    }
+
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Handle missing table/column errors gracefully
+    if (error && isMissingResourceError(error)) {
+      handleApiError(error, 'getAccountDeletionStatus', { 
+        user_id: user.id,
+        suggestion: 'Run migration to create account_deletion_requests table'
+      });
+      return { data: null, error: null };
+    }
+
+    if (error) {
+      handleApiError(error, 'getAccountDeletionStatus', { user_id: user.id });
+      throw error;
+    }
+
+    console.debug('Account deletion status fetched successfully:', { 
+      user_id: user.id, 
+      has_pending_deletion: !!data 
+    });
+
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'getAccountDeletionStatus');
+    return { data: null, error };
+  }
+};
+
+export const downloadUserData = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    // Fetch user's data
+    const [profileData, postsData, commentsData, notificationsData] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('posts').select('*').eq('user_id', user.id),
+      supabase.from('comments').select('*').eq('user_id', user.id),
+      supabase.from('notifications').select('*').eq('user_id', user.id)
+    ]);
+
+    const userData = {
+      profile: profileData.data,
+      posts: postsData.data || [],
+      comments: commentsData.data || [],
+      notifications: notificationsData.data || [],
+      exportDate: new Date().toISOString()
+    };
+
+    // Create and download JSON file
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vigil-user-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return { error: null };
+  } catch (error) {
+    console.error('Error downloading user data:', error);
+    return { error };
+  }
+};
+
+// Send deletion confirmation email
+export const sendDeletionEmail = async (
+  type: 'deletion_scheduled' | 'deletion_cancelled' | 'deletion_reminder',
+  scheduledDate?: string,
+  gracePeriodDays?: number
+) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get user profile for name
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', user.id)
+      .single();
+
+    const userName = profile?.full_name || profile?.username || 'Usuário';
+
+    const { data, error } = await supabase.functions.invoke('send-deletion-email', {
+      body: {
+        type,
+        userEmail: user.email,
+        userName,
+        scheduledDate,
+        gracePeriodDays
+      }
+    });
+
+    if (error) {
+      console.error('Error sending deletion email:', error);
+      return { data: null, error: error.message };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+     console.error('Error sending deletion email:', error);
+     return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
+   }
+};
+
 export const fetchFollows = async (userId: string) => {
     const { data: followersData, error: followersError } = await supabase.from('followers').select('follower_id').eq('following_id', userId);
     const { data: followingData, error: followingError } = await supabase.from('followers').select('following_id').eq('follower_id', userId);
@@ -340,12 +685,8 @@ export const fetchActiveMembers = (communityId: string) =>
 
 // --- Topics API ---
 export const fetchTrendingTopics = async () => {
-  console.log('[API] fetchTrendingTopics called');
   try {
     const result = await supabase.rpc('get_trending_topics');
-    console.log('[API] fetchTrendingTopics raw result:', result);
-    console.log('[API] fetchTrendingTopics result.data:', result.data);
-    console.log('[API] fetchTrendingTopics result.error:', result.error);
     
     // O resultado vem em result.data, não diretamente no result
     if (result.error) {
@@ -392,8 +733,6 @@ export const fetchFullConversations = (conversationIds: string[]) =>
 
 export const sendMessage = async (messageData: { conversationId?: string, targetUserId?: string, text: string }) => {
   try {
-    console.log('API sendMessage called with:', messageData);
-    
     // Ensure we have a valid session before making the API call
     await ensureValidSession();
     
@@ -404,8 +743,6 @@ export const sendMessage = async (messageData: { conversationId?: string, target
         content: messageData.text 
       } 
     });
-    
-    console.log('Edge function response:', response);
     
     if (response.error) {
       console.error('Edge function error:', response.error);
@@ -431,8 +768,133 @@ export const upsertSubscription = (userId: string, plan: 'free' | 'basic' | 'pro
 export const fetchUserSubscription = (userId: string) =>
   supabase.from('subscriptions').select('plan').eq('user_id', userId).single();
 
+export const getUserSubscription = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('plan, status, created_at, updated_at')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw error;
+    }
+    
+    return { data: data || { plan: 'free', status: 'active' }, error: null };
+  } catch (error) {
+    console.error('Error fetching user subscription:', error);
+    return { data: { plan: 'free', status: 'active' }, error };
+  }
+};
+
 export const submitCancellationFeedback = (feedbackData: { user_id: string; previous_plan: string; reason: string; details: string; }) =>
   supabase.from('cancellation_feedback').insert(feedbackData);
 
 export const fetchCancellationFeedback = () =>
   supabase.rpc('get_cancellation_feedback_with_profiles');
+
+// Alternative function to check for pending operations without status column dependency
+export const getPendingOperationsSafe = async (userId: string) => {
+  try {
+    // Since most tables don't have status columns, we'll check for recent activity instead
+    const [recentComments, recentReports] = await Promise.all([
+      supabase
+        .from('comments')
+        .select('id, created_at')
+        .eq('user_id', userId)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+        .then(result => {
+          if (result.error) {
+            console.debug('Error querying recent comments:', result.error);
+            return { data: [], error: null };
+          }
+          return result;
+        }),
+      supabase
+        .from('reports')
+        .select('id, created_at')
+        .eq('reporter_id', userId)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+        .then(result => {
+          if (result.error) {
+            console.debug('Error querying recent reports:', result.error);
+            return { data: [], error: null };
+          }
+          return result;
+        })
+    ]);
+
+    const totalRecent = (recentComments.data?.length || 0) + 
+                       (recentReports.data?.length || 0);
+
+    return { 
+      count: totalRecent, 
+      details: {
+        posts: 0, // Posts don't have pending status
+        comments: recentComments.data?.length || 0,
+        reports: recentReports.data?.length || 0
+      },
+      error: null 
+    };
+  } catch (error) {
+    console.debug('Error checking recent operations:', error);
+    return { count: 0, details: { posts: 0, comments: 0, reports: 0 }, error };
+  }
+};
+
+// Function to check for pending operations
+export const getPendingOperations = async (userId: string) => {
+  try {
+    // Check for pending comments and reports (posts don't have status column)
+    const [pendingComments, pendingReports] = await Promise.all([
+      supabase.from('comments').select('id').eq('user_id', userId).eq('status', 'pending').then(result => {
+        // Handle case where comments table doesn't have status column or other errors
+        if (result.error) {
+          if (result.error.code === 'PGRST116' || // Column doesn't exist
+              result.error.code === 'PGRST205' || // Table doesn't exist
+              result.error.code === '42703' ||    // PostgreSQL: column does not exist
+              result.error.message?.includes('column') ||
+              result.error.message?.includes('status')) {
+            console.debug('Comments table does not have status column, returning empty array');
+            return { data: [], error: null };
+          }
+          console.warn('Error querying comments:', result.error);
+          return { data: [], error: null };
+        }
+        return result;
+      }),
+      supabase.from('reports').select('id').eq('reporter_id', userId).eq('status', 'pending').then(result => {
+        // Handle case where reports table doesn't have status column or doesn't exist
+        if (result.error) {
+          if (result.error.code === 'PGRST116' || // Column doesn't exist
+              result.error.code === 'PGRST205' || // Table doesn't exist
+              result.error.code === '42703' ||    // PostgreSQL: column does not exist
+              result.error.message?.includes('column') ||
+              result.error.message?.includes('status')) {
+            console.debug('Reports table does not have status column or does not exist, returning empty array');
+            return { data: [], error: null };
+          }
+          console.warn('Error querying reports:', result.error);
+          return { data: [], error: null };
+        }
+        return result;
+      })
+    ]);
+
+    const totalPending = (pendingComments.data?.length || 0) + 
+                        (pendingReports.data?.length || 0);
+
+    return { 
+      count: totalPending, 
+      details: {
+        posts: 0, // Posts don't have pending status
+        comments: pendingComments.data?.length || 0,
+        reports: pendingReports.data?.length || 0
+      },
+      error: null 
+    };
+  } catch (error) {
+    console.debug('Error checking pending operations:', error);
+    return { count: 0, details: { posts: 0, comments: 0, reports: 0 }, error };
+  }
+};

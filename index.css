@@ -458,3 +458,62 @@ time.cursor-help:hover {
   border-bottom-color: #60a5fa;
 }
 
+/* Icon-Text Alignment Utilities */
+.icon-text-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+}
+
+.icon-text-container-sm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* 8px */
+}
+
+.icon-text-container-lg {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* 16px */
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-wrapper-sm {
+  width: 1rem; /* 16px */
+  height: 1rem; /* 16px */
+}
+
+.icon-wrapper-md {
+  width: 1.25rem; /* 20px */
+  height: 1.25rem; /* 20px */
+}
+
+.icon-wrapper-lg {
+  width: 1.5rem; /* 24px */
+  height: 1.5rem; /* 24px */
+}
+
+.text-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+/* Responsive icon-text alignment */
+@media (max-width: 768px) {
+  .icon-text-container {
+    gap: 0.5rem; /* Smaller gap on mobile */
+  }
+  
+  .icon-wrapper-md {
+    width: 1.125rem; /* 18px on mobile */
+    height: 1.125rem; /* 18px on mobile */
+  }
+}
+

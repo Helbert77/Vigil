@@ -133,9 +133,6 @@ const CrossBrowserTest: React.FC = () => {
   };
 
   const testShowMoreButton = () => {
-    if (browser.isChrome) {
-      console.debug('[Chrome Debug] Test "Mostrar mais" button clicked');
-    }
     alert(`Teste do botão "Mostrar mais" - Navegador: ${browser.name} ${browser.version}`);
   };
 

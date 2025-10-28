@@ -14,7 +14,7 @@ const NavLink: React.FC<NavLinkProps> = ({ icon, label, isActive, onClick, notif
     onClick={onClick} 
     className={`w-full flex items-center transition-colors duration-200 relative rounded-lg
       ${/* Mobile and desktop spacing */ ''}
-      ${isCollapsed ? 'justify-center p-3' : 'space-x-3 px-3 py-3 md:py-2'}
+      ${isCollapsed ? 'justify-center p-3' : 'gap-3 px-3 py-3 md:py-2'}
       ${/* Active and hover states */ ''}
       ${isActive 
         ? 'bg-primary/20 text-primary font-bold' 
@@ -25,8 +25,8 @@ const NavLink: React.FC<NavLinkProps> = ({ icon, label, isActive, onClick, notif
     `}
     title={isCollapsed ? label : ''}
   >
-    <div className="relative flex-shrink-0">
-      <div className="w-5 h-5 md:w-4 md:h-4">
+    <div className="relative flex-shrink-0 flex items-center justify-center">
+      <div className="w-5 h-5 md:w-4 md:h-4 flex items-center justify-center">
         {icon}
       </div>
       {notificationCount > 0 && (
@@ -38,7 +38,7 @@ const NavLink: React.FC<NavLinkProps> = ({ icon, label, isActive, onClick, notif
       )}
     </div>
     {!isCollapsed && (
-      <span className="text-base md:text-sm font-medium truncate">
+      <span className="text-base md:text-sm font-medium truncate flex items-center">
         {label}
       </span>
     )}

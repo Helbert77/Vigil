@@ -301,7 +301,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
             addToast('Post link copied! Best for sharing in Instagram Stories or bio.', 'success');
           })
           .catch(err => {
-            console.error('Failed to copy for Instagram:', err);
             addToast('Could not copy link. Please try again.', 'error');
           });
         break;
@@ -311,7 +310,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
             addToast('Post link copied to clipboard!', 'success');
           })
           .catch(err => {
-            console.error('Failed to copy link:', err);
             addToast('Could not copy link. Please try again.', 'error');
           });
         break;

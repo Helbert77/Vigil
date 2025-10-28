@@ -83,13 +83,7 @@ const CrossBrowserButton: React.FC<CrossBrowserButtonProps> = ({
           return;
         }
 
-        if (browser.isChrome) {
-          console.debug('[Chrome Debug] Button clicked:', {
-            target: button.textContent?.trim(),
-            disabled,
-            timestamp: Date.now()
-          });
-        }
+
 
         // Verifica se o clique é válido
         if (event.isTrusted !== false) {
@@ -164,20 +158,12 @@ const CrossBrowserButton: React.FC<CrossBrowserButtonProps> = ({
   const handleFocus = (event: React.FocusEvent<HTMLButtonElement>) => {
     setIsFocused(true);
     onFocus?.(event);
-    
-    if (browser.isChrome) {
-      console.debug('[Chrome Debug] Button focused');
-    }
   };
 
   const handleBlur = (event: React.FocusEvent<HTMLButtonElement>) => {
     setIsFocused(false);
     setIsPressed(false);
     onBlur?.(event);
-    
-    if (browser.isChrome) {
-      console.debug('[Chrome Debug] Button blurred');
-    }
   };
 
   // Classes CSS dinâmicas baseadas no estado e navegador
