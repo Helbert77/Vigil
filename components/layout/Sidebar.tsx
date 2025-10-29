@@ -75,8 +75,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-2 md:p-0">
-        <nav className={`space-y-1 md:space-y-2 ${isCollapsed ? 'px-1' : 'px-2 md:px-0'}`}>
+      <div className="flex-1 overflow-y-auto sidebar-scrollable p-2 md:p-0">
+        <nav className={`space-y-1 ${isCollapsed ? 'px-1' : 'px-2 md:px-0'}`}>
           <NavLink 
             icon={<HomeIcon />} 
             label="Home" 

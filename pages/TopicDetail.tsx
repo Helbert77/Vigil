@@ -33,9 +33,8 @@ interface TopicDetailProps {
 }
 
 const TopicDetail: React.FC<TopicDetailProps> = ({ tag, posts, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, user, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll, allUsers }) => {
-  const topicPosts = posts.filter((post: Post) => 
-    post.text.toLowerCase().includes(`#${tag.toLowerCase()}`)
-  );
+  // Use os posts já filtrados corretamente no App.tsx
+  const topicPosts = posts;
 
   // Calculate stats and influential users
   const influentialUsersMap = new Map<string, { user: User, count: number }>();

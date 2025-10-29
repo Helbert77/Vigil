@@ -85,16 +85,23 @@
   /* Otimizações específicas do Safari */
   -webkit-font-smoothing: antialiased;
   -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
-/* Estados de foco para acessibilidade */
-.browser-chrome-button:focus-visible,
-.browser-brave-button:focus-visible,
-.browser-trae-button:focus-visible,
-.browser-firefox-button:focus-visible,
-.browser-safari-button:focus-visible {
-  outline: 2px solid #007BFF;
-  outline-offset: 2px;
+/* Estados de foco para acessibilidade - removido outline automático */
+/* Os estilos de outline foram removidos intencionalmente para permitir controle individual por componente */
+/* Cada botão deve implementar seus próprios estilos de foco conforme necessário */
+
+/* Estilo de foco sutil para botões sem ring */
+.browser-chrome-button.focus-subtle:focus-visible,
+.browser-brave-button.focus-subtle:focus-visible,
+.browser-trae-button.focus-subtle:focus-visible,
+.browser-firefox-button.focus-subtle:focus-visible,
+.browser-safari-button.focus-subtle:focus-visible {
+  background-color: rgba(0, 123, 255, 0.1);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 
 /* Estados desabilitados */

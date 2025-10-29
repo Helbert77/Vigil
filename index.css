@@ -64,6 +64,27 @@
   background: rgba(34, 211, 238, 0.7);
 }
 
+/* Sidebar scrollbar - usa o estilo global (display: none) para ficar completamente oculto */
+/* Removidos estilos específicos para permitir que o ::-webkit-scrollbar { display: none; } global funcione */
+
+/* iOS Safari specific scrollbar behavior - removido para usar estilo global */
+@supports (-webkit-touch-callout: none) {
+  .sidebar-scrollable {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Removidos estilos de scrollbar específicos para iOS - usa o global display: none */
+}
+
+/* Android Chrome specific optimizations - removido scrollbar para usar estilo global */
+@media (max-width: 768px) and (pointer: coarse) {
+  .sidebar-scrollable {
+    /* Otimizações para touch em Android */
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+  /* Removidos estilos de scrollbar específicos para Android - usa o global display: none */
+}
+
 /* Gradient text animation */
 @keyframes gradient-shift {
   0% { background-position: 0% 50%; }
@@ -163,8 +184,20 @@
   display: none;
 }
 
+/* Firefox - scrollbar invisível global */
+* {
+  scrollbar-width: none;
+}
+
+/* Garantir que o sidebar também use o estilo global no Firefox */
+.sidebar-scrollable {
+  scrollbar-width: none;
+}
+
 /* Media queries para dispositivos móveis - Layout Flexbox responsivo */
 @media (max-width: 768px) {
+  /* Sidebar scrollbar - removidos estilos específicos para usar o global display: none */
+
   /* Container principal do header mobile */
   .profile-mobile-header-container {
     display: flex;

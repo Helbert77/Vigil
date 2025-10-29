@@ -159,10 +159,11 @@ const Rightbar: React.FC<RightbarProps> = ({
                     onClick={(e) => {
                       onNavigateTrendingTopics?.();
                     }}
-                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm transition-colors duration-200 w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded px-1"
+                    className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm transition-colors duration-200 w-full text-left focus:outline-none rounded px-1 focus-subtle"
                     style={{ color: '#007BFF' }}
                     aria-label="Mostrar mais tópicos em alta"
                     title="Ver todos os tópicos em alta"
+                    disableFocusRing={true}
                   >
                     Mostrar mais
                   </CrossBrowserButton>
@@ -205,9 +206,10 @@ const Rightbar: React.FC<RightbarProps> = ({
                 onClick={(e) => {
                   onNavigateExploreUsers?.();
                 }}
-                className="text-sm font-medium text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded px-1"
+                className="text-sm font-medium text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none rounded px-1 focus-subtle"
                 aria-label="Mostrar mais usuários para seguir"
                 title="Ver mais usuários para seguir"
+                disableFocusRing={true}
               >
                 Mostrar mais
               </CrossBrowserButton>

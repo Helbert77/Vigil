@@ -48,7 +48,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
-  const [postToCommunityOnly, setPostToCommunityOnly] = useState(true);
+  const [postToCommunityOnly, setPostToCommunityOnly] = useState(false);
   
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
@@ -66,7 +66,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   useEffect(() => {
     if (community) {
-      setPostToCommunityOnly(true);
+      setPostToCommunityOnly(false);
     }
   }, [community]);
 
@@ -121,7 +121,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
       };
     }
 
-    const finalCommunityId = community ? (postToCommunityOnly ? community.id : undefined) : selectedCommunityId;
+    const finalCommunityId = community ? (postToCommunityOnly ? undefined : community.id) : selectedCommunityId;
 
     onAddPost(text, imageUrl, videoUrl, audioUrl, poll, finalCommunityId, mediaType === 'evidence' ? evidenceItems : undefined, isSensitive);
     resetState();
@@ -590,7 +590,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
                  />
                  <label htmlFor="post-to-community" className="text-gray-600 dark:text-gray-400">
-                   Postar apenas em <span className="font-semibold">{community.name}</span>
+                   Tornar público
                  </label>
                </div>
              ) : userJoinedCommunities.length > 0 && (

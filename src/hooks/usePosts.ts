@@ -3,6 +3,7 @@ import { Post, Poll, User, Comment, EvidenceItem, Community } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 import { supabase } from '@/integrations/supabase/client';
+import { extractHashtags } from '../utils/hashtags';
 
 interface DbPost {
   id: string; content: string; image_url?: string; video_url?: string; audio_url?: string; poll_data?: Poll; evidence_board_data?: EvidenceItem[]; created_at: string; likes_count: number; comments_count: number; shares_count: number; views_count: number; community_id?: string; user_id: string; is_pinned?: boolean; media_is_sensitive?: boolean;
@@ -65,6 +66,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
             liked_by_user: dbPost.post_likes.some(l => l.user_id === appUser.id), views: dbPost.views_count || 0, isPinned: dbPost.is_pinned, user_voted_option: dbPost.poll_votes[0]?.option_index ?? null,
             media_is_sensitive: dbPost.media_is_sensitive,
             mediaIsSensitive: dbPost.media_is_sensitive,
+            tags: extractHashtags(dbPost.content),
           };
         });
         setPosts(fetchedPosts);

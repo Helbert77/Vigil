@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Icon } from '../icons/Icon';
 import { usePresence } from '@/src/contexts/PresenceContext';
 
@@ -16,6 +16,7 @@ interface AvatarProps {
 const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', userId, showStatus = false, className = '' }) => {
   const { onlineUserIds } = usePresence();
   const isOnline = userId ? onlineUserIds.includes(userId) : false;
+  const [imageError, setImageError] = useState(false);
 
   const sizeClasses: Record<typeof size, string> = {
     sm: 'h-8 w-8',
@@ -29,19 +30,27 @@ const Avatar: React.FC<AvatarProps> = ({ src, alt, size = 'md', userId, showStat
     lg: 'w-4 h-4 bottom-1 right-1',
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const renderFallback = () => (
+    <div className="h-full w-full rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+      <UserIcon />
+    </div>
+  );
+
   const renderAvatar = () => {
-    if (!src || src.trim() === '') {
-      return (
-        <div className="h-full w-full rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-          <UserIcon />
-        </div>
-      );
+    if (!src || src.trim() === '' || imageError) {
+      return renderFallback();
     }
     return (
       <img
         src={src}
         alt={alt}
         className="h-full w-full rounded-full object-cover"
+        onError={handleImageError}
+        onLoad={() => setImageError(false)}
       />
     );
   };

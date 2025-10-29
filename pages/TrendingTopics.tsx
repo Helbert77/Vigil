@@ -60,7 +60,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
   }, [trendingTopics, searchTerm, sortBy]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-light-bg via-gray-50 to-light-bg dark:from-dark-bg dark:via-gray-900 dark:to-dark-bg">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Header com botão voltar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
@@ -73,18 +73,13 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
               <ArrowLeftIcon />
               <span className="text-sm font-medium">Voltar</span>
             </button>
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full">
-                <FireIcon />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                  Acontecendo Agora
-                </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {filteredAndSortedTopics.length} tópicos em alta
-                </p>
-              </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                Acontecendo Agora
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {filteredAndSortedTopics.length} tópicos em alta
+              </p>
             </div>
           </div>
         </div>
@@ -92,13 +87,12 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
         {/* Barra de pesquisa e filtros */}
         <div className="mb-6 space-y-4">
           <div className="relative">
-            <SearchIcon />
             <input
               type="text"
               placeholder="Buscar tópicos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none"
             />
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
               <SearchIcon />
@@ -112,7 +106,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                 onClick={() => setSortBy('posts')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   sortBy === 'posts'
-                    ? 'bg-blue-500 text-white shadow-lg'
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 shadow-lg'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
@@ -122,7 +116,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                 onClick={() => setSortBy('alphabetical')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   sortBy === 'alphabetical'
-                    ? 'bg-blue-500 text-white shadow-lg'
+                    ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 shadow-lg'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
@@ -133,7 +127,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
         </div>
 
         {/* Lista completa de tópicos */}
-        <div className="grid gap-4 md:gap-6">
+        <div className="grid gap-2 md:gap-3">
           {filteredAndSortedTopics && filteredAndSortedTopics.length > 0 ? (
             filteredAndSortedTopics.map((topic, index) => {
               const originalIndex = trendingTopics.findIndex(t => t.tag === topic.tag);
@@ -142,50 +136,46 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
               return (
                 <Card 
                   key={topic.tag}
-                  className={`transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer group ${
-                    isTopThree ? 'ring-2 ring-yellow-400 dark:ring-yellow-500 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20' : ''
-                  }`}
+                  className="transform transition-all duration-300 hover:scale-[1.01] hover:shadow-lg cursor-pointer group"
                   onClick={() => onViewTag(topic.tag)}
                 >
-                  <div className="flex items-center justify-between p-4 md:p-6">
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <div className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full font-bold text-lg ${
-                        isTopThree 
-                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white shadow-lg' 
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                      }`}>
+                  <div className="flex items-center justify-between p-2 md:p-2">
+                    <div className="flex items-center space-x-2 flex-1 min-w-0">
+                      <div className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full font-bold text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                         {originalIndex + 1}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="font-bold text-lg md:text-xl text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          <h3 className="font-bold text-sm md:text-base text-gray-900 dark:text-white truncate group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
                             #{topic.tag}
                           </h3>
                           {isTopThree && (
                             <div className="flex items-center space-x-1">
-                              <FireIcon />
-                              <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
+                              <div className="text-red-500">
+                                <FireIcon />
+                              </div>
+                              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
                                 Em Alta
                               </span>
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center space-x-2 text-xs text-gray-600 dark:text-gray-400">
                           <span className="font-medium">
                             {topic.post_count.toLocaleString()} posts
                           </span>
-                          <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">
                             #{originalIndex + 1} trending
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 text-gray-400 group-hover:text-blue-500 transition-colors">
+                    <div className="flex items-center space-x-2 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">
                       <TrendingUpIcon />
-                      <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
@@ -220,11 +210,11 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
 
         {/* Informações adicionais e estatísticas */}
         <div className="mt-8 space-y-6">
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-            <div className="text-center p-6">
+          <Card className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+            <div className="text-center p-4">
               <div className="flex items-center justify-center space-x-2 mb-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Atualização em tempo real
                 </span>
               </div>
@@ -236,8 +226,8 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
 
           {filteredAndSortedTopics.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <Card className="text-center p-3">
+                <div className="text-xl font-bold text-gray-800 dark:text-gray-200">
                   {filteredAndSortedTopics.reduce((sum, topic) => sum + topic.post_count, 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -245,8 +235,8 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                 </div>
               </Card>
               
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <Card className="text-center p-3">
+                <div className="text-xl font-bold text-gray-800 dark:text-gray-200">
                   {filteredAndSortedTopics.length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -254,8 +244,8 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                 </div>
               </Card>
               
-              <Card className="text-center p-4">
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+              <Card className="text-center p-3">
+                <div className="text-xl font-bold text-gray-800 dark:text-gray-200">
                   {Math.round(filteredAndSortedTopics.reduce((sum, topic) => sum + topic.post_count, 0) / filteredAndSortedTopics.length).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">

@@ -13,6 +13,7 @@ interface CrossBrowserButtonProps {
   onFocus?: (event: React.FocusEvent<HTMLButtonElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLButtonElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
+  disableFocusRing?: boolean;
 }
 
 /**
@@ -31,6 +32,7 @@ const CrossBrowserButton: React.FC<CrossBrowserButtonProps> = ({
   onFocus,
   onBlur,
   onKeyDown,
+  disableFocusRing = false,
   ...props
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -172,7 +174,7 @@ const CrossBrowserButton: React.FC<CrossBrowserButtonProps> = ({
     const stateClasses = [];
     
     if (isPressed) stateClasses.push('active:scale-95');
-    if (isFocused) stateClasses.push('ring-2 ring-blue-500 ring-opacity-50');
+    if (isFocused && !disableFocusRing) stateClasses.push('ring-2 ring-blue-500 ring-opacity-50');
     if (disabled) stateClasses.push('opacity-50 cursor-not-allowed');
     
     // Classes específicas do navegador
