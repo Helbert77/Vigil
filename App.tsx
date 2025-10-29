@@ -242,19 +242,33 @@ const App: React.FC = () => {
     }
 
     try {
-      const { error } = await api.logout();
+      // Timeout para evitar que o logout trave indefinidamente
+      const logoutPromise = api.logout();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout no logout')), 10000)
+      );
+
+      const result = await Promise.race([logoutPromise, timeoutPromise]);
+      const error = (result as any)?.error;
 
       if (error) {
         console.warn('Ocorreu um erro durante o logout, forçando a limpeza local e redirecionamento.', error);
+        // Forçar limpeza local mesmo com erro
+        forceWebBrowserLogout();
+        return;
       } else {
         console.log('Logout bem-sucedido, redirecionando...');
       }
 
     } catch (e) {
       console.error('Erro crítico no handleLogout, forçando redirecionamento:', e);
-    } finally {
-      window.location.href = '/';
+      // Em caso de erro de rede (como net::ERR_ABORTED), forçar limpeza local
+      forceWebBrowserLogout();
+      return;
     }
+    
+    // Redirecionamento apenas se não houve erro crítico
+    window.location.href = '/';
   };
 
   const filteredContent = useMemo(() => {

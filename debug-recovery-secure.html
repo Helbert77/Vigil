@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Recovery Flow (Versão Segura)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .secure-info { background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .security-note { font-size: 0.9em; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>Debug Recovery Flow (Versão Segura)</h1>
+    
+    <div class="secure-info">
+        <strong>🔒 Melhorias de Segurança Implementadas:</strong>
+        <ul>
+            <li>Sanitização de todas as entradas de usuário</li>
+            <li>Validação de URLs e parâmetros</li>
+            <li>Uso de textContent em vez de innerHTML</li>
+            <li>Validação de email com regex</li>
+            <li>Escape de caracteres especiais</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>URL Analysis</h2>
+        <div id="url-analysis"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Hash Parameters</h2>
+        <div id="hash-params"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Query Parameters</h2>
+        <div id="query-params"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Session State</h2>
+        <div id="session-state"></div>
+    </div>
+    
+    <div class="section">
+        <h2>Test Recovery Link</h2>
+        <input type="email" id="test-email" placeholder="Digite seu email" style="width: 300px; padding: 8px;" maxlength="100">
+        <button onclick="testRecoveryFlow()" style="padding: 8px 16px; margin-left: 10px;">Enviar Link de Teste</button>
+        <div id="test-result" style="margin-top: 10px;"></div>
+        <div class="security-note">
+            ⚠️ Apenas emails válidos são aceitos. Entrada é sanitizada para prevenir XSS.
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js@2';
+        
+        const SUPABASE_URL = "https://oprqgllsqtfdyjgvgovo.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcnFnbGxzcXRmZHlqZ3Znb3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyNjIzMDQsImV4cCI6MjA3NDgzODMwNH0.MilSiXXMS3Ko_NNnfasCqFyURuD5zpZNCdbVE324_Jw";
+        
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Funções de segurança
+        function sanitizeText(text) {
+            if (typeof text !== 'string') {
+                return '';
+            }
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function createSecureElement(tag, content = '', className = '') {
+            const element = document.createElement(tag);
+            if (content) {
+                element.textContent = content;
+            }
+            if (className) {
+                element.className = className;
+            }
+            return element;
+        }
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email) && email.length <= 100;
+        }
+        
+        function isValidURL(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+        
+        function truncateString(str, maxLength = 100) {
+            if (typeof str !== 'string') return '';
+            return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+        }
+        
+        function analyzeURL() {
+            const urlAnalysis = document.getElementById('url-analysis');
+            const hashParams = document.getElementById('hash-params');
+            const queryParams = document.getElementById('query-params');
+            
+            // Limpar conteúdo anterior
+            urlAnalysis.innerHTML = '';
+            hashParams.innerHTML = '';
+            queryParams.innerHTML = '';
+            
+            // Análise da URL atual
+            const currentURL = window.location.href;
+            const hash = window.location.hash;
+            const search = window.location.search;
+            
+            // Validar e sanitizar URL
+            if (!isValidURL(currentURL)) {
+                const errorElement = createSecureElement('p', 'URL inválida detectada!', 'error');
+                urlAnalysis.appendChild(errorElement);
+                return;
+            }
+            
+            // Criar elementos de forma segura
+            const urlElement = createSecureElement('p');
+            const urlStrong = createSecureElement('strong', 'URL Completa:');
+            urlElement.appendChild(urlStrong);
+            urlElement.appendChild(document.createTextNode(' ' + truncateString(currentURL, 150)));
+            
+            const hashElement = createSecureElement('p');
+            const hashStrong = createSecureElement('strong', 'Hash:');
+            hashElement.appendChild(hashStrong);
+            hashElement.appendChild(document.createTextNode(' ' + (hash ? truncateString(hash, 100) : 'Nenhum')));
+            
+            const searchElement = createSecureElement('p');
+            const searchStrong = createSecureElement('strong', 'Query String:');
+            searchElement.appendChild(searchStrong);
+            searchElement.appendChild(document.createTextNode(' ' + (search ? truncateString(search, 100) : 'Nenhuma')));
+            
+            urlAnalysis.appendChild(urlElement);
+            urlAnalysis.appendChild(hashElement);
+            urlAnalysis.appendChild(searchElement);
+            
+            // Análise dos parâmetros do hash
+            if (hash) {
+                const hashTitle = createSecureElement('h3', 'Parâmetros do Hash:');
+                hashParams.appendChild(hashTitle);
+                
+                try {
+                    const hashWithoutSymbol = hash.substring(1);
+                    const hashParamsObj = new URLSearchParams(hashWithoutSymbol);
+                    
+                    let paramCount = 0;
+                    for (const [key, value] of hashParamsObj.entries()) {
+                        if (paramCount >= 10) { // Limitar número de parâmetros
+                            const limitElement = createSecureElement('p', 'Muitos parâmetros... (limitado a 10)', 'warning');
+                            hashParams.appendChild(limitElement);
+                            break;
+                        }
+                        
+                        const paramElement = createSecureElement('p');
+                        const keyStrong = createSecureElement('strong', truncateString(key, 50) + ':');
+                        paramElement.appendChild(keyStrong);
+                        paramElement.appendChild(document.createTextNode(' ' + truncateString(value, 100)));
+                        hashParams.appendChild(paramElement);
+                        paramCount++;
+                    }
+                    
+                    // Verificações específicas para recovery
+                    const type = hashParamsObj.get('type');
+                    const accessToken = hashParamsObj.get('access_token');
+                    const refreshToken = hashParamsObj.get('refresh_token');
+                    
+                    if (type === 'recovery') {
+                        const successElement = createSecureElement('p', '✓ Tipo de recovery detectado', 'success');
+                        hashParams.appendChild(successElement);
+                    } else {
+                        const errorElement = createSecureElement('p', '✗ Tipo de recovery NÃO detectado', 'error');
+                        hashParams.appendChild(errorElement);
+                    }
+                    
+                    if (accessToken && accessToken.length > 10) {
+                        const successElement = createSecureElement('p', '✓ Access token presente', 'success');
+                        hashParams.appendChild(successElement);
+                    } else {
+                        const errorElement = createSecureElement('p', '✗ Access token ausente', 'error');
+                        hashParams.appendChild(errorElement);
+                    }
+                    
+                    if (refreshToken && refreshToken.length > 10) {
+                        const successElement = createSecureElement('p', '✓ Refresh token presente', 'success');
+                        hashParams.appendChild(successElement);
+                    } else {
+                        const errorElement = createSecureElement('p', '✗ Refresh token ausente', 'error');
+                        hashParams.appendChild(errorElement);
+                    }
+                    
+                } catch (error) {
+                    const errorElement = createSecureElement('p', 'Erro ao processar parâmetros do hash', 'error');
+                    hashParams.appendChild(errorElement);
+                }
+            } else {
+                const noHashElement = createSecureElement('p', 'Nenhum parâmetro de hash encontrado');
+                hashParams.appendChild(noHashElement);
+            }
+            
+            // Análise dos parâmetros de query
+            if (search) {
+                const queryTitle = createSecureElement('h3', 'Parâmetros de Query:');
+                queryParams.appendChild(queryTitle);
+                
+                try {
+                    const queryParamsObj = new URLSearchParams(search);
+                    
+                    let paramCount = 0;
+                    for (const [key, value] of queryParamsObj.entries()) {
+                        if (paramCount >= 10) { // Limitar número de parâmetros
+                            const limitElement = createSecureElement('p', 'Muitos parâmetros... (limitado a 10)', 'warning');
+                            queryParams.appendChild(limitElement);
+                            break;
+                        }
+                        
+                        const paramElement = createSecureElement('p');
+                        const keyStrong = createSecureElement('strong', truncateString(key, 50) + ':');
+                        paramElement.appendChild(keyStrong);
+                        paramElement.appendChild(document.createTextNode(' ' + truncateString(value, 100)));
+                        queryParams.appendChild(paramElement);
+                        paramCount++;
+                    }
+                } catch (error) {
+                    const errorElement = createSecureElement('p', 'Erro ao processar parâmetros de query', 'error');
+                    queryParams.appendChild(errorElement);
+                }
+            } else {
+                const noQueryElement = createSecureElement('p', 'Nenhum parâmetro de query encontrado');
+                queryParams.appendChild(noQueryElement);
+            }
+        }
+        
+        async function checkSessionState() {
+            const sessionState = document.getElementById('session-state');
+            sessionState.innerHTML = '';
+            
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    const errorElement = createSecureElement('p', `Erro ao obter sessão: ${sanitizeText(error.message)}`, 'error');
+                    sessionState.appendChild(errorElement);
+                    return;
+                }
+                
+                if (session && session.user) {
+                    const successElement = createSecureElement('p', '✓ Sessão ativa encontrada', 'success');
+                    sessionState.appendChild(successElement);
+                    
+                    const userIdElement = createSecureElement('p');
+                    const userIdStrong = createSecureElement('strong', 'User ID:');
+                    userIdElement.appendChild(userIdStrong);
+                    userIdElement.appendChild(document.createTextNode(' ' + sanitizeText(session.user.id || 'N/A')));
+                    
+                    const emailElement = createSecureElement('p');
+                    const emailStrong = createSecureElement('strong', 'Email:');
+                    emailElement.appendChild(emailStrong);
+                    emailElement.appendChild(document.createTextNode(' ' + sanitizeText(session.user.email || 'N/A')));
+                    
+                    const createdElement = createSecureElement('p');
+                    const createdStrong = createSecureElement('strong', 'Criado em:');
+                    createdElement.appendChild(createdStrong);
+                    const createdDate = session.user.created_at ? new Date(session.user.created_at).toLocaleString() : 'N/A';
+                    createdElement.appendChild(document.createTextNode(' ' + createdDate));
+                    
+                    const updatedElement = createSecureElement('p');
+                    const updatedStrong = createSecureElement('strong', 'Última atualização:');
+                    updatedElement.appendChild(updatedStrong);
+                    const updatedDate = session.user.updated_at ? new Date(session.user.updated_at).toLocaleString() : 'N/A';
+                    updatedElement.appendChild(document.createTextNode(' ' + updatedDate));
+                    
+                    const expiresElement = createSecureElement('p');
+                    const expiresStrong = createSecureElement('strong', 'Token expira em:');
+                    expiresElement.appendChild(expiresStrong);
+                    const expiresDate = session.expires_at ? new Date(session.expires_at * 1000).toLocaleString() : 'N/A';
+                    expiresElement.appendChild(document.createTextNode(' ' + expiresDate));
+                    
+                    sessionState.appendChild(userIdElement);
+                    sessionState.appendChild(emailElement);
+                    sessionState.appendChild(createdElement);
+                    sessionState.appendChild(updatedElement);
+                    sessionState.appendChild(expiresElement);
+                } else {
+                    const infoElement = createSecureElement('p', 'Nenhuma sessão ativa', 'info');
+                    sessionState.appendChild(infoElement);
+                }
+            } catch (err) {
+                const errorElement = createSecureElement('p', `Erro: ${sanitizeText(err.message || 'Erro desconhecido')}`, 'error');
+                sessionState.appendChild(errorElement);
+            }
+        }
+        
+        window.testRecoveryFlow = async function() {
+            const emailInput = document.getElementById('test-email');
+            const testResult = document.getElementById('test-result');
+            
+            // Limpar resultado anterior
+            testResult.innerHTML = '';
+            
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                const errorElement = createSecureElement('p', 'Por favor, digite um email', 'error');
+                testResult.appendChild(errorElement);
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                const errorElement = createSecureElement('p', 'Por favor, digite um email válido', 'error');
+                testResult.appendChild(errorElement);
+                return;
+            }
+            
+            try {
+                const infoElement = createSecureElement('p', 'Enviando link de recovery...', 'info');
+                testResult.appendChild(infoElement);
+                
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/update-password`,
+                });
+                
+                // Limpar mensagem de carregamento
+                testResult.innerHTML = '';
+                
+                if (error) {
+                    const errorElement = createSecureElement('p', `Erro: ${sanitizeText(error.message)}`, 'error');
+                    testResult.appendChild(errorElement);
+                } else {
+                    const successElement = createSecureElement('p', `✓ Link de recovery enviado para ${sanitizeText(email)}`, 'success');
+                    testResult.appendChild(successElement);
+                    
+                    const redirectElement = createSecureElement('p');
+                    const redirectStrong = createSecureElement('strong', 'Redirect URL configurada:');
+                    redirectElement.appendChild(redirectStrong);
+                    redirectElement.appendChild(document.createTextNode(' ' + sanitizeText(`${window.location.origin}/update-password`)));
+                    
+                    const infoElement = createSecureElement('p', 'Verifique seu email e clique no link para testar o fluxo', 'info');
+                    
+                    testResult.appendChild(redirectElement);
+                    testResult.appendChild(infoElement);
+                }
+            } catch (err) {
+                testResult.innerHTML = '';
+                const errorElement = createSecureElement('p', `Erro: ${sanitizeText(err.message || 'Erro desconhecido')}`, 'error');
+                testResult.appendChild(errorElement);
+            }
+        };
+        
+        // Monitorar mudanças de autenticação
+        supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
+            
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('PASSWORD_RECOVERY event detected');
+            }
+            
+            if (event === 'SIGNED_IN' && session) {
+                console.log('User signed in during recovery flow');
+            }
+            
+            checkSessionState();
+        });
+        
+        // Executar análises iniciais
+        analyzeURL();
+        checkSessionState();
+        
+        // Atualizar a cada 10 segundos (reduzido de 5 para melhor performance)
+        setInterval(() => {
+            analyzeURL();
+            checkSessionState();
+        }, 10000);
+    </script>
+</body>
+</html>

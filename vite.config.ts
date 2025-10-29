@@ -39,8 +39,10 @@ export default defineConfig(({ mode }) => {
         })
       ],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        // Removido: Chaves API não devem ser expostas no frontend
+        // Use o serviço SecureApiService para chamadas seguras
+        'process.env.NODE_ENV': JSON.stringify(mode),
+        'process.env.APP_VERSION': JSON.stringify(process.env.npm_package_version || '1.0.0')
       },
       resolve: {
         alias: {

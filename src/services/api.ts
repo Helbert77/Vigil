@@ -119,7 +119,14 @@ export const logout = async () => {
     localStorage.removeItem('keepLoggedIn');
     localStorage.removeItem('sessionExpiry');
     
-    const { error } = await supabase.auth.signOut();
+    // Tentar fazer logout do Supabase com timeout
+    const signOutPromise = supabase.auth.signOut();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout na requisição de logout')), 8000)
+    );
+
+    const result = await Promise.race([signOutPromise, timeoutPromise]);
+    const error = (result as any)?.error;
     
     // Tratar AuthSessionMissingError como um sucesso, pois o usuário já está deslogado
     if (error && error.name !== 'AuthSessionMissingError') {
@@ -131,10 +138,23 @@ export const logout = async () => {
     // Se não houver erro ou for AuthSessionMissingError, considerar sucesso
     return { error: null };
 
-  } catch (networkError) {
+  } catch (networkError: unknown) {
     console.error('Erro de rede durante o logout:', networkError);
-    // Retornar erro para que o App.tsx possa forçar a limpeza local
-    return { error: networkError };
+    
+    const errorMessage = networkError instanceof Error ? networkError.message : String(networkError);
+    const errorName = networkError instanceof Error ? networkError.name : '';
+    
+    // Para erros de rede específicos (como net::ERR_ABORTED), ainda limpar dados locais
+    if (errorMessage.includes('ERR_ABORTED') || 
+        errorMessage.includes('Timeout') ||
+        errorName === 'AbortError') {
+      console.log('Erro de rede detectado, mas dados locais foram limpos');
+      // Retornar sucesso parcial - dados locais limpos mesmo com erro de rede
+      return { error: null };
+    }
+    
+    // Para outros tipos de erro, retornar erro para que o App.tsx possa forçar a limpeza local
+    return { error: networkError instanceof Error ? networkError : new Error(String(networkError)) };
   }
 };
 export const updateUserPassword = (newPassword: string) => 
@@ -612,7 +632,7 @@ export const sendDeletionEmail = async (
     }
 
     return { data, error: null };
-  } catch (error) {
+  } catch (error: unknown) {
      console.error('Error sending deletion email:', error);
      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
    }

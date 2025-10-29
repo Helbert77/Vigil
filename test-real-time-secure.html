@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Funcionalidades em Tempo Real - Vigil (Versão Segura)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .checklist {
+            list-style-type: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            margin-right: 10px;
+        }
+        .checklist li.completed:before {
+            content: "✅ ";
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+        .progress-fill.complete {
+            background-color: #28a745;
+        }
+        .progress-fill.incomplete {
+            background-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Teste de Funcionalidades em Tempo Real - Vigil (Versão Segura)</h1>
+        <p>Este arquivo ajuda a verificar se as correções nas funcionalidades em tempo real estão funcionando corretamente.</p>
+        
+        <div class="instructions">
+            <h4>📋 Instruções Gerais:</h4>
+            <ol>
+                <li>Certifique-se de que o servidor está rodando (<code>npm run dev</code>)</li>
+                <li>Abra a aplicação em <strong>duas abas diferentes</strong> do navegador</li>
+                <li>Faça login com contas diferentes em cada aba (ou use a mesma conta)</li>
+                <li>Execute os testes abaixo em sequência</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔔 Teste 1: Sistema de Notificações</h3>
+            <div class="instructions">
+                <p><strong>Como testar:</strong></p>
+                <ol>
+                    <li>Aba 1: Vá para a página de notificações</li>
+                    <li>Aba 2: Siga o usuário da Aba 1, curta um post, ou comente</li>
+                    <li>Aba 1: Verifique se a notificação aparece instantaneamente</li>
+                </ol>
+            </div>
+            
+            <ul class="checklist">
+                <li id="notif-1">Notificações aparecem instantaneamente</li>
+                <li id="notif-2">Contador de notificações atualiza em tempo real</li>
+                <li id="notif-3">Não há logs excessivos no console</li>
+                <li id="notif-4">Interface permanece responsiva</li>
+            </ul>
+            
+            <button onclick="openApp('/notifications')">Abrir Notificações</button>
+            <button onclick="toggleCheck('notif-1')">✅ Teste 1</button>
+            <button onclick="toggleCheck('notif-2')">✅ Teste 2</button>
+            <button onclick="toggleCheck('notif-3')">✅ Teste 3</button>
+            <button onclick="toggleCheck('notif-4')">✅ Teste 4</button>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 Teste 2: Sistema de Mensagens</h3>
+            <div class="instructions">
+                <p><strong>Como testar:</strong></p>
+                <ol>
+                    <li>Aba 1: Vá para a página de mensagens</li>
+                    <li>Aba 2: Vá para a página de mensagens</li>
+                    <li>Abra a mesma conversa nas duas abas</li>
+                    <li>Envie mensagens alternadamente em cada aba</li>
+                </ol>
+            </div>
+            
+            <ul class="checklist">
+                <li id="msg-1">Mensagens aparecem instantaneamente na outra aba</li>
+                <li id="msg-2">Contador de mensagens não lidas atualiza</li>
+                <li id="msg-3">Scroll automático funciona corretamente</li>
+                <li id="msg-4">Não há duplicação de mensagens</li>
+                <li id="msg-5">Status "Enviando..." funciona corretamente</li>
+            </ul>
+            
+            <button onclick="openApp('/messages')">Abrir Mensagens</button>
+            <button onclick="toggleCheck('msg-1')">✅ Teste 1</button>
+            <button onclick="toggleCheck('msg-2')">✅ Teste 2</button>
+            <button onclick="toggleCheck('msg-3')">✅ Teste 3</button>
+            <button onclick="toggleCheck('msg-4')">✅ Teste 4</button>
+            <button onclick="toggleCheck('msg-5')">✅ Teste 5</button>
+        </div>
+
+        <div class="test-section">
+            <h3>👥 Teste 3: Sistema de Presença</h3>
+            <div class="instructions">
+                <p><strong>Como testar:</strong></p>
+                <ol>
+                    <li>Aba 1: Observe os avatares com indicadores de status online</li>
+                    <li>Aba 2: Faça logout ou feche a aba</li>
+                    <li>Aba 1: Verifique se o status muda para offline</li>
+                </ol>
+            </div>
+            
+            <ul class="checklist">
+                <li id="presence-1">Indicadores de status online funcionam</li>
+                <li id="presence-2">Status atualiza quando usuário sai</li>
+                <li id="presence-3">Status atualiza quando usuário entra</li>
+            </ul>
+            
+            <button onclick="toggleCheck('presence-1')">✅ Teste 1</button>
+            <button onclick="toggleCheck('presence-2')">✅ Teste 2</button>
+            <button onclick="toggleCheck('presence-3')">✅ Teste 3</button>
+        </div>
+
+        <div class="test-section">
+            <h3>⚡ Teste 4: Performance e Console</h3>
+            <div class="instructions">
+                <p><strong>Como testar:</strong></p>
+                <ol>
+                    <li>Abra o DevTools (F12)</li>
+                    <li>Vá para a aba Console</li>
+                    <li>Navegue pela aplicação e use as funcionalidades</li>
+                    <li>Verifique se não há logs excessivos</li>
+                </ol>
+            </div>
+            
+            <ul class="checklist">
+                <li id="perf-1">Console limpo (sem logs desnecessários)</li>
+                <li id="perf-2">Aplicação responsiva</li>
+                <li id="perf-3">Sem erros de JavaScript</li>
+                <li id="perf-4">Conexões WebSocket estáveis</li>
+            </ul>
+            
+            <button onclick="openDevTools()">Abrir DevTools</button>
+            <button onclick="toggleCheck('perf-1')">✅ Teste 1</button>
+            <button onclick="toggleCheck('perf-2')">✅ Teste 2</button>
+            <button onclick="toggleCheck('perf-3')">✅ Teste 3</button>
+            <button onclick="toggleCheck('perf-4')">✅ Teste 4</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📊 Resumo dos Testes</h3>
+        <div id="summary">
+            <p>Complete os testes acima para ver o resumo.</p>
+        </div>
+        <button onclick="generateSummary()">Gerar Resumo</button>
+        <button onclick="resetTests()">Resetar Testes</button>
+    </div>
+
+    <script>
+        // Função de sanitização para prevenir XSS
+        function sanitizeText(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Função segura para criar elementos DOM
+        function createSecureElement(tag, content, className = '') {
+            const element = document.createElement(tag);
+            if (content) {
+                element.textContent = content;
+            }
+            if (className) {
+                element.className = className;
+            }
+            return element;
+        }
+
+        function toggleCheck(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.classList.toggle('completed');
+                updateSummary();
+            }
+        }
+
+        function openApp(path = '') {
+            // Validação de entrada para prevenir XSS
+            const allowedPaths = ['/notifications', '/messages', ''];
+            if (!allowedPaths.includes(path)) {
+                console.error('Caminho não permitido:', path);
+                return;
+            }
+            window.open(`http://localhost:3000${path}`, '_blank');
+        }
+
+        function openDevTools() {
+            alert('Pressione F12 para abrir o DevTools e vá para a aba Console');
+        }
+
+        function updateSummary() {
+            const total = document.querySelectorAll('.checklist li').length;
+            const completed = document.querySelectorAll('.checklist li.completed').length;
+            const percentage = Math.round((completed / total) * 100);
+            
+            const summaryElement = document.getElementById('summary');
+            
+            // Limpar conteúdo anterior
+            summaryElement.innerHTML = '';
+            
+            // Criar elementos de forma segura
+            const progressText = createSecureElement('p');
+            const strongElement = createSecureElement('strong', 'Progresso:');
+            progressText.appendChild(strongElement);
+            progressText.appendChild(document.createTextNode(` ${completed}/${total} testes concluídos (${percentage}%)`));
+            
+            const progressContainer = createSecureElement('div', '', 'progress-bar');
+            const progressFill = createSecureElement('div', '', percentage === 100 ? 'progress-fill complete' : 'progress-fill incomplete');
+            progressFill.style.width = `${percentage}%`;
+            
+            progressContainer.appendChild(progressFill);
+            summaryElement.appendChild(progressText);
+            summaryElement.appendChild(progressContainer);
+        }
+
+        function generateSummary() {
+            const sections = ['notif', 'msg', 'presence', 'perf'];
+            const summaryElement = document.getElementById('summary');
+            
+            // Limpar conteúdo anterior
+            summaryElement.innerHTML = '';
+            
+            const reportTitle = createSecureElement('h4', '📋 Relatório de Testes:');
+            summaryElement.appendChild(reportTitle);
+            
+            sections.forEach(section => {
+                const items = document.querySelectorAll(`[id^="${section}-"]`);
+                const completed = document.querySelectorAll(`[id^="${section}-"].completed`);
+                const sectionNames = {
+                    'notif': 'Notificações',
+                    'msg': 'Mensagens',
+                    'presence': 'Presença',
+                    'perf': 'Performance'
+                };
+                
+                const sectionName = sectionNames[section];
+                const isPassed = completed.length === items.length;
+                
+                const reportLine = createSecureElement('p');
+                const strongElement = createSecureElement('strong', `${sectionName}:`);
+                reportLine.appendChild(strongElement);
+                reportLine.appendChild(document.createTextNode(` ${completed.length}/${items.length} `));
+                
+                const statusSpan = createSecureElement('span', isPassed ? '✅ PASSOU' : '❌ FALHOU', 
+                    isPassed ? 'status success' : 'status error');
+                reportLine.appendChild(statusSpan);
+                
+                summaryElement.appendChild(reportLine);
+            });
+        }
+
+        function resetTests() {
+            document.querySelectorAll('.checklist li').forEach(item => {
+                item.classList.remove('completed');
+            });
+            updateSummary();
+        }
+
+        // Inicializar
+        updateSummary();
+    </script>
+</body>
+</html>
