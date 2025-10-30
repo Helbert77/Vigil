@@ -7,6 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import Tooltip from '@/components/common/Tooltip';
 import MentionSuggestions from '@/src/components/common/MentionSuggestions';
+import EmojiStickerPicker from '@/src/components/EmojiStickerPicker';
+import { EmojiData } from '@/src/data/emojis';
+import { StickerData } from '@/src/data/stickers';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
@@ -54,6 +57,17 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
   
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
+  
+  // Emoji and Sticker state
+  const [recentEmojis, setRecentEmojis] = useState<EmojiData[]>([]);
+  const [recentStickers, setRecentStickers] = useState<StickerData[]>([]);
+  const [favoriteEmojis, setFavoriteEmojis] = useState<EmojiData[]>([]);
+  const [favoriteStickers, setFavoriteStickers] = useState<StickerData[]>([]);
+  const [preferences, setPreferences] = useState({
+    skinTone: 'default',
+    enableAnimations: true,
+    autoSave: true
+  });
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -293,15 +307,30 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     evidenceFileInputRef.current?.click();
   };
 
-  const handleEmojiSelect = (emoji: string) => {
+  const handleEmojiSelect = (emoji: EmojiData) => {
     if(textareaRef.current){
         const start = textareaRef.current.selectionStart;
         const end = textareaRef.current.selectionEnd;
-        const newText = text.substring(0, start) + emoji + text.substring(end);
+        const newText = text.substring(0, start) + emoji.emoji + text.substring(end);
         setText(newText);
         textareaRef.current.focus();
         setTimeout(() => {
-          textareaRef.current?.setSelectionRange(start + emoji.length, start + emoji.length)
+          textareaRef.current?.setSelectionRange(start + emoji.emoji.length, start + emoji.emoji.length)
+        }, 0);
+    }
+  };
+
+  const handleStickerSelect = (sticker: StickerData) => {
+    // For stickers, we'll add them as a special format in the text
+    const stickerText = `[sticker:${sticker.name}]`;
+    if(textareaRef.current){
+        const start = textareaRef.current.selectionStart;
+        const end = textareaRef.current.selectionEnd;
+        const newText = text.substring(0, start) + stickerText + text.substring(end);
+        setText(newText);
+        textareaRef.current.focus();
+        setTimeout(() => {
+          textareaRef.current?.setSelectionRange(start + stickerText.length, start + stickerText.length)
         }, 0);
     }
   };
@@ -626,11 +655,22 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
                  )}
              </div>
              {showEmojiPicker && (
-                 <div className="absolute top-full left-0 mt-2 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg p-2 flex flex-wrap w-48 z-10">
-                     {EMOJIS.map((emoji: string) => (
-                         <button key={emoji} onClick={() => handleEmojiSelect(emoji)} className="text-xl p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">{emoji}</button>
-                     ))}
-                 </div>
+                 <EmojiStickerPicker
+                   onEmojiSelect={handleEmojiSelect}
+                   onStickerSelect={handleStickerSelect}
+                   onClose={() => setShowEmojiPicker(false)}
+                   recentEmojis={recentEmojis}
+                   recentStickers={recentStickers}
+                   favoriteEmojis={favoriteEmojis}
+                   favoriteStickers={favoriteStickers}
+                   preferences={preferences}
+                   enableVirtualization={true}
+                   enableOptimizations={true}
+                   enableAutoUpdate={true}
+                   showUpdateNotifications={true}
+                   maxHeight={400}
+                   theme="dark"
+                 />
              )}
           </div>
          <div className="flex items-center space-x-3">

@@ -7,6 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '../..//hooks/useToast';
 import Tooltip from '../common/Tooltip';
 import MentionSuggestions from '@/src/components/common/MentionSuggestions';
+import EmojiStickerPicker from '@/src/components/EmojiStickerPicker';
+import { useEmojiSticker } from '@/src/hooks/useEmojiSticker';
+import { EmojiData } from '@/src/data/emojis';
+import { StickerData } from '@/src/data/stickers';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
@@ -62,7 +66,16 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
   const evidenceFileInputRef = useRef<HTMLInputElement>(null);
   const [currentItemIdForUpload, setCurrentItemIdForUpload] = useState<string | null>(null);
 
-  const EMOJIS = ['👍', '🔥', '🤔', '😂', '💡', '🤯', '👽', '🛸', '👁️', '📜', '📡', '💥'];
+  // Hook para gerenciar emojis e figurinhas
+  const {
+    recentEmojis,
+    recentStickers,
+    favoriteEmojis,
+    favoriteStickers,
+    preferences,
+    addToRecentEmojis,
+    addToRecentStickers
+  } = useEmojiSticker();
 
   useEffect(() => {
     if (community) {
@@ -274,16 +287,40 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     evidenceFileInputRef.current?.click();
   };
 
-  const handleEmojiSelect = (emoji: string) => {
-    if(textareaRef.current){
-        const start = textareaRef.current.selectionStart;
-        const end = textareaRef.current.selectionEnd;
-        const newText = text.substring(0, start) + emoji + text.substring(end);
-        setText(newText);
-        textareaRef.current.focus();
-        setTimeout(() => {
-          textareaRef.current?.setSelectionRange(start + emoji.length, start + emoji.length)
-        }, 0);
+  // Handlers para o novo sistema de emojis e figurinhas
+  const handleEmojiSelect = (emojiData: EmojiData) => {
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const newText = text.substring(0, start) + emojiData.emoji + text.substring(end);
+      setText(newText);
+      textareaRef.current.focus();
+      setTimeout(() => {
+        textareaRef.current?.setSelectionRange(start + emojiData.emoji.length, start + emojiData.emoji.length);
+      }, 0);
+      
+      // Adicionar aos recentes
+      addToRecentEmojis(emojiData);
+      setShowEmojiPicker(false);
+    }
+  };
+
+  const handleStickerSelect = (stickerData: StickerData) => {
+    // Para stickers, vamos adicionar como uma referência especial no texto
+    if (textareaRef.current) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      const stickerRef = `[sticker:${stickerData.id}]`;
+      const newText = text.substring(0, start) + stickerRef + text.substring(end);
+      setText(newText);
+      textareaRef.current.focus();
+      setTimeout(() => {
+        textareaRef.current?.setSelectionRange(start + stickerRef.length, start + stickerRef.length);
+      }, 0);
+      
+      // Adicionar aos recentes
+      addToRecentStickers(stickerData);
+      setShowEmojiPicker(false);
     }
   };
 
@@ -572,10 +609,21 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
                  )}
              </div>
              {showEmojiPicker && (
-                 <div className="absolute top-full left-0 mt-2 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg p-2 flex flex-wrap w-48 z-10">
-                     {EMOJIS.map((emoji: string) => (
-                         <button key={emoji} onClick={() => handleEmojiSelect(emoji)} className="text-xl p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded">{emoji}</button>
-                     ))}
+                 <div className="absolute top-full left-0 mt-2 z-10">
+                     <EmojiStickerPicker
+                         onEmojiSelect={handleEmojiSelect}
+                         onStickerSelect={handleStickerSelect}
+                         onClose={() => setShowEmojiPicker(false)}
+                         recentEmojis={recentEmojis}
+                         recentStickers={recentStickers}
+                         favoriteEmojis={favoriteEmojis}
+                         favoriteStickers={favoriteStickers}
+                         preferences={{
+                           skinTone: preferences.defaultSkinTone,
+                           enableAnimations: preferences.showAnimatedStickers,
+                           autoSave: preferences.autoSaveRecents
+                         }}
+                     />
                  </div>
              )}
           </div>

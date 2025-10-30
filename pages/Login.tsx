@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { LogoIcon } from '@/components/icons/LogoIcon';
 import { Icon } from '@/components/icons/Icon';
+import { EyeIcon } from '@/components/icons/EyeIcon';
+import { EyeOffIcon } from '@/components/icons/EyeOffIcon';
 
 // Ícones para os cartões de recursos
 const UsersIcon = () => <Icon className="h-8 w-8 mb-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -33,6 +35,10 @@ const Login: React.FC = () => {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados para controlar visibilidade das senhas
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -206,11 +212,53 @@ const Login: React.FC = () => {
             </div>
             <div>
               <label htmlFor="password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
-              <input id="password-signup" name="password" type="password" required className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <input 
+                  id="password-signup" 
+                  name="password" 
+                  type={showPassword ? "text" : "password"} 
+                  required 
+                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <label htmlFor="confirm-password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar Senha</label>
-              <input id="confirm-password-signup" name="confirmPassword" type="password" required className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              <div className="relative">
+                <input 
+                  id="confirm-password-signup" 
+                  name="confirmPassword" 
+                  type={showConfirmPassword ? "text" : "password"} 
+                  required 
+                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                  )}
+                </button>
+              </div>
             </div>
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             <button type="submit" disabled={loading} className="w-full py-2 px-4 rounded-md shadow-sm text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50">
@@ -237,7 +285,29 @@ const Login: React.FC = () => {
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" required className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <div className="relative">
+              <input 
+                id="password" 
+                name="password" 
+                type={showPassword ? "text" : "password"} 
+                autoComplete="current-password" 
+                required 
+                className="mt-1 appearance-none block w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                ) : (
+                  <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
