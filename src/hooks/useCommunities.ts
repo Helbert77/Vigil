@@ -15,7 +15,7 @@ export const useCommunities = (appUser: User | null) => {
     try {
       const { data, error } = await api.fetchCommunities();
       if (error) {
-        console.error('[useCommunities] Error fetching communities:', error);
+        // Error log removed for production
         throw error;
       }
       const safeCommunities = data.map((c: any) => ({ 
@@ -26,7 +26,7 @@ export const useCommunities = (appUser: User | null) => {
       })) as Community[];
       setCommunities(safeCommunities);
     } catch (error) {
-      console.error('[useCommunities] Failed to load communities:', error);
+      // Error log removed for production
       addToast('Erro ao carregar comunidades.', 'error');
     }
   }, [addToast]);
@@ -36,19 +36,19 @@ export const useCommunities = (appUser: User | null) => {
       const response = await api.fetchTrendingTopics();
       
       if (response.error) {
-        console.error('[useCommunities] Error fetching trending topics:', response.error);
+        // Error log removed for production
         throw response.error;
       }
       
       const topicsData = response.data || [];
       
       if (topicsData.length === 0) {
-        console.warn('[useCommunities] No trending topics found - this might be normal if there are no recent posts with hashtags');
+        // Warning log removed for production
       }
       
       setTrendingTopics(topicsData as TrendingTopic[]);
     } catch (error) {
-      console.error('[useCommunities] Failed to fetch trending topics:', error);
+      // Error log removed for production
       setTrendingTopics([]);
     }
   }, []);
@@ -61,13 +61,13 @@ export const useCommunities = (appUser: User | null) => {
     try {
       const { data, error } = await api.fetchJoinedCommunityIds(appUser.id);
       if (error) {
-        console.error('[useCommunities] Error fetching joined communities:', error);
+        // Error log removed for production
         throw error;
       }
       const joinedIds = data.map((item: { community_id: string }) => item.community_id);
       setJoinedCommunityIds(joinedIds);
     } catch (error) {
-      console.error('[useCommunities] Failed to fetch joined communities:', error);
+      // Error log removed for production
       addToast('Erro ao carregar comunidades que você participa.', 'error');
     }
   }, [appUser, addToast]);
@@ -155,7 +155,7 @@ export const useCommunities = (appUser: User | null) => {
       
       const { error: joinError } = await api.joinCommunity(appUser.id, id);
       if (joinError) { 
-        console.error('[useCommunities] Failed to join created community:', joinError);
+        // Error log removed for production
         addToast(`Comunidade criada, mas falha ao entrar.`, 'error'); 
       } else { 
         addToast(`Comunidade "${name}" criada!`, 'success'); 
@@ -164,9 +164,9 @@ export const useCommunities = (appUser: User | null) => {
       fetchInitialData();
       fetchJoinedCommunities();
       return data.id;
-    } catch (error: any) {
-      console.error('[useCommunities] Error creating community:', error);
-      addToast(`Erro ao criar comunidade: ${error.message}`, 'error');
+    } catch (error) {
+      // Error log removed for production
+      addToast('Erro ao criar comunidade.', 'error');
       return null;
     }
   }, [appUser, addToast, fetchInitialData, fetchJoinedCommunities]);

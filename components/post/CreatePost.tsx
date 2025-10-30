@@ -146,7 +146,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error(`Error uploading ${fileMainType}:`, uploadError);
+      // Error log removed for production
       addToast(`Falha ao enviar ${fileMainType}. Por favor, tente novamente.`, 'error');
       setIsUploading(false);
       return;
@@ -250,7 +250,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
       .upload(filePath, file);
 
     if (uploadError) {
-      console.error(`Error uploading ${fileType}:`, uploadError);
+      // Error log removed for production
       addToast(`Falha ao enviar ${fileType}. Tente novamente.`, 'error');
     } else {
       const { data } = supabase.storage

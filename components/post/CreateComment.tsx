@@ -67,7 +67,7 @@ const CreateComment: React.FC<CreateCommentProps> = ({ user, postId, onAddCommen
     const { error: uploadError } = await supabase.storage.from('posts-media').upload(filePath, file);
 
     if (uploadError) {
-      console.error('Error uploading image:', uploadError);
+      // Error log removed for production
       addToast('Falha ao enviar imagem. Tente novamente.', 'error');
       setIsUploading(false);
       return;
@@ -204,4 +204,4 @@ const CreateComment: React.FC<CreateCommentProps> = ({ user, postId, onAddCommen
   );
 };
 
-export default CreateComment;
+export default React.memo(CreateComment);

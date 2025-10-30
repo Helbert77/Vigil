@@ -86,7 +86,10 @@ const Search: React.FC<SearchProps> = ({
     return result;
   }, [allUsers, lowercasedQuery, followingOnlyFilter, followedUserIds]);
 
-  const userJoinedCommunities = communities.filter(c => joinedCommunityIds.includes(c.id));
+  const userJoinedCommunities = useMemo(() => 
+    communities.filter(c => joinedCommunityIds.includes(c.id)),
+    [communities, joinedCommunityIds]
+  );
 
   interface TabButtonProps {
     label: string;

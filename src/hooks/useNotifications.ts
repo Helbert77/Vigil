@@ -24,7 +24,7 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
       }));
       setNotifications(formattedNotifications);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Error log removed for production
     }
   }, [appUser]);
 
@@ -71,8 +71,7 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
     try {
       await api.markAllNotificationsAsRead(appUser.id);
     } catch (error) {
-      // Silently fail, not critical for user
-      console.error('Failed to mark notifications as read:', error);
+      // Silently fail, not critical for user - error log removed for production
     }
   }, [appUser, unreadNotificationsCount]);
 

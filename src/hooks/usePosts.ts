@@ -72,7 +72,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         setPosts(fetchedPosts);
       }
     } catch (error) {
-      console.error('Error fetching posts:', error);
+      // Error log removed for production
       addToast('Erro ao carregar posts.', 'error');
     } finally {
       setIsPostsLoading(false);
@@ -110,7 +110,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
       if (error) throw error;
       setSavedPostIds(data.map((item: { post_id: string }) => item.post_id));
     } catch (error) {
-      console.error('Error fetching saved posts:', error);
+      // Error log removed for production
     }
   }, [appUser]);
 
@@ -158,8 +158,8 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
           return;
         }
       } catch (error) {
-        console.error('Moderation error:', error);
-        addToast('Não foi possível verificar o conteúdo. Tente novamente.', 'error');
+         // Error log removed for production
+         addToast('Não foi possível verificar o conteúdo. Tente novamente.', 'error');
         return;
       }
     }
@@ -360,8 +360,8 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
           return;
         }
       } catch (error) {
-        console.error('Moderation error:', error);
-        addToast('Não foi possível verificar o conteúdo do comentário. Tente novamente.', 'error');
+         // Error log removed for production
+         addToast('Não foi possível verificar o conteúdo do comentário. Tente novamente.', 'error');
         return;
       }
     }
@@ -394,6 +394,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
       }
       await sendMentionNotifications(commentText, postId);
     } catch (error) {
+      // Error log removed for production
       addToast('Erro ao adicionar comentário.', 'error');
     }
   }, [appUser, addToast, fetchPosts, posts, sendMentionNotifications]);
@@ -409,6 +410,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         await sendMentionNotifications(newText, post.id);
       }
     } catch (error) {
+      // Error log removed for production
       addToast('Erro ao editar comentário.', 'error');
     }
   }, [addToast, fetchPosts, posts, sendMentionNotifications]);
@@ -420,7 +422,8 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
       addToast('Comentário apagado.', 'success');
       fetchPosts();
     } catch (error) {
-      addToast('Erro ao apagar comentário.', 'error');
+      // Error log removed for production
+      addToast('Erro de moderação. Tente novamente.', 'error');
     }
   }, [addToast, fetchPosts]);
 
@@ -432,8 +435,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         await api.incrementCommentView(id);
       }
     } catch (error) {
-      // Silently fail, not critical for user
-      console.error(`Failed to increment view for ${type} ${id}`, error);
+      // Error log removed for production
     }
   }, []);
 

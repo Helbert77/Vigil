@@ -77,10 +77,7 @@ const App: React.FC = () => {
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
 
   useEffect(() => {
-    console.log('%c[App.tsx] Estado do usuário atualizado:', 'color: magenta; font-weight: bold;', appUser);
-    if (appUser) {
-      console.log(`%c[App.tsx] A função atual do usuário é: ${appUser.role}`, 'color: magenta; font-weight: bold;');
-    }
+    // User state updated - logs removed for production
   }, [appUser]);
 
   const scrollToTop = () => {
@@ -129,7 +126,7 @@ const App: React.FC = () => {
       if (error) throw error;
       setActiveMembers(data as ActiveMember[]);
     } catch (error) {
-      console.error("Failed to refresh active members", error);
+      // Error handling - log removed for production
     }
   }, []);
 

@@ -364,11 +364,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
     setIsEditing(false);
   };
 
-  const isFollowing = followedUserIds.includes(post.user.id);
-  const isCurrentUser = post.user.id === user.id;
+  const isFollowing = useMemo(() => followedUserIds.includes(post.user.id), [followedUserIds, post.user.id]);
+  const isCurrentUser = useMemo(() => post.user.id === user.id, [post.user.id, user.id]);
   // CORREÇÃO: A lógica agora verifica corretamente se deve mostrar o aviso
   // Mostra o aviso SE: o post tem mídia sensível E o usuário NÃO quer ver conteúdo sensível E a mídia ainda não foi revelada
-  const showSensitiveWarning = post.media_is_sensitive && !user.showSensitiveContent && !isMediaVisible;
+  const showSensitiveWarning = useMemo(() => 
+    post.media_is_sensitive && !user.showSensitiveContent && !isMediaVisible,
+    [post.media_is_sensitive, user.showSensitiveContent, isMediaVisible]
+  );
 
   return (
     <>
@@ -636,4 +639,4 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
   );
 };
 
-export default PostCard;
+export default memo(PostCard);

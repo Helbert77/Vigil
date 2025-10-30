@@ -147,10 +147,8 @@ const AppContent: React.FC = () => {
 
   // Effects
   useEffect(() => {
-    console.log('%c[App.tsx] Estado do usuário atualizado:', 'color: magenta; font-weight: bold;', appUser);
-    if (appUser) {
-      console.log(`%c[App.tsx] A função atual do usuário é: ${appUser.role}`, 'color: magenta; font-weight: bold;');
-    }
+    // User state log removed for production
+    // User role log removed for production
   }, [appUser]);
 
   // Splash screen logic
@@ -179,15 +177,15 @@ const AppContent: React.FC = () => {
       );
 
       const result = await Promise.race([logoutPromise, timeoutPromise]);
-      const error = (result as any)?.error;
+      const error = (result as { error?: string })?.error;
 
       if (error) {
-        console.warn('Erro durante o logout, mas continuando com redirecionamento:', error);
+        // Warning log removed for production
       }
       
       window.location.reload();
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      // Error log removed for production
       // Mesmo com erro, forçar redirecionamento para garantir que o usuário seja deslogado
       window.location.reload();
     }

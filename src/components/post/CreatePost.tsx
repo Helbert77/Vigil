@@ -331,6 +331,16 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     }, 1500);
   };
 
+  const filteredMentionSuggestions = React.useMemo(() => {
+    if (!mentionQuery) return [];
+    return allUsers
+      .filter(u => 
+        u.username.toLowerCase().includes(mentionQuery.toLowerCase()) || 
+        u.name.toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+      .slice(0, 5);
+  }, [allUsers, mentionQuery]);
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setText(newText);
@@ -342,14 +352,14 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     if (mentionMatch) {
       const query = mentionMatch[1].toLowerCase();
       setMentionQuery(query);
-      setMentionSuggestions(
-        allUsers.filter(u => u.username.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)).slice(0, 5)
-      );
     } else {
       setMentionQuery(null);
-      setMentionSuggestions([]);
     }
   };
+
+  React.useEffect(() => {
+    setMentionSuggestions(filteredMentionSuggestions);
+  }, [filteredMentionSuggestions]);
 
   const handleMentionSelect = (selectedUser: User) => {
     if (textareaRef.current) {
@@ -380,7 +390,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   const isPostDisabled = (!text.trim() && !imageUrl && !videoUrl && !audioUrl && !mediaType) || isGenerating || isUploading || isOverLimit;
 
-  const userJoinedCommunities = communities.filter(c => joinedCommunityIds.includes(c.id));
+  const userJoinedCommunities = React.useMemo(() => 
+    communities.filter(c => joinedCommunityIds.includes(c.id)),
+    [communities, joinedCommunityIds]
+  );
 
   return (
     <Card className="mb-6">

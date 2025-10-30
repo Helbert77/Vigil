@@ -22,20 +22,29 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
   query, users, communities, topics,
   onNavigateToUser, onNavigateToCommunity, onNavigateToTopic, onGoToAdvancedSearch
 }) => {
-  const lowercasedQuery = query.toLowerCase();
+  const lowercasedQuery = React.useMemo(() => query.toLowerCase(), [query]);
 
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(lowercasedQuery) ||
-    u.username.toLowerCase().includes(lowercasedQuery)
-  ).slice(0, 3);
+  const filteredUsers = React.useMemo(() => 
+    users.filter(u =>
+      u.name.toLowerCase().includes(lowercasedQuery) ||
+      u.username.toLowerCase().includes(lowercasedQuery)
+    ).slice(0, 3),
+    [users, lowercasedQuery]
+  );
 
-  const filteredCommunities = communities.filter(c =>
-    c.name.toLowerCase().includes(lowercasedQuery)
-  ).slice(0, 2);
+  const filteredCommunities = React.useMemo(() =>
+    communities.filter(c =>
+      c.name.toLowerCase().includes(lowercasedQuery)
+    ).slice(0, 2),
+    [communities, lowercasedQuery]
+  );
 
-  const filteredTopics = topics.filter(t =>
-    t.tag.toLowerCase().includes(lowercasedQuery)
-  ).slice(0, 2);
+  const filteredTopics = React.useMemo(() =>
+    topics.filter(t =>
+      t.tag.toLowerCase().includes(lowercasedQuery)
+    ).slice(0, 2),
+    [topics, lowercasedQuery]
+  );
 
   return (
     <div className="absolute top-full mt-2 w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-20 max-h-96 overflow-y-auto">

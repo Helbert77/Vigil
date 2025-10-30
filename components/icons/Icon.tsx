@@ -4,7 +4,7 @@ interface IconProps extends React.SVGProps<SVGSVGElement> {
     children: React.ReactNode;
 }
 
-export const Icon: React.FC<IconProps> = ({ children, width, height, ...props }) => (
+export const Icon: React.FC<IconProps> = React.memo(({ children, width, height, ...props }) => (
     <svg 
         xmlns="http://www.w3.org/2000/svg" 
         width={width || "24"} // Usa a prop width se fornecida, caso contrário, 24
@@ -19,4 +19,4 @@ export const Icon: React.FC<IconProps> = ({ children, width, height, ...props })
     >
         {children}
     </svg>
-);
+));

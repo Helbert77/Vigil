@@ -123,4 +123,4 @@ const TheoryAnalysisModal: React.FC<TheoryAnalysisModalProps> = ({ postText, onC
   );
 };
 
-export default TheoryAnalysisModal;
+export default React.memo(TheoryAnalysisModal);

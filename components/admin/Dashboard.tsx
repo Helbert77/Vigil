@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
       setMetrics(data);
     } catch (error) {
       addToast('Erro ao carregar as métricas do dashboard.', 'error');
-      console.error(error);
+      // Error log removed for production
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +44,7 @@ const Dashboard: React.FC = () => {
       setFeedback(data || []);
     } catch (error) {
       addToast('Erro ao carregar feedback de cancelamento.', 'error');
-      console.error(error);
+      // Error log removed for production
     }
   };
 
@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
 
     } catch (error) {
       addToast('Erro ao zerar os contadores.', 'error');
-      console.error(error);
+      // Error log removed for production
     }
   };
 

@@ -23,8 +23,9 @@ export const useModerationData = (appUser: User | null) => {
       setModerationQueue(queueData);
       setPendingModerationCount(queueData.length);
     } catch (error) {
-      console.error("[useModerationData] Erro ao buscar fila de moderação:", error);
-      addToast('Erro ao carregar a fila de moderação.', 'error');
+      // Error log removed for production
+      setIsLoading(false);
+      addToast('Erro ao buscar dados de moderação.', 'error');
     }
   }, [isModerator, addToast]);
 
@@ -37,8 +38,9 @@ export const useModerationData = (appUser: User | null) => {
       setAppealsQueue(appealsData);
       setPendingAppealsCount(appealsData.length);
     } catch (error) {
-      console.error("[useModerationData] Erro ao buscar fila de apelações:", error);
-      addToast('Erro ao carregar a fila de apelações.', 'error');
+      // Error log removed for production
+      setIsLoading(false);
+      addToast('Erro ao buscar dados de moderação.', 'error');
     }
   }, [isModerator, addToast]);
 
@@ -66,7 +68,7 @@ export const useModerationData = (appUser: User | null) => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'moderation_queue' },
         async (payload) => {
           const { data: author, error } = await supabase.from('profiles').select('*').eq('id', payload.new.author_id).single();
-          if (error) { console.error("[Real-time MODERAÇÃO] Erro ao buscar autor do novo item", error); return; }
+          if (error) { /* Error log removed for production */ return; }
           
           const newItem = { ...payload.new, author };
           setModerationQueue(prev => [newItem, ...prev]);
@@ -84,7 +86,7 @@ export const useModerationData = (appUser: User | null) => {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn(`[Real-time MODERAÇÃO] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
+          // Warning log removed for production
         }
       });
 
@@ -93,7 +95,7 @@ export const useModerationData = (appUser: User | null) => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'moderation_appeals' },
         async (payload) => {
           const { data: fullAppeal, error } = await supabase.from('moderation_appeals').select('*, violation:violation_id(*), user:user_id(*)').eq('id', payload.new.id).single();
-          if (error) { console.error("[Real-time APELAÇÕES] Erro ao buscar detalhes da nova apelação", error); return; }
+          if (error) { /* Error log removed for production */ return; }
 
           setAppealsQueue(prev => [fullAppeal, ...prev]);
           setPendingAppealsCount(prev => prev + 1);
@@ -110,7 +112,7 @@ export const useModerationData = (appUser: User | null) => {
       )
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn(`[Real-time APELAÇÕES] ⚠️ Erro de conexão com o canal: ${status}. Funcionalidade em tempo real desabilitada.`);
+          // Warning log removed for production
         }
       });
 

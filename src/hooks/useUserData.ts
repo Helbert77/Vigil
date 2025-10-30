@@ -30,7 +30,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       }));
       setAllUsers(fetchedUsers);
     } catch (error) {
-      console.error('Error fetching all users:', error);
+      // Error log removed for production
       addToast('Erro ao carregar usuários.', 'error');
     }
   }, [addToast]);
@@ -70,7 +70,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         setBlockedUsersList([]);
       }
     } catch (error) {
-      console.error('Error fetching user lists:', error);
+      // Error log removed for production
     }
   }, [appUser]);
 
@@ -97,7 +97,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         setUsersToFollow([]);
       }
     } catch (error) {
-      console.error('Error fetching users to follow:', error);
+      // Error log removed for production
       setUsersToFollow([]);
     }
   }, [appUser]);
@@ -144,7 +144,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       }
       // Removido fetchUsersToFollow() para evitar re-renderização desnecessária
     } catch (error) {
-      console.error('Error during follow/unfollow operation:', error);
+      // Error log removed for production
       addToast('Falha ao atualizar status de seguir. Revertendo.', 'error');
       
       // Reverter todas as mudanças em caso de erro
@@ -181,8 +181,8 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         }
         fetchUserLists();
     } catch (error) {
-        console.error('Error during block/unblock operation:', error);
-        addToast('Falha ao atualizar status de bloqueio.', 'error');
+      // Error log removed for production
+      addToast('Falha ao atualizar status de bloqueio.', 'error');
     }
   }, [appUser, addToast, blockedUserIds, fetchUserLists]);
 
@@ -207,8 +207,8 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       await refreshUser();
       addToast('Perfil atualizado com sucesso!', 'success');
     } catch (error) {
-      console.error('Error updating user profile:', error);
-      addToast('Falha ao atualizar o perfil.', 'error');
+      // Error log removed for production
+      addToast('Erro ao atualizar perfil.', 'error');
     }
   }, [appUser, addToast, refreshUser]);
 

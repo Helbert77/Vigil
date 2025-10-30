@@ -20,7 +20,7 @@ const saveViewedMessages = (userId: string, messageIds: Set<string>) => {
   try {
     localStorage.setItem(`${VIEWED_MESSAGES_KEY}_${userId}`, JSON.stringify([...messageIds]));
   } catch (error) {
-    console.error('Failed to save viewed messages:', error);
+    // Logs removidos para produção
   }
 };
 
@@ -63,7 +63,7 @@ export const useConversations = (appUser: User | null) => {
       const { data, error } = await supabase.rpc('get_user_conversations');
 
       if (error) {
-        console.error('[fetchConversations] RPC error:', error);
+        // Logs removidos para produção
         throw error;
       }
 
@@ -107,7 +107,7 @@ export const useConversations = (appUser: User | null) => {
       setUnreadMessagesCount(unreadCount);
       
     } catch (error) {
-      console.error('[fetchConversations] Error:', error);
+      // Logs removidos para produção
       addToast('Erro ao carregar conversas', 'error');
     } finally {
       setIsLoading(false);
@@ -222,7 +222,7 @@ export const useConversations = (appUser: User | null) => {
         
         setConversations(prev => [tempConversation, ...prev]);
       } else {
-        console.error('[handleSendMessage] Target user not found in participants!');
+        // Logs removidos para produção
       }
     }
 
@@ -230,14 +230,14 @@ export const useConversations = (appUser: User | null) => {
       const response = await api.sendMessage({ conversationId, targetUserId, text });
       
       if (response.error) {
-        console.error('[handleSendMessage] API returned error:', response.error);
+        // Logs removidos para produção
         throw response.error;
       }
       
       const { data } = response;
       
       if (!data || !data.success) {
-        console.error('[handleSendMessage] API returned unsuccessful response:', data);
+        // Logs removidos para produção
         throw new Error('Falha ao enviar mensagem');
       }
       
@@ -253,13 +253,13 @@ export const useConversations = (appUser: User | null) => {
       return returnedConversationId;
       
     } catch (error) {
-      console.error('[handleSendMessage] Error occurred:', error);
+      // Logs removidos para produção
       
       let errorMessage = 'Falha ao enviar mensagem. Tente novamente.';
       if (error instanceof FunctionsHttpError) {
         try {
           const errorData = await error.context.json();
-          console.error('[handleSendMessage] HTTP error details:', errorData);
+          // Logs removidos para produção
           
           // Handle authentication errors specifically
           if (errorData.error && errorData.error.includes('Authentication failed')) {
@@ -328,7 +328,7 @@ export const useConversations = (appUser: User | null) => {
       setUnreadMessagesCount(newUnreadCount);
 
     } catch (error) {
-      console.error('[handleDeleteConversation] Error:', error);
+      // Logs removidos para produção
       addToast('Erro ao apagar conversa', 'error');
       setConversations(originalConversations);
     }

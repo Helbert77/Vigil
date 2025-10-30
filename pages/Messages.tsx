@@ -88,15 +88,11 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || isSending) {
-      console.log('[Messages] Submit blocked - empty message or already sending');
+      // Logs removidos para produção
       return;
     }
 
-    console.log('[Messages] Submitting message:', { 
-      newChatTargetUser: newChatTargetUser?.id, 
-      selectedConversationId,
-      text: messageText 
-    });
+    // Logs removidos para produção
 
     setIsSending(true);
     const textToSend = messageText;
@@ -104,25 +100,25 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
     
     try {
       if (newChatTargetUser) {
-        console.log('[Messages] Sending to new chat target');
+        // Logs removidos para produção
         const newConversationId = await handleSendMessage({ 
           targetUserId: newChatTargetUser.id, 
           text: textToSend 
         });
         
-        console.log('[Messages] New conversation ID returned:', newConversationId);
+        // Logs removidos para produção
         
         // O useEffect acima vai detectar a nova conversa e atualizar o estado
         
       } else if (selectedConversationId) {
-        console.log('[Messages] Sending to existing conversation');
+        // Logs removidos para produção
         await handleSendMessage({ 
           conversationId: selectedConversationId, 
           text: textToSend 
         });
       }
     } catch (error) {
-      console.error('[Messages] Error in handleSubmit:', error);
+      // Logs removidos para produção
       setMessageText(textToSend); // Restaura o texto em caso de erro
     } finally {
       setIsSending(false);
@@ -130,7 +126,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   };
 
   const handleStartNewChat = async (targetUser: User) => {
-    console.log('[Messages] Starting new chat with:', targetUser.username);
+    // Logs removidos para produção
     
     const existingConvo = conversations.find(c => 
       c.participants.length === 2 && 
@@ -141,11 +137,11 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
     setShowChatOnMobile(true);
 
     if (existingConvo) {
-      console.log('[Messages] Found existing conversation:', existingConvo.id);
+      // Logs removidos para produção
       setSelectedConversationId(existingConvo.id);
       setNewChatTargetUser(null);
     } else {
-      console.log('[Messages] No existing conversation, setting up new chat');
+      // Logs removidos para produção
       setSelectedConversationId(null);
       setNewChatTargetUser(targetUser);
     }
@@ -154,7 +150,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   const handleDeleteConversation = async () => {
     if (!selectedConversationId) return;
     
-    console.log('[Messages] Deleting conversation:', selectedConversationId);
+    // Logs removidos para produção
     await onDeleteConversation(selectedConversationId);
     setIsDeleteModalOpen(false);
     setShowOptionsMenu(false);
@@ -225,7 +221,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
     );
   }
 
-  console.log('[Messages] Render - conversations:', conversations.length, 'selected:', selectedConversationId, 'newChatTarget:', newChatTargetUser?.username);
+  // Logs removidos para produção
 
   // Determina qual conversa ou usuário mostrar
   const displayConversation = selectedConversation;
@@ -318,7 +314,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                     const otherUser = getOtherUser(conversation);
                     
                     if (!otherUser) {
-                      console.warn('[Messages] Conversation missing other user:', conversation.id);
+                      // Logs removidos para produção
                       return null;
                     }
                     
@@ -329,7 +325,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                       <div
                         key={conversation.id}
                         onClick={() => {
-                          console.log('[Messages] Selecting conversation:', conversation.id);
+                          // Logs removidos para produção
                           setSelectedConversationId(conversation.id);
                           setNewChatTargetUser(null);
                           setShowChatOnMobile(true);

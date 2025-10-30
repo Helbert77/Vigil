@@ -97,4 +97,4 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ item, onAction }) => {
   );
 };
 
-export default ModerationCard;
+export default React.memo(ModerationCard);

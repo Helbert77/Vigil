@@ -57,7 +57,7 @@ export const useTimelineEvents = () => {
           : event
       ));
     } catch (err) {
-      console.error('Failed to update event position:', err);
+        // Error log removed for production
     }
   }, []);
 
