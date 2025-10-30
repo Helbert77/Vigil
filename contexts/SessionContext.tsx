@@ -28,7 +28,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         // Sessão expirou, fazer logout
         localStorage.removeItem('keepLoggedIn');
         localStorage.removeItem('sessionExpiry');
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.signOut();
+        } catch (error) {
+          // Silenciar erros de logout automático
+          console.log('Logout automático realizado (conexão pode ter sido interrompida)');
+        }
         setSession(null);
         setUser(null);
         setLoading(false);
@@ -130,7 +135,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       if (session && keepLoggedIn === 'false' && sessionExpiry && sessionExpiry !== 'never') {
         const expiryTime = parseInt(sessionExpiry);
         if (Date.now() >= expiryTime) {
-          supabase.auth.signOut();
+          try {
+            supabase.auth.signOut();
+          } catch (error) {
+            // Silenciar erros de logout por inatividade
+            console.log('Logout por inatividade realizado (conexão pode ter sido interrompida)');
+          }
           localStorage.removeItem('sessionExpiry');
           localStorage.removeItem('keepLoggedIn');
         }

@@ -75,8 +75,14 @@ const Login: React.FC = () => {
         setTimeout(() => {
           const currentExpiry = localStorage.getItem('sessionExpiry');
           if (currentExpiry && currentExpiry !== 'never' && Date.now() >= parseInt(currentExpiry)) {
-            supabase.auth.signOut();
-            addToast('Sessão expirada por inatividade', 'info');
+            try {
+              supabase.auth.signOut();
+              addToast('Sessão expirada por inatividade', 'info');
+            } catch (error) {
+              // Silenciar erros de logout automático
+              console.log('Logout automático por inatividade realizado');
+              addToast('Sessão expirada por inatividade', 'info');
+            }
           }
         }, inactivityTimeout);
       }

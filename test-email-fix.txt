@@ -1,3 +1,0 @@
-Teste de correção do email do Git
-Email correto configurado: helbertcarlos@hotmail.com
-Data: 2024-12-19

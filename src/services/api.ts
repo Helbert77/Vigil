@@ -119,11 +119,29 @@ export const logout = async () => {
     localStorage.removeItem('keepLoggedIn');
     localStorage.removeItem('sessionExpiry');
     
-    // Tentar fazer logout do Supabase com timeout
+    // Verificar se já existe uma sessão ativa antes de tentar fazer logout
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      // Se não há sessão ativa, considerar logout bem-sucedido
+      console.log('Nenhuma sessão ativa encontrada, logout local realizado');
+      return { error: null };
+    }
+    
+    // Criar um AbortController para cancelar a requisição se necessário
+    const abortController = new AbortController();
+    
+    // Tentar fazer logout do Supabase com timeout e controle de abort
     const signOutPromise = supabase.auth.signOut();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout na requisição de logout')), 8000)
-    );
+    const timeoutPromise = new Promise((_, reject) => {
+      const timeoutId = setTimeout(() => {
+        abortController.abort();
+        reject(new Error('Timeout na requisição de logout'));
+      }, 5000); // Reduzido para 5 segundos
+      
+      // Limpar timeout se a promise for resolvida
+      signOutPromise.finally(() => clearTimeout(timeoutId));
+    });
 
     const result = await Promise.race([signOutPromise, timeoutPromise]);
     const error = (result as any)?.error;
@@ -139,22 +157,24 @@ export const logout = async () => {
     return { error: null };
 
   } catch (networkError: unknown) {
-    console.error('Erro de rede durante o logout:', networkError);
-    
     const errorMessage = networkError instanceof Error ? networkError.message : String(networkError);
     const errorName = networkError instanceof Error ? networkError.name : '';
     
-    // Para erros de rede específicos (como net::ERR_ABORTED), ainda limpar dados locais
+    // Para erros de rede específicos (como net::ERR_ABORTED), silenciar e considerar sucesso
     if (errorMessage.includes('ERR_ABORTED') || 
         errorMessage.includes('Timeout') ||
+        errorMessage.includes('AbortError') ||
         errorName === 'AbortError') {
-      console.log('Erro de rede detectado, mas dados locais foram limpos');
-      // Retornar sucesso parcial - dados locais limpos mesmo com erro de rede
+      // Não logar erro para ERR_ABORTED pois é esperado em algumas situações
+      console.log('Logout local realizado (conexão interrompida)');
       return { error: null };
     }
     
-    // Para outros tipos de erro, retornar erro para que o App.tsx possa forçar a limpeza local
-    return { error: networkError instanceof Error ? networkError : new Error(String(networkError)) };
+    // Para outros tipos de erro, logar apenas como warning
+    console.warn('Erro durante o logout (dados locais limpos):', errorMessage);
+    
+    // Sempre retornar sucesso após limpar dados locais
+    return { error: null };
   }
 };
 export const updateUserPassword = (newPassword: string) => 
