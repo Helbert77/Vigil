@@ -17,6 +17,7 @@ const TimelineIcon = () => <Icon><path d="M3 3v18h18"></path><path d="M7 12h10">
 const ShieldIcon = () => <Icon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></Icon>;
 const DashboardIcon = () => <Icon><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></Icon>;
 const GavelIcon = () => <Icon><path d="m14 13-7.5 7.5"/><path d="m18 17-5.5 5.5"/><path d="m15 6-3.5 3.5"/><path d="m2 21 6-6"/><path d="m3 3 7.5 7.5"/><path d="m13 1 6 6"/><path d="M12 6 9 3 3 9l3 3"/><path d="M18 12 21 9l-6-6-3 3"/></Icon>;
+const LibraryIcon = () => <Icon><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></Icon>;
 
 interface SidebarProps {
   user: User | null;
@@ -52,6 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
           <NavLink icon={<MailIcon />} label="Messages" isActive={currentPage === 'Messages'} onClick={() => setCurrentPage('Messages')} notificationCount={unreadMessagesCount} isCollapsed={isCollapsed} />
           <NavLink icon={<BookmarkIcon />} label="Saved" isActive={currentPage === 'Saved'} onClick={() => setCurrentPage('Saved')} isCollapsed={isCollapsed} />
           <NavLink icon={<UsersIcon />} label="Communities" isActive={currentPage === 'Communities'} onClick={() => setCurrentPage('Communities')} isCollapsed={isCollapsed} />
+          <NavLink icon={<LibraryIcon />} label="Library" isActive={currentPage === 'Library'} onClick={() => setCurrentPage('Library')} isCollapsed={isCollapsed} />
           <NavLink icon={<TimelineIcon />} label="Timeline" isActive={currentPage === 'Timeline'} onClick={() => setCurrentPage('Timeline')} isCollapsed={isCollapsed} />
           <NavLink icon={<UserIcon />} label="Profile" isActive={currentPage === 'Profile'} onClick={() => setCurrentPage('Profile')} isCollapsed={isCollapsed} />
           <NavLink icon={<SettingsIcon />} label="Settings" isActive={currentPage === 'Settings'} onClick={() => setCurrentPage('Settings')} isCollapsed={isCollapsed} />

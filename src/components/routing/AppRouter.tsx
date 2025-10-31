@@ -29,6 +29,7 @@ import {
   LazyPremiumPage,
   LazyTrendingTopicsPage,
   LazyExploreUsers,
+  LazyLibrary,
   LazyLogin,
   LazyUpdatePassword,
   LazySplashScreen,
@@ -438,6 +439,9 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
             onGoBack={() => props.setCurrentPage('Home')}
           />
         } />
+
+        {/* Biblioteca */}
+        <Route path="/library" element={<LazyLibrary />} />
 
         {/* Topic Detail */}
         <Route path="/topic/:tag" element={

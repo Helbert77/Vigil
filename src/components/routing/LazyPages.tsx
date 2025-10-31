@@ -31,6 +31,8 @@ export const LazyAppeals = lazy(() => import('@/pages/admin/Appeals'));
 export const LazyPremiumPage = lazy(() => import('@/src/pages/PremiumPage'));
 export const LazyTrendingTopicsPage = lazy(() => import('@/pages/TrendingTopics'));
 export const LazyExploreUsers = lazy(() => import('@/components/ExploreUsers'));
+// Biblioteca
+export const LazyLibrary = lazy(() => import('@/pages/Library'));
 
 // Lazy loading das páginas de autenticação
 export const LazyLogin = lazy(() => import('@/pages/Login'));
