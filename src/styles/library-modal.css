@@ -1,0 +1,263 @@
+/* Estilos customizados para o modal da Library */
+
+/* Container principal do modal com scroll */
+.library-modal-content {
+  animation: fadeInScale 0.2s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar personalizada para o container principal */
+.library-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.library-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.library-modal-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.library-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Scrollbar personalizada para descrição */
+.library-description::-webkit-scrollbar {
+  width: 6px;
+}
+
+.library-description::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.library-description::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.library-description::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  .library-modal-content::-webkit-scrollbar-thumb,
+  .library-description::-webkit-scrollbar-thumb {
+    background: #6b7280;
+  }
+  
+  .library-modal-content::-webkit-scrollbar-thumb:hover,
+  .library-description::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+}
+
+/* Animações de entrada/saída */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animações suaves */
+.library-modal-enter {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.library-modal-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.library-modal-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.library-modal-exit-active {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 150ms ease-in, transform 150ms ease-in;
+}
+
+/* Responsividade específica para o modal */
+@media (max-width: 640px) {
+  .library-modal-container {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .library-modal-content {
+    max-height: 95vh;
+    padding: 1rem;
+  }
+  
+  .library-modal-image {
+    max-width: 120px;
+    max-height: 160px;
+    margin: 0 auto;
+  }
+  
+  .library-modal-buttons {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .library-modal-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    min-height: 44px;
+  }
+  
+  .library-description {
+    max-height: 120px;
+  }
+  
+  .library-modal-content > *:not(:last-child) {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .library-modal-container {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+  
+  .library-modal-content {
+    max-height: 90vh;
+  }
+  
+  .library-modal-image {
+    max-width: 140px;
+    max-height: 180px;
+  }
+  
+  .library-modal-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .library-description {
+    max-height: 140px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .library-modal-container {
+    max-height: calc(100vh - 4rem);
+  }
+  
+  .library-modal-content {
+    flex-direction: column;
+  }
+  
+  .library-modal-image {
+    max-width: 160px;
+    max-height: 200px;
+    margin: 0 auto;
+  }
+  
+  .library-description {
+    max-height: 160px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .library-modal-content {
+    flex-direction: row;
+  }
+  
+  .library-modal-image {
+    max-width: 180px;
+    max-height: 240px;
+  }
+  
+  .library-description {
+    max-height: 192px;
+  }
+}
+
+/* Otimizações para altura de tela pequena */
+@media (max-height: 600px) {
+  .library-modal-content {
+    max-height: 95vh;
+  }
+  
+  .library-description {
+    max-height: 80px;
+  }
+  
+  .library-modal-image {
+    max-width: 100px;
+    max-height: 130px;
+  }
+}
+
+/* Melhorias de acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .library-modal-enter-active,
+  .library-modal-exit-active {
+    transition: none;
+  }
+  
+  .library-modal-content {
+    animation: none;
+  }
+}
+
+/* Suporte para telas de alta densidade */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .library-modal-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+@media (min-resolution: 2dppx) {
+  .library-modal-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Estilos para foco e acessibilidade */
+.library-modal-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.library-modal-close:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Otimizações para touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .library-modal-button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.875rem 1.25rem;
+  }
+  
+  .library-modal-close {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Garantir que o conteúdo não seja cortado */
+.library-modal-content > * {
+  flex-shrink: 0;
+}

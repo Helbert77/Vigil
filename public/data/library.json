@@ -104,12 +104,10 @@
     }
   ],
   "categories": [
-    { "key": "estrategia", "label": "Estratégia" },
-    { "key": "ficcao", "label": "Ficção" },
-    { "key": "politica", "label": "Política" },
-    { "key": "documentario", "label": "Documentários" },
-    { "key": "sobrevivencia", "label": "Sobrevivência" },
-    { "key": "podcast", "label": "Podcasts" }
+    { "key": "ebook", "label": "Ebooks" },
+    { "key": "document", "label": "Documentos" },
+    { "key": "article", "label": "Artigos" },
+    { "key": "magazine", "label": "Revistas" }
   ],
   "tags": [
     { "id": "novo", "label": "Novo", "color": "#10B981" },

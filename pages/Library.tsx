@@ -10,9 +10,9 @@ type SortBy = 'date' | 'title' | 'author';
 
 const categories: { key: LibraryItemType; label: string }[] = [
   { key: 'ebook', label: 'Ebooks' },
+  { key: 'document', label: 'Documentos' },
   { key: 'article', label: 'Artigos' },
   { key: 'magazine', label: 'Revistas' },
-  { key: 'document', label: 'Documentos' },
 ];
 
 const Library: React.FC = () => {
