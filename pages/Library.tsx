@@ -4,6 +4,7 @@ import { LibraryItemModal } from '@/src/components/library/LibraryItemModal';
 import { LibraryItem, LibraryItemType } from '@/src/data/library';
 import { libraryDataService, LibraryData } from '@/src/services/LibraryDataService';
 import { logger } from '@/src/utils/Logger';
+import '@/src/styles/library-responsive.css';
 
 type ViewMode = 'list' | 'small' | 'large';
 type SortBy = 'date' | 'title' | 'author';
@@ -131,15 +132,13 @@ const Library: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-light-background dark:bg-dark-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-light-text-secondary dark:text-dark-text-secondary">
-                Carregando biblioteca...
-              </p>
-            </div>
+      <div className="library-page bg-light-background dark:bg-dark-background">
+        <div className="library-container">
+          <div className="library-loading">
+            <div className="library-loading-spinner"></div>
+            <p className="text-light-text-secondary dark:text-dark-text-secondary">
+              Carregando biblioteca...
+            </p>
           </div>
         </div>
       </div>
@@ -149,8 +148,8 @@ const Library: React.FC = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-light-background dark:bg-dark-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="library-page bg-light-background dark:bg-dark-background">
+        <div className="library-container">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
               Erro ao carregar biblioteca
@@ -158,7 +157,7 @@ const Library: React.FC = () => {
             <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors min-h-[44px] min-w-[44px]"
             >
               Tentar novamente
             </button>
@@ -169,45 +168,41 @@ const Library: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-light-background dark:bg-dark-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="library-page bg-light-background dark:bg-dark-background">
+      <div className="library-container">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-light-text dark:text-dark-text mb-2">
+        <div className="library-header">
+          <h1 className="library-title text-light-text dark:text-dark-text">
             Biblioteca Virtual
           </h1>
-          <p className="text-light-text-secondary dark:text-dark-text-secondary">
+          <p className="library-subtitle text-light-text-secondary dark:text-dark-text-secondary">
             Acesse nossa coleção de livros, documentários e recursos educacionais
           </p>
         </div>
 
       {/* Filtros e controles */}
-      <div className="bg-light-card dark:bg-dark-card rounded-lg p-6 mb-6 border border-light-border dark:border-dark-border">
+      <div className="library-filters bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border">
         {/* Abas de categorias */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="library-categories">
           <button
             onClick={() => setActiveCategory('all')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeCategory === 'all'
-                ? 'bg-primary text-white'
-                : 'bg-light-background dark:bg-dark-background text-light-text dark:text-dark-text hover:bg-primary/10'
+            className={`library-category-button ${
+              activeCategory === 'all' ? 'active' : ''
             }`}
           >
             Todos
           </button>
-          {libraryData?.categories.map(category => (
-             <button
-               key={category.key}
-               onClick={() => setActiveCategory(category.key)}
-               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                 activeCategory === category.key
-                   ? 'bg-primary text-white'
-                   : 'bg-light-background dark:bg-dark-background text-light-text dark:text-dark-text hover:bg-primary/10'
-               }`}
-             >
-               {category.label}
-             </button>
-           ))}
+          {libraryData?.categories?.map(category => (
+            <button
+              key={category.key}
+              onClick={() => setActiveCategory(category.key)}
+              className={`library-category-button ${
+                activeCategory === category.key ? 'active' : ''
+              }`}
+            >
+              {category.label}
+            </button>
+          ))}
         </div>
 
         {/* Filtros por tags */}
@@ -235,48 +230,80 @@ const Library: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 items-center justify-between">
-
-          {/* Search */}
-          <div className="flex-1 min-w-[220px] sm:min-w-[280px]">
+        {/* Controles de busca e visualização */}
+        <div className="library-controls">
+          <div className="library-search">
             <input
+              type="text"
+              placeholder="Buscar por título, autor ou descrição..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Pesquisar por título, autor ou descrição..."
-              className="w-full px-3 py-2 rounded border border-light-border dark:border-dark-border bg-white dark:bg-gray-800 text-sm"
+              className="w-full px-4 py-2 border border-light-border dark:border-dark-border rounded-lg bg-black text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
             />
           </div>
-
-          {/* Sort & View Mode */}
-          <div className="flex items-center gap-2">
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)} className="px-3 py-2 rounded border border-light-border dark:border-dark-border bg-white dark:bg-gray-800 text-sm">
-              <option value="date">Data</option>
+          <div className="flex flex-wrap gap-2 items-center">
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-black text-white text-sm min-h-[44px] shadow-sm"
+            >
+              <option value="todos">Todas as tags</option>
+              {libraryData?.tags?.map(tag => (
+                <option key={tag.id} value={tag.id}>{tag.label}</option>
+              ))}
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-black text-white text-sm min-h-[44px] shadow-sm"
+            >
               <option value="title">Título</option>
+              <option value="date">Data</option>
+              <option value="downloads">Downloads</option>
+              <option value="views">Visualizações</option>
               <option value="author">Autor</option>
             </select>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setViewMode('list')} className={`px-3 py-2 rounded text-sm ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Lista</button>
-              <button onClick={() => setViewMode('small')} className={`px-3 py-2 rounded text-sm ${viewMode === 'small' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Ícones Pequenos</button>
-              <button onClick={() => setViewMode('large')} className={`px-3 py-2 rounded text-sm ${viewMode === 'large' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'}`}>Ícones Grandes</button>
+            <div className="library-view-controls">
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`library-view-button ${viewMode === 'list' ? 'active' : ''}`}
+                aria-label="Visualização em lista"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd"/>
+                </svg>
+              </button>
+              <button 
+                onClick={() => setViewMode('small')} 
+                className={`library-view-button ${viewMode === 'small' ? 'active' : ''}`}
+                aria-label="Ícones pequenos"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+              </button>
+              <button 
+                onClick={() => setViewMode('large')} 
+                className={`library-view-button ${viewMode === 'large' ? 'active' : ''}`}
+                aria-label="Ícones grandes"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      {viewMode === 'list' ? (
-        <div className="space-y-2">
+      <div className="library-content-container">
+        <div className={`library-grid ${viewMode}-mode`}>
           {filtered.map(item => (
             <LibraryItemCard key={item.id} item={item} viewMode={viewMode} onClick={handleOpen} />
           ))}
         </div>
-      ) : (
-        <div className={`grid gap-3 sm:gap-4 ${viewMode === 'small' ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
-          {filtered.map(item => (
-            <LibraryItemCard key={item.id} item={item} viewMode={viewMode} onClick={handleOpen} />
-          ))}
-        </div>
-      )}
+      </div>
 
       {/* Modal */}
       <LibraryItemModal isOpen={isModalOpen} onClose={handleClose} item={selectedItem} />

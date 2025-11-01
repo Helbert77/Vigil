@@ -67,10 +67,9 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
 
           {/* Informações do item */}
           <div className="flex-1 min-w-0">
-            <div className="mb-4 md:mb-6">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-light-text dark:text-dark-text mb-2 leading-tight">{item.title}</h2>
-              <p className="text-base sm:text-lg text-light-text-secondary dark:text-dark-text-secondary mb-3">por {item.author}</p>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
+            <div className="mb-6 md:mb-8">
+              <p className="text-lg sm:text-xl text-light-text-secondary dark:text-dark-text-secondary mb-4 font-medium">por {item.author}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
                 <span className="inline-block px-3 py-1 text-sm bg-primary/10 text-primary rounded-full capitalize w-fit">
                   {item.category || item.type}
                 </span>

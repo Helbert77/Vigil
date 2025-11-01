@@ -37,7 +37,7 @@ const GenericModal: React.FC<GenericModalProps> = ({ isOpen, onClose, title, chi
         className={`bg-light-card dark:bg-dark-card rounded-lg md:rounded-xl shadow-xl w-full ${getSizeClasses()} max-h-[95vh] md:max-h-[90vh] flex flex-col`} 
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-3 md:p-4 lg:p-6 border-b border-light-border dark:border-dark-border flex justify-between items-center shrink-0">
+        <div className="p-3 md:p-4 lg:p-6 flex justify-between items-center shrink-0">
           <h2 className="text-lg md:text-xl lg:text-2xl font-bold truncate pr-2 text-light-text dark:text-dark-text">{title}</h2>
           <button 
             onClick={onClose} 
