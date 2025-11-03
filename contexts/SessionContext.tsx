@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
+import { getSessionSafe } from '../src/utils/supabaseAuthSafe';
 import { User } from '../types';
 
 interface SessionContextType {
@@ -41,7 +42,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       }
     }
     
-    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    const currentSession = await getSessionSafe();
     setSession(currentSession);
 
     if (currentSession?.user) {

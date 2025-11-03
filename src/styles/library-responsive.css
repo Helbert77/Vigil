@@ -544,7 +544,7 @@
   }
   
   .library-grid.list-mode .library-card img {
-    width: 3rem;
+    width: 4.8rem;
     height: 4rem;
   }
   
@@ -554,7 +554,7 @@
   }
   
   .library-card.list-card .card-image {
-    width: 48px;
+    width: 77px;
     height: 60px;
   }
   
@@ -730,7 +730,7 @@
   }
   
   .library-grid.list-mode .library-card img {
-    width: 2.5rem;
+    width: 4rem;
     height: 3.5rem;
   }
   

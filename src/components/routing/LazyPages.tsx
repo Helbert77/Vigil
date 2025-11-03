@@ -34,6 +34,9 @@ export const LazyExploreUsers = lazy(() => import('@/components/ExploreUsers'));
 // Biblioteca
 export const LazyLibrary = lazy(() => import('@/pages/Library'));
 
+// Teste de Analytics
+export const LazyTestAnalytics = lazy(() => import('@/src/pages/TestAnalytics'));
+
 // Lazy loading das páginas de autenticação
 export const LazyLogin = lazy(() => import('@/pages/Login'));
 export const LazyUpdatePassword = lazy(() => import('@/pages/UpdatePassword'));

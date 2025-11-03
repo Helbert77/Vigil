@@ -73,7 +73,7 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
           srcSet={generateSrcSet(item.coverUrl)}
           sizes={getImageSizes('list')}
           alt={item.title}
-          className="w-20 h-full object-cover rounded-l-lg flex-shrink-0"
+          className="w-32 h-full object-cover rounded-l-lg flex-shrink-0"
           loading="lazy"
           decoding="async"
         />
