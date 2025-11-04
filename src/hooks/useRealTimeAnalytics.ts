@@ -7,6 +7,9 @@ export interface UseRealTimeAnalyticsOptions {
   autoStart?: boolean;
   onError?: (error: Error) => void;
   onUpdate?: (stats: RealTimeStats) => void;
+  initialViews?: number;
+  initialDownloads?: number;
+  publishedDate?: string;
 }
 
 export interface UseRealTimeAnalyticsReturn {
@@ -36,7 +39,10 @@ export function useRealTimeAnalytics(
     itemId,
     autoStart = true,
     onError,
-    onUpdate
+    onUpdate,
+    initialViews,
+    initialDownloads,
+    publishedDate
   } = options;
 
   // Estados
@@ -64,9 +70,8 @@ export function useRealTimeAnalytics(
       setStats(newStats);
       setLastUpdate(new Date());
       setError(null);
-      
-      // Atualiza estado de loading baseado no isUpdating
-      setIsLoading(newStats.isUpdating);
+      // Finaliza loading após primeira atualização recebida
+      setIsLoading(false);
 
       // Chama callback personalizado se fornecido
       if (onUpdateRef.current) {
@@ -107,6 +112,11 @@ export function useRealTimeAnalytics(
       setIsLoading(true);
       setError(null);
       setIsActive(true);
+
+      // Semear valores iniciais reais, se fornecidos
+      if (typeof initialViews === 'number' || typeof initialDownloads === 'number') {
+        realTimeAnalytics.seedInitialStats(itemId, initialViews ?? 0, initialDownloads ?? 0, publishedDate);
+      }
 
       // Limpa subscription anterior se existir
       if (subscriptionRef.current) {
@@ -222,7 +232,7 @@ export function useRealTimeAnalytics(
   return {
     stats,
     isLoading,
-    isUpdating: stats?.isUpdating || false,
+    isUpdating: false,
     isActive,
     error,
     lastUpdate,

@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../integrations/supabase/client';
 
 // Utility function for standardized error handling and logging
 const handleApiError = (error: any, operation: string, context?: any) => {
@@ -70,6 +70,7 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
   }
 };
 import { Poll, EvidenceItem, User } from '@/types';
+import { LibraryItem } from '../data/library';
 
 // --- Session Management ---
 export const ensureValidSession = async () => {
@@ -112,6 +113,61 @@ export const ensureValidSession = async () => {
   }
 };
 
+// Tenta criar/configurar a tabela library_items automaticamente via RPC exec_sql
+export const ensureLibraryItemsTable = async (): Promise<boolean> => {
+  const migrationSQL = `
+    -- Create table if not exists
+    create extension if not exists pgcrypto;
+    create extension if not exists "uuid-ossp";
+
+    create table if not exists public.library_items (
+      id uuid default gen_random_uuid() primary key,
+      type text not null,
+      title text not null,
+      author text,
+      description text,
+      cover_url text,
+      date timestamp with time zone,
+      published_date date,
+      category text,
+      tags text[],
+      read_url text,
+      download_url text,
+      downloads integer default 0,
+      views integer default 0,
+      created_at timestamp with time zone default now()
+    );
+
+    -- Enable RLS and policies
+    alter table public.library_items enable row level security;
+
+    create policy if not exists "Public read library items" on public.library_items
+      for select using (true);
+
+    create policy if not exists "Authenticated insert library items" on public.library_items
+      for insert to authenticated
+      with check (auth.role() = 'authenticated');
+
+    -- Indexes
+    create index if not exists idx_library_items_type on public.library_items(type);
+    create index if not exists idx_library_items_date on public.library_items(date);
+    create index if not exists idx_library_items_tags on public.library_items using gin(tags);
+  `;
+
+  try {
+    const { error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
+    if (error) {
+      handleApiError(error, 'ensureLibraryItemsTable', { suggestion: 'Verificar função RPC exec_sql e permissões' });
+      return false;
+    }
+    const exists = await checkTableExists('library_items');
+    return exists;
+  } catch (err: any) {
+    handleApiError(err, 'ensureLibraryItemsTable');
+    return false;
+  }
+};
+
 // --- Auth API ---
 export const logout = async () => {
   try {
@@ -132,7 +188,8 @@ export const logout = async () => {
     const abortController = new AbortController();
     
     // Tentar fazer logout do Supabase com timeout e controle de abort
-    const signOutPromise = supabase.auth.signOut();
+    // Usar escopo "local" para evitar chamada de rede que pode ser abortada em navegação
+    const signOutPromise = supabase.auth.signOut({ scope: 'local' });
     const timeoutPromise = new Promise((_, reject) => {
       const timeoutId = setTimeout(() => {
         abortController.abort();
@@ -403,178 +460,72 @@ export const updateUser = (userId: string, updates: { [key: string]: any }) =>
 export const updateUserRole = (userId: string, role: 'user' | 'moderator' | 'admin') =>
   supabase.from('profiles').update({ role }).eq('id', userId);
 
-export const deleteUserAccount = () =>
-  supabase.functions.invoke('delete-user');
+// --- Library API ---
+// Mapeia nomes camelCase do frontend para snake_case do banco
+const mapLibraryItemToDb = (item: Omit<LibraryItem, 'id' | 'downloads' | 'views'>) => ({
+  type: item.type,
+  title: item.title,
+  author: item.author,
+  description: item.description,
+  cover_url: item.coverUrl,
+  date: item.date,
+  published_date: item.publishedDate,
+  category: item.category,
+  tags: item.tags,
+  read_url: item.readUrl,
+  download_url: item.downloadUrl,
+});
 
-export const scheduleAccountDeletion = async (gracePeriodDays: number = 7, reason?: string) => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const error = new Error('Usuário não encontrado');
-      handleApiError(error, 'scheduleAccountDeletion', { step: 'auth_check' });
-      throw error;
-    }
+// Converte registro do banco para o tipo LibraryItem do frontend
+const mapDbToLibraryItem = (row: any): LibraryItem => ({
+  id: row.id,
+  type: row.type,
+  title: row.title,
+  author: row.author,
+  description: row.description ?? '',
+  coverUrl: row.cover_url ?? '',
+  date: row.date ? new Date(row.date).toISOString() : new Date().toISOString(),
+  publishedDate: row.published_date ? new Date(row.published_date).toISOString() : undefined,
+  category: row.category ?? undefined,
+  tags: row.tags ?? [],
+  readUrl: row.read_url ?? undefined,
+  downloadUrl: row.download_url ?? undefined,
+  downloads: row.downloads ?? 0,
+  views: row.views ?? 0,
+});
 
-    // Check if table exists before making the query
-    const tableExists = await checkTableExists('account_deletion_requests');
-    if (!tableExists) {
-      console.debug('Table account_deletion_requests does not exist, cannot schedule deletion');
-      return { data: null, error: new Error('Funcionalidade de agendamento não disponível. Entre em contato com o suporte.') };
-    }
+export const addLibraryItem = async (item: Omit<LibraryItem, 'id' | 'downloads' | 'views'>) => {
+  // Verifica se tabela existe; tenta criar automaticamente se ausente
+  let tableExists = await checkTableExists('library_items');
+  if (!tableExists) {
+    const created = await ensureLibraryItemsTable();
+    tableExists = created;
+  }
 
-    const deletionDate = new Date();
-    deletionDate.setDate(deletionDate.getDate() + gracePeriodDays);
-
-    const requestData = {
-      user_id: user.id,
-      scheduled_deletion_date: deletionDate.toISOString(),
-      status: 'pending',
-      grace_period_days: gracePeriodDays,
-      reason: reason || null
-    };
-
-    const { data, error } = await supabase
-      .from('account_deletion_requests')
-      .insert(requestData)
-      .select()
-      .single();
-
-    // Handle missing table/column errors gracefully
-    if (error && isMissingResourceError(error)) {
-      handleApiError(error, 'scheduleAccountDeletion', { 
-        user_id: user.id,
-        grace_period_days: gracePeriodDays,
-        suggestion: 'Run migration to create account_deletion_requests table'
-      });
-      return { data: null, error: new Error('Funcionalidade de agendamento não disponível. Entre em contato com o suporte.') };
-    }
-
-    if (error) {
-      handleApiError(error, 'scheduleAccountDeletion', { 
-        user_id: user.id, 
-        grace_period_days: gracePeriodDays 
-      });
-      throw error;
-    }
-
-    console.debug('Account deletion scheduled successfully:', { 
-      user_id: user.id, 
-      scheduled_date: deletionDate.toISOString(),
-      grace_period_days: gracePeriodDays
-    });
-
-    return { data, error: null };
-  } catch (error) {
-    handleApiError(error, 'scheduleAccountDeletion');
+  const dbItem = mapLibraryItemToDb(item);
+  const { data, error } = await supabase.from('library_items').insert(dbItem).select().single();
+  if (error) {
+    // Log detalhado e retorna erro para que UI possa fazer fallback
+    handleApiError(error, 'addLibraryItem', { table_name: 'library_items' });
     return { data: null, error };
   }
+  return { data: mapDbToLibraryItem(data), error: null };
 };
 
-export const cancelAccountDeletion = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const error = new Error('Usuário não encontrado');
-      handleApiError(error, 'cancelAccountDeletion', { step: 'auth_check' });
-      throw error;
-    }
+export const getLibraryItems = async (): Promise<{ data: LibraryItem[] | null; error: any }> => {
+  const { data, error } = await supabase.from('library_items').select('*');
 
-    // Check if table exists before making the query
-    const tableExists = await checkTableExists('account_deletion_requests');
-    if (!tableExists) {
-      console.debug('Table account_deletion_requests does not exist, cannot cancel deletion');
-      return { error: new Error('Funcionalidade de cancelamento não disponível. Entre em contato com o suporte.') };
-    }
-
-    const updateData = { 
-      status: 'cancelled',
-      cancelled_at: new Date().toISOString()
-    };
-
-    const { error } = await supabase
-      .from('account_deletion_requests')
-      .update(updateData)
-      .eq('user_id', user.id)
-      .eq('status', 'pending');
-
-    // Handle missing table/column errors gracefully
-    if (error && isMissingResourceError(error)) {
-      handleApiError(error, 'cancelAccountDeletion', { 
-        user_id: user.id,
-        suggestion: 'Run migration to create account_deletion_requests table'
-      });
-      return { error: new Error('Funcionalidade de cancelamento não disponível. Entre em contato com o suporte.') };
-    }
-
-    if (error) {
-      handleApiError(error, 'cancelAccountDeletion', { user_id: user.id });
-      throw error;
-    }
-
-    console.debug('Account deletion cancelled successfully:', { 
-      user_id: user.id,
-      cancelled_at: updateData.cancelled_at
-    });
-
-    return { error: null };
-  } catch (error) {
-    handleApiError(error, 'cancelAccountDeletion');
-    return { error };
-  }
-};
-
-export const getAccountDeletionStatus = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      const error = new Error('Usuário não encontrado');
-      handleApiError(error, 'getAccountDeletionStatus', { step: 'auth_check' });
-      throw error;
-    }
-
-    // Check if table exists before making the query
-    const tableExists = await checkTableExists('account_deletion_requests');
-    if (!tableExists) {
-      console.debug('Table account_deletion_requests does not exist, returning null');
-      return { data: null, error: null };
-    }
-
-    const { data, error } = await supabase
-      .from('account_deletion_requests')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    // Handle missing table/column errors gracefully
-    if (error && isMissingResourceError(error)) {
-      handleApiError(error, 'getAccountDeletionStatus', { 
-        user_id: user.id,
-        suggestion: 'Run migration to create account_deletion_requests table'
-      });
-      return { data: null, error: null };
-    }
-
-    if (error) {
-      handleApiError(error, 'getAccountDeletionStatus', { user_id: user.id });
-      throw error;
-    }
-
-    console.debug('Account deletion status fetched successfully:', { 
-      user_id: user.id, 
-      has_pending_deletion: !!data 
-    });
-
-    return { data, error: null };
-  } catch (error) {
-    handleApiError(error, 'getAccountDeletionStatus');
+  if (error) {
+    handleApiError(error, 'getLibraryItems');
     return { data: null, error };
   }
+
+  const mapped = data.map(mapDbToLibraryItem);
+  return { data: mapped, error: null };
 };
 
-export const downloadUserData = async () => {
+// --- User Data API ---
+export const fetchInitialData = async (user: User) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -651,11 +602,193 @@ export const sendDeletionEmail = async (
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+   return { data, error: null };
   } catch (error: unknown) {
      console.error('Error sending deletion email:', error);
      return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };
    }
+};
+
+// --- Account Deletion API ---
+export const getAccountDeletionStatus = async (): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      const err = { message: 'Funcionalidade não disponível: tabela account_deletion_requests ausente', code: 'PGRST205' };
+      handleApiError(err, 'getAccountDeletionStatus', { user_id: user.id, table_name: 'account_deletion_requests' });
+      return { data: null, error: err };
+    }
+
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      handleApiError(error, 'getAccountDeletionStatus', { user_id: user.id });
+      return { data: null, error };
+    }
+
+    const latest = Array.isArray(data) ? (data[0] || null) : null;
+    console.debug('Deletion status fetched', { user_id: user.id, latest });
+    return { data: latest, error: null };
+  } catch (error) {
+    handleApiError(error, 'getAccountDeletionStatus');
+    return { data: null, error };
+  }
+};
+
+export const scheduleAccountDeletion = async (
+  gracePeriodDays: number = 7
+): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      const err = { message: 'Funcionalidade não disponível: tabela account_deletion_requests ausente', code: 'PGRST205' };
+      handleApiError(err, 'scheduleAccountDeletion', { user_id: user.id, table_name: 'account_deletion_requests' });
+      return { data: null, error: err };
+    }
+
+    const scheduledDate = new Date();
+    scheduledDate.setDate(scheduledDate.getDate() + gracePeriodDays);
+
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .insert({
+        user_id: user.id,
+        status: 'scheduled',
+        grace_period_days: gracePeriodDays,
+        scheduled_deletion_date: scheduledDate.toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      handleApiError(error, 'scheduleAccountDeletion', { user_id: user.id });
+      return { data: null, error };
+    }
+
+    console.debug('Account deletion scheduled', { user_id: user.id, gracePeriodDays, scheduledDate });
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'scheduleAccountDeletion');
+    return { data: null, error };
+  }
+};
+
+export const cancelAccountDeletion = async (): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const tableExists = await checkTableExists('account_deletion_requests');
+    if (!tableExists) {
+      const err = { message: 'Funcionalidade não disponível: tabela account_deletion_requests ausente', code: 'PGRST205' };
+      handleApiError(err, 'cancelAccountDeletion', { user_id: user.id, table_name: 'account_deletion_requests' });
+      return { data: null, error: err };
+    }
+
+    // Update latest scheduled request to cancelled
+    const { data: latestArr } = await supabase
+      .from('account_deletion_requests')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'scheduled')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const latestId = Array.isArray(latestArr) && latestArr[0]?.id;
+    if (!latestId) {
+      return { data: null, error: null };
+    }
+
+    const { data, error } = await supabase
+      .from('account_deletion_requests')
+      .update({ status: 'cancelled' })
+      .eq('id', latestId)
+      .select()
+      .single();
+
+    if (error) {
+      handleApiError(error, 'cancelAccountDeletion', { user_id: user.id, request_id: latestId });
+      return { data: null, error };
+    }
+
+    console.debug('Account deletion cancelled', { user_id: user.id, request_id: latestId });
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'cancelAccountDeletion');
+    return { data: null, error };
+  }
+};
+
+export const deleteUserAccount = async (): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('delete-user', { body: {} });
+    if (error) {
+      handleApiError(error, 'deleteUserAccount');
+      throw error;
+    }
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'deleteUserAccount');
+    return { data: null, error };
+  }
+};
+
+// Convenience alias expected by UI components
+export const downloadUserData = async (): Promise<{ error: any | null }> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não encontrado');
+    }
+
+    const [profileData, postsData, commentsData, notificationsData] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('posts').select('*').eq('user_id', user.id),
+      supabase.from('comments').select('*').eq('user_id', user.id),
+      supabase.from('notifications').select('*').eq('user_id', user.id)
+    ]);
+
+    const userData = {
+      profile: profileData.data,
+      posts: postsData.data || [],
+      comments: commentsData.data || [],
+      notifications: notificationsData.data || [],
+      exportDate: new Date().toISOString()
+    };
+
+    const dataStr = JSON.stringify(userData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vigil-user-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return { error: null };
+  } catch (error) {
+    handleApiError(error, 'downloadUserData');
+    return { error };
+  }
 };
 
 export const fetchFollows = async (userId: string) => {
@@ -663,8 +796,8 @@ export const fetchFollows = async (userId: string) => {
     const { data: followingData, error: followingError } = await supabase.from('followers').select('following_id').eq('follower_id', userId);
     if (followersError || followingError) throw new Error(followersError?.message || followingError?.message);
     return {
-        followerIds: followersData.map(f => f.follower_id),
-        followingIds: followingData.map(f => f.following_id),
+        followerIds: (followersData || []).map((f: { follower_id: string }) => f.follower_id),
+        followingIds: (followingData || []).map((f: { following_id: string }) => f.following_id),
     };
 };
 
@@ -843,7 +976,7 @@ export const getPendingOperationsSafe = async (userId: string) => {
         .select('id, created_at')
         .eq('user_id', userId)
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-        .then(result => {
+        .then((result: { data: { id: string; created_at: string }[] | null; error: { code?: string; message?: string } | null }) => {
           if (result.error) {
             console.debug('Error querying recent comments:', result.error);
             return { data: [], error: null };
@@ -855,7 +988,7 @@ export const getPendingOperationsSafe = async (userId: string) => {
         .select('id, created_at')
         .eq('reporter_id', userId)
         .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-        .then(result => {
+        .then((result: { data: { id: string; created_at: string }[] | null; error: { code?: string; message?: string } | null }) => {
           if (result.error) {
             console.debug('Error querying recent reports:', result.error);
             return { data: [], error: null };
@@ -887,7 +1020,7 @@ export const getPendingOperations = async (userId: string) => {
   try {
     // Check for pending comments and reports (posts don't have status column)
     const [pendingComments, pendingReports] = await Promise.all([
-      supabase.from('comments').select('id').eq('user_id', userId).eq('status', 'pending').then(result => {
+      supabase.from('comments').select('id').eq('user_id', userId).eq('status', 'pending').then((result: { data: { id: string }[] | null; error: { code?: string; message?: string } | null }) => {
         // Handle case where comments table doesn't have status column or other errors
         if (result.error) {
           if (result.error.code === 'PGRST116' || // Column doesn't exist
@@ -903,7 +1036,7 @@ export const getPendingOperations = async (userId: string) => {
         }
         return result;
       }),
-      supabase.from('reports').select('id').eq('reporter_id', userId).eq('status', 'pending').then(result => {
+      supabase.from('reports').select('id').eq('reporter_id', userId).eq('status', 'pending').then((result: { data: { id: string }[] | null; error: { code?: string; message?: string } | null }) => {
         // Handle case where reports table doesn't have status column or doesn't exist
         if (result.error) {
           if (result.error.code === 'PGRST116' || // Column doesn't exist

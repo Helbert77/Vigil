@@ -30,7 +30,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('keepLoggedIn');
         localStorage.removeItem('sessionExpiry');
         try {
-          await supabase.auth.signOut();
+          // Logout local para evitar erros de rede durante navegação/expiração
+          await supabase.auth.signOut({ scope: 'local' });
         } catch (error) {
           // Silenciar erros de logout automático
           console.log('Logout automático realizado (conexão pode ter sido interrompida)');
@@ -137,7 +138,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         const expiryTime = parseInt(sessionExpiry);
         if (Date.now() >= expiryTime) {
           try {
-            supabase.auth.signOut();
+            // Logout local evita chamada de rede que pode ser abortada
+            supabase.auth.signOut({ scope: 'local' });
           } catch (error) {
             // Silenciar erros de logout por inatividade
             console.log('Logout por inatividade realizado (conexão pode ter sido interrompida)');

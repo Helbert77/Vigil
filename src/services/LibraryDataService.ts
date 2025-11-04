@@ -1,5 +1,6 @@
 import { LibraryItem } from '@/src/data/library';
 import { logger } from '@/src/utils/Logger';
+import { getLibraryItems } from '@/src/services/api';
 
 export interface LibraryData {
   items: LibraryItem[];
@@ -12,6 +13,12 @@ class LibraryDataService {
   private cache: LibraryData | null = null;
   private cacheTimestamp: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  private readonly DEFAULT_CATEGORIES: Array<{ key: string; label: string }> = [
+    { key: 'ebook', label: 'Ebooks' },
+    { key: 'document', label: 'Documentos' },
+    { key: 'article', label: 'Artigos' },
+    { key: 'magazine', label: 'Revistas' }
+  ];
 
   private constructor() {}
 
@@ -35,25 +42,89 @@ class LibraryDataService {
       }
 
       logger.info('Carregando dados da biblioteca...', undefined, 'library', 'LibraryDataService');
-      
+
+      // 1) Tenta carregar do Supabase (tabela library_items)
+      try {
+        const { data: dbItems, error } = await getLibraryItems();
+        if (!error && dbItems && dbItems.length >= 0) {
+          // Constrói tags a partir dos itens do banco
+          const uniqueTags = new Set<string>();
+          dbItems.forEach(item => (item.tags || []).forEach(t => uniqueTags.add(t)));
+          const tags = Array.from(uniqueTags).map(t => ({ id: t, label: t, color: '#6B7280' }));
+
+          const dataFromDb: LibraryData = {
+            items: dbItems,
+            categories: this.DEFAULT_CATEGORIES,
+            tags
+          };
+
+          // Atualiza cache
+          this.cache = dataFromDb;
+          this.cacheTimestamp = now;
+
+          logger.info(`Dados carregados do Supabase: ${dbItems.length} itens`, undefined, 'library', 'LibraryDataService');
+          return dataFromDb;
+        }
+      } catch (dbErr) {
+        logger.warn('Falha ao carregar dados do Supabase, tentando JSON', dbErr, 'library', 'LibraryDataService');
+      }
+
+      // 2) Fallback: JSON estático
       const response = await fetch('/data/library.json');
-      
       if (!response.ok) {
         throw new Error(`Erro ao carregar dados: ${response.status} ${response.statusText}`);
       }
+      const jsonData: any = await response.json();
+      this.validateLibraryData(jsonData);
 
-      const data: LibraryData = await response.json();
-      
-      // Valida a estrutura dos dados
-      this.validateLibraryData(data);
-      
+      // Normaliza itens do JSON para o formato LibraryItem esperado
+      const typeMap: Record<string, string> = {
+        book: 'ebook',
+        guide: 'document',
+        video: 'document',
+        audio: 'document'
+      };
+
+      const normalizedItems = (jsonData.items || []).map((raw: any) => {
+        const rawType = (raw.type || '').toString().toLowerCase();
+        const mappedType = (typeMap[rawType] || rawType);
+        const validTypes = ['ebook', 'article', 'magazine', 'document'];
+        const finalType = validTypes.includes(mappedType) ? mappedType : 'document';
+
+        const date = raw.date || raw.publishedDate || new Date().toISOString();
+
+        const downloadUrl = raw.downloadUrl || raw.fileUrl || undefined;
+        const readUrl = raw.readUrl || raw.readOnlineUrl || downloadUrl || undefined;
+
+        const item = {
+          id: String(raw.id ?? crypto.randomUUID()),
+          type: finalType,
+          title: raw.title ?? '',
+          author: raw.author ?? '',
+          description: raw.description ?? '',
+          coverUrl: raw.coverUrl ?? '',
+          date,
+          publishedDate: raw.publishedDate ?? undefined,
+          category: raw.category ?? undefined,
+          tags: Array.isArray(raw.tags) ? raw.tags : [],
+          readUrl,
+          downloadUrl,
+          downloads: Number(raw.downloads ?? 0),
+          views: Number(raw.views ?? 0)
+        } as LibraryItem;
+        return item;
+      });
+
       // Atualiza o cache
-      this.cache = data;
+      const normalizedData: LibraryData = {
+        items: normalizedItems,
+        categories: Array.isArray(jsonData.categories) ? jsonData.categories : this.DEFAULT_CATEGORIES,
+        tags: Array.isArray(jsonData.tags) ? jsonData.tags : []
+      };
+      this.cache = normalizedData;
       this.cacheTimestamp = now;
-      
-      logger.info(`Dados carregados com sucesso: ${data.items.length} itens`, undefined, 'library', 'LibraryDataService');
-      
-      return data;
+      logger.info(`Dados carregados do JSON: ${normalizedItems.length} itens`, undefined, 'library', 'LibraryDataService');
+      return normalizedData;
     } catch (error) {
       logger.error('Erro ao carregar dados da biblioteca', error, 'library', 'LibraryDataService');
       

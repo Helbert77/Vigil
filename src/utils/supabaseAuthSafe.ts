@@ -26,8 +26,8 @@ export async function getSessionSafe(): Promise<Session | null> {
     if (isInvalidRefreshToken) {
       logger.warn('Sessão inválida: Refresh Token não encontrado. Limpando estado.', err, 'auth', 'getSessionSafe');
       try {
-        // Tenta limpar sessão para evitar loops de refresh
-        await supabase.auth.signOut();
+        // Tenta limpar sessão local para evitar loops de refresh sem depender da rede
+        await supabase.auth.signOut({ scope: 'local' });
       } catch (signOutError) {
         logger.info('Falha ao realizar signOut após erro de refresh token. Prosseguindo.', signOutError, 'auth', 'getSessionSafe');
       }
@@ -52,7 +52,7 @@ export async function withAuthGuard<T>(fn: (session: Session) => Promise<T>): Pr
   } catch (err) {
     const message = String((err as any)?.message || 'Unknown error');
     if (message.includes('Invalid Refresh Token')) {
-      try { await supabase.auth.signOut(); } catch {}
+      try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
       logger.warn('Operação protegida abortada: refresh token inválido. Sessão limpa.', err, 'auth', 'withAuthGuard');
       return null;
     }

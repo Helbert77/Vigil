@@ -7,6 +7,7 @@ export interface LibraryItem {
   author: string;
   description: string;
   coverUrl: string;
+
   date: string; // ISO date string
   publishedDate?: string; // Data de publicação
   category?: string; // Categoria do item

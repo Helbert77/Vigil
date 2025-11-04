@@ -64,6 +64,9 @@ export function formatDate(
   date: string | Date,
   options: FormatOptions = {}
 ): string {
+  if (!date) {
+    return 'Data inválida';
+  }
   const {
     locale = 'pt-BR',
     timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -96,6 +99,9 @@ export function formatDate(
  */
 function formatDateFallback(date: string | Date): string {
   try {
+    if (!date) {
+      return 'Data inválida';
+    }
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     
     if (isNaN(dateObj.getTime())) {
@@ -120,6 +126,9 @@ export function formatDateTime(
   date: string | Date,
   options: FormatOptions = {}
 ): string {
+  if (!date) {
+    return 'Data inválida';
+  }
   const {
     locale = 'pt-BR',
     timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -154,6 +163,9 @@ export function formatDateTime(
  */
 function formatDateTimeFallback(date: string | Date): string {
   try {
+    if (!date) {
+      return 'Data inválida';
+    }
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     
     if (isNaN(dateObj.getTime())) {
@@ -178,11 +190,12 @@ function formatDateTimeFallback(date: string | Date): string {
  */
 export function isRecentlyUpdated(date: string | Date): boolean {
   try {
+    if (!date) return false;
     const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
     const now = new Date();
     const diffMs = now.getTime() - dateObj.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    
     return diffHours <= 24;
   } catch (error) {
     console.error('Erro ao verificar se data foi atualizada recentemente', error);

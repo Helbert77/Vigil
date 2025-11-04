@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { LibraryItem } from '@/src/data/library';
-import { libraryAnalytics } from '@/src/services/LibraryAnalytics';
+import { realTimeAnalytics, RealTimeStats } from '@/src/services/RealTimeAnalytics';
+import SafeImage from '@/src/components/common/SafeImage';
+import { formatDate, isValidDate } from '@/src/utils/formatters';
+import { logger } from '@/src/utils/Logger';
 
 type ViewMode = 'list' | 'small' | 'large';
 
@@ -21,15 +24,53 @@ const getTypeLabel = (type: string) => {
 };
 
 export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onClick }) => {
-  const [localStats, setLocalStats] = useState(() => libraryAnalytics.getStats(item.id));
+  const [stats, setStats] = useState<RealTimeStats>(() => ({
+    views: 0,
+    downloads: 0,
+    lastAccessed: new Date().toISOString(),
+    publishedDate: item.publishedDate || item.date,
+    isUpdating: false
+  }));
 
   useEffect(() => {
-    setLocalStats(libraryAnalytics.getStats(item.id));
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    const setupAnalytics = async () => {
+      try {
+        // Tenta obter as estatísticas existentes primeiro
+        const initialStats = await realTimeAnalytics.getStats(item.id);
+        setStats(initialStats);
+
+        // Se inscreve para futuras atualizações
+        subscription = await realTimeAnalytics.subscribe(item.id, (newStats) => {
+          setStats(newStats);
+        });
+
+        // Contabiliza a visualização após a configuração inicial
+        await realTimeAnalytics.incrementView(item.id);
+
+      } catch (error) {
+        // Em caso de erro, tenta se inscrever e obter os dados
+        realTimeAnalytics.subscribe(item.id, (newStats) => {
+          setStats(newStats);
+        }).then(sub => {
+          subscription = sub;
+          // Tenta incrementar mesmo se a obtenção inicial falhar
+          return realTimeAnalytics.incrementView(item.id);
+        }).catch(() => {});
+      }
+    };
+
+    setupAnalytics();
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [item.id]);
 
   const handleClick = () => {
-    libraryAnalytics.incrementView(item.id);
-    setLocalStats(libraryAnalytics.getStats(item.id));
     onClick(item);
   };
 
@@ -46,9 +87,12 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
     return num.toString();
   };
 
-  const generateSrcSet = (baseUrl: string): string => {
+  const generateSrcSet = (baseUrl: string): string | undefined => {
+    const isUnsplash = baseUrl.includes('images.unsplash.com');
+    if (!isUnsplash) return undefined;
     const sizes = [150, 300, 450, 600];
-    return sizes.map(size => `${baseUrl}&w=${size} ${size}w`).join(', ');
+    const sep = baseUrl.includes('?') ? '&' : '?';
+    return sizes.map(size => `${baseUrl}${sep}w=${size} ${size}w`).join(', ');
   };
 
   const getImageSizes = (viewMode: ViewMode): string => {
@@ -65,17 +109,45 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
   };
   const baseClasses = 'library-card transition transform hover:scale-[1.01] hover:shadow-lg cursor-pointer rounded-lg border border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card';
 
+  const isFutureDate = (iso?: string): boolean => {
+    if (!iso) return false;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return false;
+    // tolerância de 60s para clocks diferentes
+    return d.getTime() > Date.now() + 60_000;
+  };
+
+  // Exibe exatamente a mesma data do item, sem conversões que alterem o dia
+  const formatExactItemDate = (raw?: string): string => {
+    if (!raw) return '';
+    // Caso 'YYYY-MM-DD'
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const [y, m, d] = raw.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    // Caso ISO 'YYYY-MM-DDTHH:MM:SSZ' ou similar: usa apenas a parte da data
+    const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoMatch) {
+      const [y, m, d] = isoMatch[1].split('-');
+      return `${d}/${m}/${y}`;
+    }
+    // Caso já esteja formatado (ex.: 'DD/MM/YYYY'), retorna como está
+    return raw;
+  };
+
   if (viewMode === 'list') {
     return (
       <div className={`${baseClasses} flex gap-4 min-h-[120px]`} onClick={handleClick}>
-        <img 
-          src={item.coverUrl} 
+        <SafeImage
+          src={item.coverUrl}
           srcSet={generateSrcSet(item.coverUrl)}
-          sizes={getImageSizes('list')}
+          sizes={generateSrcSet(item.coverUrl) ? getImageSizes('list') : undefined}
           alt={item.title}
           className="w-32 h-full object-cover rounded-l-lg flex-shrink-0"
           loading="lazy"
           decoding="async"
+          minWidth={64}
+          minHeight={64}
         />
         <div className="flex-1 min-w-0 p-4 flex flex-col justify-between">
           <div>
@@ -98,18 +170,33 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
                     <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                     <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                   </svg>
-                  {formatNumber((item.views || 0) + localStats.views)}
+                  {formatNumber(stats.views)}
                 </span>
                 <span className="flex items-center gap-1">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
                   </svg>
-                  {formatNumber((item.downloads || 0) + localStats.downloads)}
+                  {formatNumber(stats.downloads)}
                 </span>
               </div>
-              <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                {new Date(item.publishedDate || item.date).toLocaleDateString('pt-BR')}
-              </span>
+              {(() => {
+                const raw = item.publishedDate || item.date;
+                if (!isValidDate(raw)) {
+                  logger.warn('Data de publicação inválida no card', { id: item.id, raw }, 'library', 'LibraryItemCard');
+                  return (
+                    <span className="text-xs text-red-600 dark:text-red-400">Data inválida</span>
+                  );
+                }
+                const future = isFutureDate(raw);
+                return (
+                  <span className="text-xs text-light-text-secondary dark:text-dark-text-secondary inline-flex items-center gap-1">
+                    {formatExactItemDate(raw)}
+                    {future && (
+                      <span className="px-1 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-[10px]">Agendada</span>
+                    )}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -129,14 +216,16 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
         aria-describedby={`stats-${item.id}`}
       >
         <div className="w-full flex flex-col items-center">
-          <img 
-            src={item.coverUrl} 
+          <SafeImage
+            src={item.coverUrl}
             srcSet={generateSrcSet(item.coverUrl)}
-            sizes={getImageSizes('small')}
+            sizes={generateSrcSet(item.coverUrl) ? getImageSizes('small') : undefined}
             alt={item.title}
             className="card-image w-16 h-20 sm:w-18 sm:h-22 md:w-20 md:h-24 object-cover rounded mx-auto mb-2 flex-shrink-0"
             loading="lazy"
             decoding="async"
+            minWidth={64}
+            minHeight={64}
           />
           <div className="w-full min-h-0 flex-1 flex flex-col">
             <h3 className="card-title text-light-text dark:text-dark-text line-clamp-2 mb-1 text-xs sm:text-sm font-medium leading-tight">{item.title}</h3>
@@ -154,13 +243,13 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
                   <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                   <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                 </svg>
-                <span className="truncate">{formatNumber((item.views || 0) + localStats.views)}</span>
+                <span className="truncate">{formatNumber(stats.views)}</span>
               </span>
               <span className="flex items-center gap-0.5 min-w-0">
                 <svg className="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
                 </svg>
-                <span className="truncate">{formatNumber((item.downloads || 0) + localStats.downloads)}</span>
+                <span className="truncate">{formatNumber(stats.downloads)}</span>
               </span>
             </div>
           </div>
@@ -171,14 +260,16 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
 
   return (
     <div className={`${baseClasses} large-card`} onClick={handleClick}>
-      <img 
-        src={item.coverUrl} 
+      <SafeImage
+        src={item.coverUrl}
         srcSet={generateSrcSet(item.coverUrl)}
-        sizes={getImageSizes('large')}
+        sizes={generateSrcSet(item.coverUrl) ? getImageSizes('large') : undefined}
         alt={item.title}
         className="card-image"
         loading="lazy"
         decoding="async"
+        minWidth={160}
+        minHeight={160}
       />
       <h3 className="card-title text-light-text dark:text-dark-text">{item.title}</h3>
       <p className="card-author text-light-text-secondary dark:text-dark-text-secondary">{item.author}</p>
@@ -196,13 +287,13 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
             <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
           </svg>
-          {formatNumber((item.views || 0) + localStats.views)}
+          {formatNumber(stats.views)}
         </span>
         <span className="library-stat">
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
           </svg>
-          {formatNumber((item.downloads || 0) + localStats.downloads)}
+          {formatNumber(stats.downloads)}
         </span>
       </div>
     </div>

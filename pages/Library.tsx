@@ -1,10 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { LibraryItemCard } from '@/src/components/library/LibraryItemCard';
-import { LibraryItemModal } from '@/src/components/library/LibraryItemModal';
-import { LibraryItem, LibraryItemType } from '@/src/data/library';
-import { libraryDataService, LibraryData } from '@/src/services/LibraryDataService';
-import { logger } from '@/src/utils/Logger';
-import '@/src/styles/library-responsive.css';
+import { LibraryItemCard } from '../src/components/library/LibraryItemCard';
+import { LibraryItemModal } from '../src/components/library/LibraryItemModal';
+import { LibraryItem, LibraryItemType } from '../src/data/library';
+import { libraryDataService, LibraryData } from '../src/services/LibraryDataService';
+import { logger } from '../src/utils/Logger';
+import { fileStorageService } from '../src/services/FileStorageService';
+import '../src/styles/library-responsive.css';
+import * as api from '../src/services/api';
+import { supabase } from '../integrations/supabase/client';
+import { useToast } from '@/hooks/useToast';
 
 type ViewMode = 'list' | 'small' | 'large';
 type SortBy = 'date' | 'title' | 'author';
@@ -26,99 +30,153 @@ const Library: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isContributeModalOpen, setIsContributeModalOpen] = useState(false);
-  
-  // Estados para dados carregados
   const [libraryData, setLibraryData] = useState<LibraryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar dados da biblioteca
   useEffect(() => {
-    const loadData = async () => {
+    let mounted = true;
+    const load = async () => {
       try {
         setIsLoading(true);
-        setError(null);
-        logger.info('Carregando dados da biblioteca...', undefined, 'library', 'Library');
-        
         const data = await libraryDataService.loadLibraryData();
-        setLibraryData(data);
-        
-        logger.info(`Dados carregados: ${data.items.length} itens`, undefined, 'library', 'Library');
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-        setError(errorMessage);
-        logger.error('Erro ao carregar dados', err, 'library', 'Library');
+        if (mounted) setLibraryData(data);
+      } catch (err: any) {
+        if (mounted) setError(err?.message || 'Falha ao carregar biblioteca');
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
       }
     };
-
-    loadData();
+    load();
+    return () => { mounted = false; };
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!libraryData) return [];
-    
-    let items = [...libraryData.items];
-    
-    // Filtrar por categoria
-    if (activeCategory !== 'all') {
-      items = items.filter(i => (i.category || i.type) === activeCategory);
+  // Estado para o formulário de contribuição
+  const [contributionType, setContributionType] = useState('');
+  const [contributionTitle, setContributionTitle] = useState('');
+  const [contributionUrl, setContributionUrl] = useState('');
+  const [contributionAuthor, setContributionAuthor] = useState('');
+  const [contributionDescription, setContributionDescription] = useState('');
+  const [contributionTags, setContributionTags] = useState('');
+  const [contributionFile, setContributionFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { addToast } = useToast();
+
+  const handleContributeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contributionFile || !contributionTitle || !contributionAuthor) {
+      setSubmitError('Por favor, preencha todos os campos obrigatórios.');
+      return;
     }
-    
-    // Filtrar por tag
-    if (selectedTag !== 'todos') {
-      items = items.filter(i => i.tags?.includes(selectedTag));
-    }
-    
-    // Filtrar por busca
-    const q = query.trim().toLowerCase();
-    if (q) {
-      items = items.filter(i => (
-        i.title.toLowerCase().includes(q) ||
-        i.author.toLowerCase().includes(q) ||
-        i.description.toLowerCase().includes(q) ||
-        (i.tags && i.tags.some(tag => tag.toLowerCase().includes(q)))
-      ));
-    }
-    
-    // Ordenar
-    items.sort((a, b) => {
-      let aValue: any, bValue: any;
-      
-      switch (sortBy) {
-        case 'title':
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
-          break;
-        case 'author':
-          aValue = a.author.toLowerCase();
-          bValue = b.author.toLowerCase();
-          break;
-        case 'date':
-          aValue = new Date(a.publishedDate || a.date);
-          bValue = new Date(b.publishedDate || b.date);
-          break;
-        case 'downloads':
-          aValue = a.downloads || 0;
-          bValue = b.downloads || 0;
-          break;
-        case 'views':
-          aValue = a.views || 0;
-          bValue = b.views || 0;
-          break;
-        default:
-          aValue = a.title.toLowerCase();
-          bValue = b.title.toLowerCase();
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // 1. Upload do arquivo para o Supabase Storage
+      const fileExt = contributionFile.name.split('.').pop();
+  const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('library-media')
+        .upload(filePath, contributionFile);
+
+      if (uploadError) {
+        throw new Error(`Falha no upload do arquivo: ${uploadError.message}`);
       }
-      
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-    
-    return items;
-  }, [libraryData, activeCategory, query, selectedTag, sortBy, sortOrder]);
+
+      // 2. Obter a URL pública do arquivo
+      const { data: urlData } = supabase.storage
+        .from('library-media')
+        .getPublicUrl(filePath);
+
+      if (!urlData) {
+        throw new Error('Não foi possível obter a URL pública do arquivo.');
+      }
+      const publicUrl = urlData.publicUrl;
+
+      // 3. Criar o novo item da biblioteca (sem id/downloads/views)
+      const validTypes: LibraryItemType[] = ['ebook', 'document', 'article', 'magazine'];
+      const computedType: LibraryItemType = validTypes.includes(contributionType as LibraryItemType)
+        ? (contributionType as LibraryItemType)
+        : 'document';
+      const newLibraryItem: Omit<LibraryItem, 'id' | 'downloads' | 'views'> = {
+        title: contributionTitle,
+        author: contributionAuthor,
+        description: contributionDescription,
+        type: computedType,
+        tags: contributionTags.split(',').map(tag => tag.trim()).filter(Boolean),
+        date: new Date().toISOString(),
+        coverUrl: publicUrl,
+        readUrl: publicUrl,
+        downloadUrl: publicUrl,
+      };
+
+      // 4. Tentar adicionar o item ao banco de dados, com fallback se a tabela não existir
+      const tableExists = await api.checkTableExists('library_items');
+      if (!tableExists) {
+        const localItem: LibraryItem = {
+          id: crypto.randomUUID(),
+          downloads: 0,
+          views: 0,
+          ...newLibraryItem,
+        };
+
+        setLibraryData(prev => {
+          if (!prev) {
+            return { items: [localItem], categories: [], tags: [] };
+          }
+          return { ...prev, items: [localItem, ...(prev.items || [])] };
+        });
+
+        addToast('Tabela da biblioteca não está configurada. Sua contribuição foi salva localmente nesta sessão.', 'info');
+
+        // Limpar e fechar
+        setContributionType('');
+        setContributionTitle('');
+        setContributionAuthor('');
+        setContributionDescription('');
+        setContributionType('');
+        setContributionTags('');
+        setContributionFile(null);
+        setIsContributeModalOpen(false);
+        return;
+      }
+
+      const { data: addedItem, error: dbError } = await api.addLibraryItem(newLibraryItem);
+      if (dbError || !addedItem) {
+        throw new Error(`Falha ao adicionar o item na biblioteca: ${dbError?.message}`);
+      }
+
+      // 5. Atualizar o estado local
+      setLibraryData(prev => {
+        if (!prev) {
+          return { items: [addedItem], categories: [], tags: [] };
+        }
+        return { ...prev, items: [addedItem, ...(prev.items || [])] };
+      });
+
+      // 6. Limpar o formulário e fechar o modal
+      setContributionType('');
+      setContributionTitle('');
+      setContributionAuthor('');
+      setContributionDescription('');
+      setContributionType('');
+      setContributionTags('');
+      setContributionFile(null);
+      setIsContributeModalOpen(false);
+      addToast('Contribuição adicionada com sucesso!', 'success');
+
+    } catch (error: any) {
+      console.error('Erro ao contribuir:', error);
+      // Ao ocorrer erro no insert, informar claramente no formulário
+      setSubmitError(error.message || 'Ocorreu um erro desconhecido.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleOpen = (item: LibraryItem) => {
     setSelectedItem(item);
@@ -128,6 +186,56 @@ const Library: React.FC = () => {
   const handleClose = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
+  };
+
+  const filtered = useMemo(() => {
+    if (!libraryData) return [];
+    let items = [...(libraryData.items || [])];
+    const q = query.trim().toLowerCase();
+
+    if (activeCategory !== 'all') {
+      items = items.filter(i => i.type === activeCategory);
+    }
+    if (selectedTag !== 'todos') {
+      items = items.filter(i => (i.tags || []).includes(selectedTag));
+    }
+    if (q) {
+      items = items.filter(i => (
+        i.title?.toLowerCase().includes(q) ||
+        i.author?.toLowerCase().includes(q) ||
+        i.description?.toLowerCase().includes(q)
+      ));
+    }
+
+    items.sort((a, b) => {
+      let cmp = 0;
+      switch (sortBy) {
+        case 'title':
+          cmp = a.title.localeCompare(b.title);
+          break;
+        case 'author':
+          cmp = a.author.localeCompare(b.author);
+          break;
+        case 'date':
+          cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+          break;
+        case 'downloads':
+          cmp = (a.downloads || 0) - (b.downloads || 0);
+          break;
+        case 'views':
+          cmp = (a.views || 0) - (b.views || 0);
+          break;
+      }
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+
+    return items;
+  }, [libraryData, activeCategory, selectedTag, query, sortBy, sortOrder]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setContributionFile(e.target.files[0]);
+    }
   };
 
   // Loading state
@@ -152,7 +260,7 @@ const Library: React.FC = () => {
       <div className="library-page bg-light-background dark:bg-dark-background">
         <div className="library-container">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+            <h2 className="text-lg font-semibold text-red-800 dark:text-white">
               Erro ao carregar biblioteca
             </h2>
             <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
@@ -180,7 +288,7 @@ const Library: React.FC = () => {
             Acesse nossa crescente coleção de documentos. Contribua com a nossa biblioteca indicando links, artigos, ou livros relacionados aos nossos temas.{' '}
             <button
               onClick={() => setIsContributeModalOpen(true)}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline font-medium transition-colors"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
             >
               Contribua
             </button>
@@ -320,13 +428,16 @@ const Library: React.FC = () => {
                 Ajude-nos a expandir nossa biblioteca compartilhando recursos valiosos relacionados aos nossos temas.
               </p>
               
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleContributeSubmit}>
                 <div>
                   <label htmlFor="contribute-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Tipo de Contribuição
                   </label>
                   <select
                     id="contribute-type"
+                    value={contributionType}
+                    onChange={(e) => setContributionType(e.target.value)}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="">Selecione o tipo</option>
@@ -346,6 +457,9 @@ const Library: React.FC = () => {
                   <input
                     type="text"
                     id="contribute-title"
+                    value={contributionTitle}
+                    onChange={(e) => setContributionTitle(e.target.value)}
+                    required
                     placeholder="Digite o título do recurso"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
@@ -358,63 +472,93 @@ const Library: React.FC = () => {
                   <input
                     type="url"
                     id="contribute-url"
+                    value={contributionUrl}
+                    onChange={(e) => setContributionUrl(e.target.value)}
                     placeholder="https://exemplo.com"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
-                
+
                 <div>
-                  <label htmlFor="contribute-author" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="contribute-file" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Arquivo (Documento, Imagem, Vídeo)
+                  </label>
+                  <input
+                    type="file"
+                    id="contribute-file"
+                    onChange={handleFileChange}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/40 dark:file:text-blue-300 dark:hover:file:bg-blue-900/60"
+                  />
+                  {contributionFile && (
+                    <p className="text-xs text-gray-500 mt-1">Arquivo selecionado: {contributionFile.name}</p>
+                  )}
+                </div>
+                 
+                 <div>
+                   <label htmlFor="contribute-author" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Autor
                   </label>
                   <input
                     type="text"
                     id="contribute-author"
+                    value={contributionAuthor}
+                    onChange={(e) => setContributionAuthor(e.target.value)}
                     placeholder="Nome do autor"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
-                
-                <div>
-                  <label htmlFor="contribute-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Descrição
-                  </label>
-                  <textarea
-                    id="contribute-description"
-                    rows={4}
-                    placeholder="Descreva brevemente o conteúdo e sua relevância para nossa biblioteca"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
-                  ></textarea>
-                </div>
-                
-                <div>
-                  <label htmlFor="contribute-tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tags (separadas por vírgula)
-                  </label>
-                  <input
-                    type="text"
-                    id="contribute-tags"
-                    placeholder="conspiração, política, história"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsContributeModalOpen(false)}
-                    className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium"
-                  >
-                    Enviar Contribuição
-                  </button>
-                </div>
-              </form>
+                 
+                 <div>
+                   <label htmlFor="contribute-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                     Descrição
+                   </label>
+                   <textarea
+                     id="contribute-description"
+                     rows={4}
+                     value={contributionDescription}
+                     onChange={(e) => setContributionDescription(e.target.value)}
+                     required
+                     placeholder="Descreva brevemente o conteúdo e sua relevância para nossa biblioteca"
+                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                   ></textarea>
+                 </div>
+                 
+                 <div>
+                   <label htmlFor="contribute-tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                     Tags (separadas por vírgula)
+                   </label>
+                   <input
+                     type="text"
+                     id="contribute-tags"
+                     value={contributionTags}
+                     onChange={(e) => setContributionTags(e.target.value)}
+                     placeholder="conspiração, política, história"
+                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                   />
+                 </div>
+                 
+                 {submitError && (
+                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3 text-sm text-red-700 dark:text-red-200">
+                     {submitError}
+                   </div>
+                 )}
+                 <div className="flex gap-3 pt-4">
+                   <button
+                     type="button"
+                     onClick={() => setIsContributeModalOpen(false)}
+                     className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors font-medium"
+                   >
+                     Cancelar
+                   </button>
+                   <button
+                     type="submit"
+                     disabled={isSubmitting}
+                     className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium disabled:bg-blue-400 disabled:cursor-not-allowed"
+                   >
+                     {isSubmitting ? 'Enviando...' : 'Enviar Contribuição'}
+                   </button>
+                 </div>
+               </form>
             </div>
           </div>
         </div>

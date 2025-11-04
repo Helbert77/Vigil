@@ -1,9 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import GenericModal from '@/src/components/common/GenericModal';
+import SafeImage from '@/src/components/common/SafeImage';
 import { LibraryItem } from '@/src/data/library';
 import { useRealTimeAnalytics } from '@/src/hooks/useRealTimeAnalytics';
-import { formatNumber, formatDate, isRecentlyUpdated } from '@/src/utils/formatters';
+import { formatNumber, formatDate, isRecentlyUpdated, isValidDate } from '@/src/utils/formatters';
+import { logger } from '@/src/utils/Logger';
 import '@/src/styles/library-modal.css';
+
+// Formata exatamente a data do item sem alterar o dia
+const formatExactItemDate = (raw?: string): string => {
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  const isoMatch = raw.match(/^(\d{4}-\d{2}-\d{2})T/);
+  if (isoMatch) {
+    const [y, m, d] = isoMatch[1].split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return raw;
+};
+
+// Extrai o nome do arquivo da URL (último segmento), ignorando query/hash
+const extractFileNameFromUrl = (url: string): string | null => {
+  try {
+    const u = new URL(url, window.location.href);
+    const pathname = u.pathname;
+    if (!pathname) return null;
+    const lastSegment = pathname.split('/').filter(Boolean).pop();
+    return lastSegment ? decodeURIComponent(lastSegment) : null;
+  } catch {
+    const clean = url.split('?')[0].split('#')[0];
+    const lastSegment = clean.split('/').filter(Boolean).pop();
+    return lastSegment ? decodeURIComponent(lastSegment) : null;
+  }
+};
+
+// Tenta obter filename do cabeçalho Content-Disposition
+const parseContentDispositionFilename = (disposition: string | null): string | null => {
+  if (!disposition) return null;
+  const starMatch = disposition.match(/filename\*=\s*UTF-8''([^;\n]+)/i);
+  if (starMatch && starMatch[1]) {
+    try {
+      return decodeURIComponent(starMatch[1]);
+    } catch {
+      return starMatch[1];
+    }
+  }
+  const stdMatch = disposition.match(/filename\s*=\s*"?([^";\n]+)"?/i);
+  if (stdMatch && stdMatch[1]) {
+    return stdMatch[1];
+  }
+  return null;
+};
 
 interface LibraryItemModalProps {
   isOpen: boolean;
@@ -13,6 +63,7 @@ interface LibraryItemModalProps {
 
 const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, item }) => {
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   // Hook de analytics em tempo real
   const {
@@ -29,6 +80,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
   } = useRealTimeAnalytics({
     itemId: item?.id || '',
     autoStart: isOpen && !!item,
+    publishedDate: item?.publishedDate || item?.date,
     onError: (err) => {
       console.error('Erro no analytics:', err);
       setError('Erro ao carregar estatísticas em tempo real');
@@ -45,57 +97,126 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
     }
   }, [isOpen]);
 
+  // Preparação e validação de data ANTES de qualquer early return
+  const publishedDateRaw = item?.publishedDate || item?.date || new Date().toISOString();
+  const isPublishedValid = isValidDate(publishedDateRaw);
+  const isPublishedFuture = (() => {
+    const d = new Date(publishedDateRaw);
+    if (isNaN(d.getTime())) return false;
+    return d.getTime() > Date.now() + 60_000; // tolerância de 60s
+  })();
+  const isDateRecent = isRecentlyUpdated(publishedDateRaw);
+
+  // Logs de validação de data (hook sempre chamado; lógica interna condicionada)
+  useEffect(() => {
+    if (!item) return;
+    if (!isPublishedValid) {
+      logger.warn('Data de publicação inválida', { id: item.id, publishedDate: publishedDateRaw }, 'library', 'LibraryItemModal');
+    } else if (isPublishedFuture) {
+      logger.warn('Data de publicação futura', { id: item.id, publishedDate: publishedDateRaw }, 'library', 'LibraryItemModal');
+    }
+  }, [item, isPublishedValid, isPublishedFuture, publishedDateRaw]);
+
   if (!item) return null;
 
   const handleDownload = async () => {
+    // Mantém o botão habilitado; evita operações concorrentes
+    if (isDownloading) return;
     try {
-      await incrementDownload();
-      
-      // Simular download
-      if (item.downloadUrl) {
+      if (!item) {
+        setError('Arquivo para download indisponível.');
+        return;
+      }
+
+      setIsDownloading(true);
+      const url = item.downloadUrl || item.readUrl;
+      if (!url) {
+        setError('Arquivo para download indisponível.');
+        return;
+      }
+      let fileName: string | undefined;
+
+      // Tenta baixar via fetch (CORS) para preservar o nome do arquivo e mostrar feedback
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const disposition = response.headers.get('Content-Disposition');
+        const nameFromHeader = parseContentDispositionFilename(disposition);
+        const blob = await response.blob();
+        fileName = nameFromHeader || extractFileNameFromUrl(url) || `${item.title}.pdf`;
+
+        const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = item.downloadUrl;
-        link.download = `${item.title}.pdf`;
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
         link.click();
+        link.remove();
+        URL.revokeObjectURL(blobUrl);
+
+        await incrementDownload();
+        setError(null);
+      } catch (downloadErr) {
+        // Fallback: abrir o link diretamente. Para mesma origem, sugere filename; para cross-origin, deixa o servidor decidir.
+        const link = document.createElement('a');
+        link.href = url;
+        let sameOrigin = false;
+        try {
+          const u = new URL(url, window.location.href);
+          sameOrigin = u.origin === window.location.origin;
+        } catch {}
+        if (sameOrigin) {
+          fileName = extractFileNameFromUrl(url) || `${item.title}.pdf`;
+          link.download = fileName;
+        }
+        link.target = '_blank';
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        await incrementDownload();
       }
     } catch (err) {
-      console.error('Erro ao incrementar download:', err);
-      setError('Erro ao registrar download');
+      console.error('Erro no download:', err);
+      setError('Falha ao baixar o arquivo. Tente novamente mais tarde.');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handleReadOnline = async () => {
     try {
-      await incrementView();
-      
       // Simular leitura online
       if (item.readUrl) {
         window.open(item.readUrl, '_blank');
       }
     } catch (err) {
       console.error('Erro ao incrementar visualização:', err);
-      setError('Erro ao registrar visualização');
+      setError('Erro ao abrir leitura online');
     }
   };
 
   // Valores para exibição com fallback
   const displayViews = stats?.views ?? (item.views || 0);
   const displayDownloads = stats?.downloads ?? (item.downloads || 0);
-  const publishedDate = stats?.publishedDate || item.date;
-  const isDateRecent = isRecentlyUpdated(publishedDate);
+  const publishedDate = stats?.publishedDate || publishedDateRaw;
 
   return (
     <GenericModal isOpen={isOpen} onClose={onClose} title="" size="xl">
         <div className="library-modal-content flex flex-col lg:flex-row gap-4 md:gap-6">
           {/* Imagem da capa */}
           <div className="flex-shrink-0 mx-auto lg:mx-0">
-            <img 
+            <SafeImage 
               src={item.coverUrl} 
-              srcSet={`${item.coverUrl}&w=200 200w, ${item.coverUrl}&w=300 300w, ${item.coverUrl}&w=400 400w`}
-              sizes="(max-width: 768px) 200px, (max-width: 1024px) 250px, 300px"
+              srcSet={item.coverUrl.includes('images.unsplash.com') ? `${item.coverUrl}&w=200 200w, ${item.coverUrl}&w=300 300w, ${item.coverUrl}&w=400 400w` : undefined}
+              sizes={item.coverUrl.includes('images.unsplash.com') ? "(max-width: 768px) 200px, (max-width: 1024px) 250px, 300px" : undefined}
               alt={item.title}
               className="library-modal-image w-48 sm:w-56 md:w-64 lg:w-72 h-64 sm:h-72 md:h-80 lg:h-96 object-cover rounded-lg shadow-lg"
               loading="lazy"
+              minWidth={160}
+              minHeight={160}
             />
           </div>
 
@@ -122,12 +243,12 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
                 <div className="flex flex-wrap gap-3 sm:gap-4 text-sm text-light-text-secondary dark:text-dark-text-secondary">
                   <span className="flex items-center gap-1">
                     <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                      <path d="M10 12a2 2 0 100-4 2 2 0 100 4z"/>
                       <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                     </svg>
                     <span className="whitespace-nowrap flex items-center gap-1">
                       {formatNumber(displayViews)} visualizações
-                      {isUpdating && (
+                      {isLoading && (
                         <svg className="w-3 h-3 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -141,7 +262,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
                     </svg>
                     <span className="whitespace-nowrap flex items-center gap-1">
                       {formatNumber(displayDownloads)} downloads
-                      {isUpdating && (
+                      {isLoading && (
                         <svg className="w-3 h-3 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -149,8 +270,8 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
                       )}
                     </span>
                   </span>
-                  {/* Indicador de nível de atividade */}
-                  {activityLevel === 'peak' && (
+                  {/* Indicador de nível de atividade baseado em thresholds */}
+                  {((stats?.views ?? 0) >= 100 || (stats?.downloads ?? 0) >= 10) && (
                     <span className="flex items-center gap-1 text-orange-500">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd"/>
@@ -188,7 +309,19 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
             {/* Informações adicionais */}
             <div className="mb-4 md:mb-6">
               <p className="text-xs sm:text-sm text-light-text-secondary dark:text-dark-text-secondary flex items-center gap-2">
-                <span>Publicado em: {formatDate(publishedDate)}</span>
+                {!isPublishedValid ? (
+                  <span className="text-red-600 dark:text-red-400">Data inválida</span>
+                ) : (
+                  <span>Publicado em: {formatExactItemDate(publishedDateRaw)}</span>
+                )}
+                {isPublishedFuture && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                    </svg>
+                    Agendada
+                  </span>
+                )}
                 {isDateRecent && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -241,19 +374,32 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
                 className="library-modal-button bg-primary hover:bg-primary/90 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium sm:font-semibold transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                  <path d="M10 12a2 2 0 100-4 2 2 0 100 4z"/>
                   <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
                 </svg>
                 <span className="whitespace-nowrap">Ler Online</span>
               </button>
               <button 
+                type="button"
                 onClick={handleDownload}
                 className="library-modal-button bg-light-border dark:bg-dark-border hover:bg-light-border/80 dark:hover:bg-dark-border/80 text-light-text dark:text-dark-text px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium sm:font-semibold transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                aria-label="Download"
+                aria-busy={isDownloading}
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
-                </svg>
-                <span className="whitespace-nowrap">Baixar PDF</span>
+                {isDownloading ? (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/>
+                  </svg>
+                )}
+                <span className="whitespace-nowrap">Download</span>
+                <span className="sr-only" aria-live="polite" role="status">
+                  {isDownloading ? 'Baixando arquivo...' : (error ? 'Falha no download' : 'Pronto para baixar')}
+                </span>
               </button>
               <button className="library-modal-button sm:col-span-2 lg:col-span-1 bg-light-card dark:bg-dark-card hover:bg-light-card/80 dark:hover:bg-dark-card/80 text-light-text dark:text-dark-text px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium sm:font-semibold transition-colors border border-light-border dark:border-dark-border flex items-center justify-center gap-2 text-sm sm:text-base">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

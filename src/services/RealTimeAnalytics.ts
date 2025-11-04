@@ -118,55 +118,26 @@ class RealTimeAnalyticsService {
   }
 
   private async fetchAndUpdateStats(itemId: string): Promise<void> {
-    // Simula chamada à API real com dados realistas
+    // Atualização passiva silenciosa: não altera contadores nem notifica subscribers
+    // Apenas garante inicialização e registra debug.
     const currentStats = this.analytics[itemId] || this.createInitialStats(itemId);
-    
-    // Marca como atualizando
-    currentStats.isUpdating = true;
-    this.notifySubscribers(itemId, currentStats);
-
     try {
-      // Simula latência da API
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 100));
-
-      // Simula incrementos realistas baseados em atividade
-      const viewIncrement = Math.floor(Math.random() * 5); // 0-4 visualizações
-      const downloadIncrement = Math.floor(Math.random() * 2); // 0-1 downloads
-
-      const updatedStats: RealTimeStats = {
-        ...currentStats,
-        views: currentStats.views + viewIncrement,
-        downloads: currentStats.downloads + downloadIncrement,
-        lastAccessed: new Date().toISOString(),
-        isUpdating: false
-      };
-
-      this.analytics[itemId] = updatedStats;
-      this.saveToStorage();
-      this.notifySubscribers(itemId, updatedStats);
-
-      logger.debug(`Stats atualizados para ${itemId}`, {
-        views: updatedStats.views,
-        downloads: updatedStats.downloads,
-        viewIncrement,
-        downloadIncrement
+      await new Promise(resolve => setTimeout(resolve, 50));
+      logger.debug(`Verificação passiva de stats para ${itemId}`, {
+        views: currentStats.views,
+        downloads: currentStats.downloads
       }, 'library', 'RealTimeAnalytics');
-
     } catch (error) {
-      currentStats.isUpdating = false;
-      this.notifySubscribers(itemId, currentStats);
-      throw error;
+      // Silencia erros passivos
+      logger.error(`Erro em verificação passiva para ${itemId}`, error, 'library', 'RealTimeAnalytics');
     }
   }
 
   private createInitialStats(itemId: string): RealTimeStats {
-    // Cria stats iniciais com dados simulados realistas
-    const baseViews = Math.floor(Math.random() * 1000) + 100;
-    const baseDownloads = Math.floor(baseViews * 0.1); // ~10% conversion rate
-    
+    // Stats iniciais determinísticos (sem aleatoriedade)
     return {
-      views: baseViews,
-      downloads: baseDownloads,
+      views: 0,
+      downloads: 0,
       lastAccessed: new Date().toISOString(),
       publishedDate: this.generateRealisticPublishDate(),
       isUpdating: false
@@ -212,7 +183,7 @@ class RealTimeAnalyticsService {
     // Detecta mudanças no nível de atividade
     this.detectActivityLevel();
 
-    // Busca dados iniciais se não existirem
+    // Garante dados iniciais sem aleatoriedade
     if (!this.analytics[itemId]) {
       this.analytics[itemId] = this.createInitialStats(itemId);
       this.saveToStorage();
@@ -227,6 +198,22 @@ class RealTimeAnalyticsService {
       callback,
       unsubscribe: () => this.unsubscribe(itemId, callback)
     };
+  }
+
+  /**
+   * Semear valores iniciais com dados reais do item
+   */
+  public seedInitialStats(itemId: string, views: number, downloads: number, publishedDate?: string): void {
+    const current = this.analytics[itemId] || this.createInitialStats(itemId);
+    this.analytics[itemId] = {
+      ...current,
+      views: typeof views === 'number' ? views : current.views,
+      downloads: typeof downloads === 'number' ? downloads : current.downloads,
+      publishedDate: publishedDate || current.publishedDate,
+    };
+    this.saveToStorage();
+    this.notifySubscribers(itemId, this.analytics[itemId]);
+    logger.info('Stats semeados com valores reais', { itemId, views, downloads }, 'library', 'RealTimeAnalytics');
   }
 
   public unsubscribe(itemId: string, callback: (stats: RealTimeStats) => void): void {
