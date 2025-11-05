@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { LibraryItemCard } from '../src/components/library/LibraryItemCard';
-import { LibraryItemModal } from '../src/components/library/LibraryItemModal';
-import { LibraryItem, LibraryItemType } from '../src/data/library';
-import { libraryDataService, LibraryData } from '../src/services/LibraryDataService';
-import { logger } from '../src/utils/Logger';
-import { fileStorageService } from '../src/services/FileStorageService';
-import '../src/styles/library-responsive.css';
-import * as api from '../src/services/api';
-import { supabase } from '../integrations/supabase/client';
+import { LibraryItemCard } from '@/src/components/library/LibraryItemCard';
+import LibraryItemModal from '@/src/components/library/LibraryItemModal';
+import { LibraryItem, LibraryItemType } from '@/src/data/library';
+import { libraryDataService, LibraryData } from '@/src/services/LibraryDataService';
+import { logger } from '@/src/utils/Logger';
+import '@/src/styles/library-responsive.css';
+import * as api from '@/src/services/api';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 
 type ViewMode = 'list' | 'small' | 'large';
@@ -34,6 +33,17 @@ const Library: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Estado para o formulário de contribuição
+  const [contributionType, setContributionType] = useState('');
+  const [contributionTitle, setContributionTitle] = useState('');
+  const [contributionAuthor, setContributionAuthor] = useState('');
+  const [contributionDescription, setContributionDescription] = useState('');
+  const [contributionTags, setContributionTags] = useState('');
+  const [contributionFile, setContributionFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { addToast } = useToast();
+
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -51,18 +61,6 @@ const Library: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Estado para o formulário de contribuição
-  const [contributionType, setContributionType] = useState('');
-  const [contributionTitle, setContributionTitle] = useState('');
-  const [contributionUrl, setContributionUrl] = useState('');
-  const [contributionAuthor, setContributionAuthor] = useState('');
-  const [contributionDescription, setContributionDescription] = useState('');
-  const [contributionTags, setContributionTags] = useState('');
-  const [contributionFile, setContributionFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const { addToast } = useToast();
-
   const handleContributeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contributionFile || !contributionTitle || !contributionAuthor) {
@@ -74,20 +72,18 @@ const Library: React.FC = () => {
     setSubmitError(null);
 
     try {
-      // 1. Upload do arquivo para o Supabase Storage
-      const fileExt = contributionFile.name.split('.').pop();
-  const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `public/${fileName}`;
+      const file = contributionFile;
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('library-media')
-        .upload(filePath, contributionFile);
+        .upload(filePath, file);
 
       if (uploadError) {
         throw new Error(`Falha no upload do arquivo: ${uploadError.message}`);
       }
 
-      // 2. Obter a URL pública do arquivo
       const { data: urlData } = supabase.storage
         .from('library-media')
         .getPublicUrl(filePath);
@@ -97,7 +93,6 @@ const Library: React.FC = () => {
       }
       const publicUrl = urlData.publicUrl;
 
-      // 3. Criar o novo item da biblioteca (sem id/downloads/views)
       const validTypes: LibraryItemType[] = ['ebook', 'document', 'article', 'magazine'];
       const computedType: LibraryItemType = validTypes.includes(contributionType as LibraryItemType)
         ? (contributionType as LibraryItemType)
@@ -110,47 +105,16 @@ const Library: React.FC = () => {
         tags: contributionTags.split(',').map(tag => tag.trim()).filter(Boolean),
         date: new Date().toISOString(),
         coverUrl: publicUrl,
+        media: publicUrl,
         readUrl: publicUrl,
         downloadUrl: publicUrl,
       };
-
-      // 4. Tentar adicionar o item ao banco de dados, com fallback se a tabela não existir
-      const tableExists = await api.checkTableExists('library_items');
-      if (!tableExists) {
-        const localItem: LibraryItem = {
-          id: crypto.randomUUID(),
-          downloads: 0,
-          views: 0,
-          ...newLibraryItem,
-        };
-
-        setLibraryData(prev => {
-          if (!prev) {
-            return { items: [localItem], categories: [], tags: [] };
-          }
-          return { ...prev, items: [localItem, ...(prev.items || [])] };
-        });
-
-        addToast('Tabela da biblioteca não está configurada. Sua contribuição foi salva localmente nesta sessão.', 'info');
-
-        // Limpar e fechar
-        setContributionType('');
-        setContributionTitle('');
-        setContributionAuthor('');
-        setContributionDescription('');
-        setContributionType('');
-        setContributionTags('');
-        setContributionFile(null);
-        setIsContributeModalOpen(false);
-        return;
-      }
 
       const { data: addedItem, error: dbError } = await api.addLibraryItem(newLibraryItem);
       if (dbError || !addedItem) {
         throw new Error(`Falha ao adicionar o item na biblioteca: ${dbError?.message}`);
       }
 
-      // 5. Atualizar o estado local
       setLibraryData(prev => {
         if (!prev) {
           return { items: [addedItem], categories: [], tags: [] };
@@ -158,12 +122,10 @@ const Library: React.FC = () => {
         return { ...prev, items: [addedItem, ...(prev.items || [])] };
       });
 
-      // 6. Limpar o formulário e fechar o modal
       setContributionType('');
       setContributionTitle('');
       setContributionAuthor('');
       setContributionDescription('');
-      setContributionType('');
       setContributionTags('');
       setContributionFile(null);
       setIsContributeModalOpen(false);
@@ -171,7 +133,6 @@ const Library: React.FC = () => {
 
     } catch (error: any) {
       console.error('Erro ao contribuir:', error);
-      // Ao ocorrer erro no insert, informar claramente no formulário
       setSubmitError(error.message || 'Ocorreu um erro desconhecido.');
     } finally {
       setIsSubmitting(false);
@@ -461,20 +422,6 @@ const Library: React.FC = () => {
                     onChange={(e) => setContributionTitle(e.target.value)}
                     required
                     placeholder="Digite o título do recurso"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="contribute-url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    URL/Link (se aplicável)
-                  </label>
-                  <input
-                    type="url"
-                    id="contribute-url"
-                    value={contributionUrl}
-                    onChange={(e) => setContributionUrl(e.target.value)}
-                    placeholder="https://exemplo.com"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>

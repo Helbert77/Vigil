@@ -115,52 +115,11 @@ export const ensureValidSession = async () => {
 
 // Tenta criar/configurar a tabela library_items automaticamente via RPC exec_sql
 export const ensureLibraryItemsTable = async (): Promise<boolean> => {
-  const migrationSQL = `
-    -- Create table if not exists
-    create extension if not exists pgcrypto;
-    create extension if not exists "uuid-ossp";
-
-    create table if not exists public.library_items (
-      id uuid default gen_random_uuid() primary key,
-      type text not null,
-      title text not null,
-      author text,
-      description text,
-      cover_url text,
-      date timestamp with time zone,
-      published_date date,
-      category text,
-      tags text[],
-      read_url text,
-      download_url text,
-      downloads integer default 0,
-      views integer default 0,
-      created_at timestamp with time zone default now()
-    );
-
-    -- Enable RLS and policies
-    alter table public.library_items enable row level security;
-
-    create policy if not exists "Public read library items" on public.library_items
-      for select using (true);
-
-    create policy if not exists "Authenticated insert library items" on public.library_items
-      for insert to authenticated
-      with check (auth.role() = 'authenticated');
-
-    -- Indexes
-    create index if not exists idx_library_items_type on public.library_items(type);
-    create index if not exists idx_library_items_date on public.library_items(date);
-    create index if not exists idx_library_items_tags on public.library_items using gin(tags);
-  `;
-
   try {
-    const { error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
-    if (error) {
-      handleApiError(error, 'ensureLibraryItemsTable', { suggestion: 'Verificar função RPC exec_sql e permissões' });
-      return false;
-    }
     const exists = await checkTableExists('library_items');
+    if (!exists) {
+      console.warn('Tabela "library_items" ausente; pulando criação automática (sem RPC).');
+    }
     return exists;
   } catch (err: any) {
     handleApiError(err, 'ensureLibraryItemsTable');
@@ -468,6 +427,7 @@ const mapLibraryItemToDb = (item: Omit<LibraryItem, 'id' | 'downloads' | 'views'
   author: item.author,
   description: item.description,
   cover_url: item.coverUrl,
+  media: item.media,
   date: item.date,
   published_date: item.publishedDate,
   category: item.category,
@@ -484,6 +444,7 @@ const mapDbToLibraryItem = (row: any): LibraryItem => ({
   author: row.author,
   description: row.description ?? '',
   coverUrl: row.cover_url ?? '',
+  media: row.media ?? undefined,
   date: row.date ? new Date(row.date).toISOString() : new Date().toISOString(),
   publishedDate: row.published_date ? new Date(row.published_date).toISOString() : undefined,
   category: row.category ?? undefined,
@@ -500,6 +461,12 @@ export const addLibraryItem = async (item: Omit<LibraryItem, 'id' | 'downloads' 
   if (!tableExists) {
     const created = await ensureLibraryItemsTable();
     tableExists = created;
+  }
+
+  if (!tableExists) {
+    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
+    handleApiError(error, 'addLibraryItem', { table_name: 'library_items' });
+    return { data: null, error };
   }
 
   const dbItem = mapLibraryItemToDb(item);

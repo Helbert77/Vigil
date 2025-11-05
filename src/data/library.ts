@@ -7,6 +7,7 @@ export interface LibraryItem {
   author: string;
   description: string;
   coverUrl: string;
+  media?: string; // URL ou caminho canônico do arquivo
 
   date: string; // ISO date string
   publishedDate?: string; // Data de publicação

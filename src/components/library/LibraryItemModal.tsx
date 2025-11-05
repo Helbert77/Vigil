@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import GenericModal from '@/src/components/common/GenericModal';
-import SafeImage from '@/src/components/common/SafeImage';
+import FileThumbnail from '@/src/components/common/FileThumbnail';
+import FileViewer from '@/src/components/common/FileViewer'; // Importar o FileViewer
 import { LibraryItem } from '@/src/data/library';
 import { useRealTimeAnalytics } from '@/src/hooks/useRealTimeAnalytics';
 import { formatNumber, formatDate, isRecentlyUpdated, isValidDate } from '@/src/utils/formatters';
+import { getFileTypeFromUrl } from '@/src/utils/fileUtils';
 import { logger } from '@/src/utils/Logger';
 import '@/src/styles/library-modal.css';
 
@@ -64,6 +66,7 @@ interface LibraryItemModalProps {
 const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, item }) => {
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const [viewingFile, setViewingFile] = useState<string | null>(null); // Estado para o URL do arquivo
 
   // Hook de analytics em tempo real
   const {
@@ -129,11 +132,12 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
       }
 
       setIsDownloading(true);
-      const url = item.downloadUrl || item.readUrl;
+      const url = item.downloadUrl || item.readUrl || item.media;
       if (!url) {
         setError('Arquivo para download indisponível.');
         return;
       }
+
       let fileName: string | undefined;
 
       // Tenta baixar via fetch (CORS) para preservar o nome do arquivo e mostrar feedback
@@ -186,15 +190,38 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
     }
   };
 
+  const getFileType = (url: string): 'pdf' | 'image' | 'video' | 'docx' | 'txt' | 'csv' | 'md' | 'unsupported' => {
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension)) {
+      return 'image';
+    }
+    if (['mp4', 'avi', 'mov'].includes(extension)) {
+      return 'video';
+    }
+    if (extension === 'pdf') {
+      return 'pdf';
+    }
+    if (extension === 'docx') {
+      return 'docx';
+    }
+    if (['txt', 'csv'].includes(extension)) {
+      return 'txt';
+    }
+    if (extension === 'md') {
+      return 'md';
+    }
+    return 'unsupported';
+  };
+
   const handleReadOnline = async () => {
     try {
-      // Simular leitura online
-      if (item.readUrl) {
-        window.open(item.readUrl, '_blank');
+      if (item?.readUrl) {
+        setViewingFile(item.readUrl);
+        await incrementView();
       }
     } catch (err) {
-      console.error('Erro ao incrementar visualização:', err);
-      setError('Erro ao abrir leitura online');
+      console.error('Erro ao abrir visualização:', err);
+      setError('Erro ao abrir visualização online');
     }
   };
 
@@ -208,15 +235,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
         <div className="library-modal-content flex flex-col lg:flex-row gap-4 md:gap-6">
           {/* Imagem da capa */}
           <div className="flex-shrink-0 mx-auto lg:mx-0">
-            <SafeImage 
-              src={item.coverUrl} 
-              srcSet={item.coverUrl.includes('images.unsplash.com') ? `${item.coverUrl}&w=200 200w, ${item.coverUrl}&w=300 300w, ${item.coverUrl}&w=400 400w` : undefined}
-              sizes={item.coverUrl.includes('images.unsplash.com') ? "(max-width: 768px) 200px, (max-width: 1024px) 250px, 300px" : undefined}
+            <FileThumbnail
+              fileUrl={item.coverUrl}
+              fileType={getFileTypeFromUrl(item.coverUrl)}
               alt={item.title}
               className="library-modal-image w-48 sm:w-56 md:w-64 lg:w-72 h-64 sm:h-72 md:h-80 lg:h-96 object-cover rounded-lg shadow-lg"
-              loading="lazy"
-              minWidth={160}
-              minHeight={160}
             />
           </div>
 
@@ -410,8 +433,15 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
             </div>
           </div>
         </div>
+        {viewingFile && (
+          <FileViewer 
+            fileUrl={viewingFile} 
+            fileType={getFileType(viewingFile)}
+            onClose={() => setViewingFile(null)} 
+          />
+        )}
     </GenericModal>
   );
 };
 
-export { LibraryItemModal };
+export default LibraryItemModal;
