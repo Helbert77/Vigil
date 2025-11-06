@@ -479,6 +479,53 @@ export const addLibraryItem = async (item: Omit<LibraryItem, 'id' | 'downloads' 
   return { data: mapDbToLibraryItem(data), error: null };
 };
 
+export const updateLibraryItem = async (id: string, updates: Partial<Omit<LibraryItem, 'id'>>) => {
+  // Verifica se tabela existe
+  const tableExists = await checkTableExists('library_items');
+  if (!tableExists) {
+    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
+    handleApiError(error, 'updateLibraryItem', { table_name: 'library_items' });
+    return { data: null, error };
+  }
+
+  // Converte os campos para o formato do banco de dados
+  const dbUpdates: any = {};
+  if (updates.type !== undefined) dbUpdates.type = updates.type;
+  if (updates.title !== undefined) dbUpdates.title = updates.title;
+  if (updates.author !== undefined) dbUpdates.author = updates.author;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.coverUrl !== undefined) dbUpdates.cover_url = updates.coverUrl;
+  if (updates.media !== undefined) dbUpdates.media = updates.media;
+  if (updates.date !== undefined) dbUpdates.date = updates.date;
+  if (updates.publishedDate !== undefined) dbUpdates.published_date = updates.publishedDate;
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
+  if (updates.readUrl !== undefined) dbUpdates.read_url = updates.readUrl;
+  if (updates.downloadUrl !== undefined) dbUpdates.download_url = updates.downloadUrl;
+  if (updates.views !== undefined) dbUpdates.views = updates.views;
+  if (updates.downloads !== undefined) dbUpdates.downloads = updates.downloads;
+
+  const { data, error } = await supabase
+    .from('library_items')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select();
+
+  if (error) {
+    handleApiError(error, 'updateLibraryItem', { item_id: id });
+    return { data: null, error };
+  }
+
+  // Verifica se algum registro foi atualizado
+  if (!data || data.length === 0) {
+    const notFoundError = { code: 'NOT_FOUND', message: 'Item não encontrado' };
+    handleApiError(notFoundError, 'updateLibraryItem', { item_id: id });
+    return { data: null, error: notFoundError };
+  }
+
+  return { data: mapDbToLibraryItem(data[0]), error: null };
+};
+
 export const getLibraryItems = async (): Promise<{ data: LibraryItem[] | null; error: any }> => {
   const { data, error } = await supabase.from('library_items').select('*');
 

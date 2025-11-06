@@ -18,17 +18,22 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "types": ["vite/client"]
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "vite-env.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "capacitor.config.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "android",
+    "ios",
+    "supabase/functions"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

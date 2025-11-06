@@ -7,6 +7,8 @@ import { useRealTimeAnalytics } from '@/src/hooks/useRealTimeAnalytics';
 import { formatNumber, formatDate, isRecentlyUpdated, isValidDate } from '@/src/utils/formatters';
 import { getFileTypeFromUrl } from '@/src/utils/fileUtils';
 import { logger } from '@/src/utils/Logger';
+import * as api from '@/src/services/api';
+import { supabase } from '@/integrations/supabase/client';
 import '@/src/styles/library-modal.css';
 
 // Formata exatamente a data do item sem alterar o dia
@@ -67,6 +69,17 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [viewingFile, setViewingFile] = useState<string | null>(null); // Estado para o URL do arquivo
+  
+  // Estados para modo de edição
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [editedTitle, setEditedTitle] = useState<string>('');
+  const [editedAuthor, setEditedAuthor] = useState<string>('');
+  const [editedDescription, setEditedDescription] = useState<string>('');
+  const [editedTags, setEditedTags] = useState<string>('');
+  const [editedCategory, setEditedCategory] = useState<string>('');
+  const [editedFile, setEditedFile] = useState<File | null>(null);
+  const [editedCover, setEditedCover] = useState<File | null>(null);
 
   // Hook de analytics em tempo real
   const {
@@ -93,12 +106,24 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
     }
   });
 
-  // Limpa erro quando modal fecha
+  // Limpa erro quando modal fecha e inicializa campos de edição
   useEffect(() => {
     if (!isOpen) {
       setError(null);
+      setIsEditing(false);
+      setEditedFile(null);
+      setEditedCover(null);
+    } else if (item) {
+      // Inicializa os campos de edição com os valores do item
+      setEditedTitle(item.title || '');
+      setEditedAuthor(item.author || '');
+      setEditedDescription(item.description || '');
+      setEditedTags(item.tags?.join(', ') || '');
+      setEditedCategory(item.category || item.type || '');
+      setEditedFile(null);
+      setEditedCover(null);
     }
-  }, [isOpen]);
+  }, [isOpen, item]);
 
   // Preparação e validação de data ANTES de qualquer early return
   const publishedDateRaw = item?.publishedDate || item?.date || new Date().toISOString();
@@ -121,6 +146,108 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
   }, [item, isPublishedValid, isPublishedFuture, publishedDateRaw]);
 
   if (!item) return null;
+
+  // Função para alternar entre editar e salvar
+  const handleEditToggle = async () => {
+    if (isEditing) {
+      // Modo salvar
+      await handleSaveChanges();
+    } else {
+      // Modo editar
+      setIsEditing(true);
+    }
+  };
+
+  // Função para salvar as alterações
+  const handleSaveChanges = async () => {
+    if (!item) return;
+
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      const updates: Partial<Omit<LibraryItem, 'id'>> = {
+        title: editedTitle.trim(),
+        author: editedAuthor.trim(),
+        description: editedDescription.trim(),
+        tags: editedTags.split(',').map(tag => tag.trim()).filter(Boolean),
+        category: editedCategory.trim() || undefined,
+      };
+
+      // Upload de arquivo principal, se fornecido
+      if (editedFile) {
+        const fileExt = editedFile.name.split('.').pop()?.toLowerCase();
+        const timestamp = Date.now();
+        const filePath = `${timestamp}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('library-media')
+          .upload(filePath, editedFile);
+
+        if (uploadError) {
+          throw new Error(`Falha no upload do arquivo: ${uploadError.message}`);
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('library-media')
+          .getPublicUrl(filePath);
+
+        if (urlData) {
+          updates.media = urlData.publicUrl;
+          updates.readUrl = urlData.publicUrl;
+          updates.downloadUrl = urlData.publicUrl;
+        }
+      }
+
+      // Upload de capa, se fornecida
+      if (editedCover) {
+        const coverExt = editedCover.name.split('.').pop()?.toLowerCase();
+        const timestamp = Date.now();
+        const coverPath = `covers/${timestamp}.${coverExt}`;
+
+        const { error: coverUploadError } = await supabase.storage
+          .from('library-media')
+          .upload(coverPath, editedCover);
+
+        if (coverUploadError) {
+          console.warn('Erro ao fazer upload da capa:', coverUploadError);
+        } else {
+          const { data: coverUrlData } = supabase.storage
+            .from('library-media')
+            .getPublicUrl(coverPath);
+
+          if (coverUrlData) {
+            updates.coverUrl = coverUrlData.publicUrl;
+          }
+        }
+      }
+
+      const { data, error } = await api.updateLibraryItem(item.id, updates);
+
+      if (error) {
+        // Se o erro for "Item não encontrado", exibe mensagem específica
+        if (error.code === 'NOT_FOUND' || error.message?.includes('não encontrado')) {
+          throw new Error('Este item não pode ser editado pois não existe no banco de dados.');
+        }
+        throw new Error(error.message || 'Erro ao salvar alterações');
+      }
+
+      if (data) {
+        // Atualiza o item local
+        Object.assign(item, data);
+        logger.info('Item atualizado com sucesso', { itemId: item.id }, 'library', 'LibraryItemModal');
+      }
+
+      setIsEditing(false);
+      setEditedFile(null);
+      setEditedCover(null);
+    } catch (err: any) {
+      console.error('Erro ao salvar alterações:', err);
+      setError(err.message || 'Erro ao salvar alterações. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDownload = async () => {
     // Mantém o botão habilitado; evita operações concorrentes
@@ -257,12 +384,43 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
             
             <div className="mb-6 md:mb-8 pr-8">
               {/* Título reposicionado */}
-              <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-light-text dark:text-dark-text mb-2">{item.title}</h2>
-              <p className="text-lg sm:text-xl text-light-text-secondary dark:text-dark-text-secondary mb-4 font-medium">por {item.author}</p>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="w-full text-lg md:text-xl lg:text-2xl font-bold text-white mb-2 px-3 py-2 border border-gray-600 rounded-lg bg-black focus:outline-none focus:ring-2 focus:ring-primary placeholder-gray-400"
+                  placeholder="Título"
+                />
+              ) : (
+                <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-light-text dark:text-dark-text mb-2">{item.title}</h2>
+              )}
+              
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedAuthor}
+                  onChange={(e) => setEditedAuthor(e.target.value)}
+                  className="w-full text-lg sm:text-xl text-gray-300 mb-4 font-medium px-3 py-2 border border-gray-600 rounded-lg bg-black focus:outline-none focus:ring-2 focus:ring-primary placeholder-gray-400"
+                  placeholder="Autor"
+                />
+              ) : (
+                <p className="text-lg sm:text-xl text-light-text-secondary dark:text-dark-text-secondary mb-4 font-medium">por {item.author}</p>
+              )}
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
-                <span className="inline-block px-3 py-1 text-sm bg-primary/10 text-primary rounded-full capitalize w-fit">
-                  {item.category || item.type}
-                </span>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedCategory}
+                    onChange={(e) => setEditedCategory(e.target.value)}
+                    className="inline-block px-3 py-1 text-sm bg-black text-white rounded-full capitalize w-fit border border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary placeholder-gray-400"
+                    placeholder="Categoria"
+                  />
+                ) : (
+                  <span className="inline-block px-3 py-1 text-sm bg-primary/10 text-primary rounded-full capitalize w-fit">
+                    {item.category || item.type}
+                  </span>
+                )}
                 <div className="flex flex-wrap gap-3 sm:gap-4 text-sm text-light-text-secondary dark:text-dark-text-secondary">
                   <span className="flex items-center gap-1">
                     <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -308,23 +466,79 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
 
             <div className="mb-4 md:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-light-text dark:text-dark-text mb-2 md:mb-3">Descrição</h3>
-              <div className="library-description max-h-32 sm:max-h-40 md:max-h-48 overflow-y-auto">
-                <p className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary leading-relaxed pr-2">
-                  {item.description}
-                </p>
-              </div>
+              {isEditing ? (
+                <textarea
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  rows={4}
+                  className="w-full text-sm sm:text-base text-gray-300 leading-relaxed px-3 py-2 border border-gray-600 rounded-lg bg-black focus:outline-none focus:ring-2 focus:ring-primary resize-none placeholder-gray-400"
+                  placeholder="Descrição"
+                />
+              ) : (
+                <div className="library-description max-h-32 sm:max-h-40 md:max-h-48 overflow-y-auto">
+                  <p className="text-sm sm:text-base text-light-text-secondary dark:text-dark-text-secondary leading-relaxed pr-2">
+                    {item.description}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Tags */}
-            {item.tags && item.tags.length > 0 && (
+            {(item.tags && item.tags.length > 0) || isEditing ? (
               <div className="mb-4 md:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-light-text dark:text-dark-text mb-2 md:mb-3">Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {item.tags.map(tag => (
-                    <span key={tag} className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-primary/10 text-primary rounded-full">
-                      {tag}
-                    </span>
-                  ))}
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedTags}
+                    onChange={(e) => setEditedTags(e.target.value)}
+                    className="w-full text-sm px-3 py-2 border border-gray-600 rounded-lg bg-black focus:outline-none focus:ring-2 focus:ring-primary text-white placeholder-gray-400"
+                    placeholder="Tags separadas por vírgula (ex: tecnologia, ciência)"
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {item.tags?.map(tag => (
+                      <span key={tag} className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-primary/10 text-primary rounded-full">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Upload de arquivos (apenas em modo de edição) */}
+            {isEditing && (
+              <div className="mb-4 md:mb-6 space-y-4">
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold text-light-text dark:text-dark-text mb-2">Arquivo Principal</h3>
+                  <input
+                    type="file"
+                    onChange={(e) => setEditedFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark cursor-pointer"
+                  />
+                  {editedFile && (
+                    <p className="text-xs text-green-400 mt-1">✓ {editedFile.name}</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Selecione um novo arquivo para substituir o atual (PDF, DOC, imagem, vídeo, etc.)
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-base sm:text-lg font-semibold text-light-text dark:text-dark-text mb-2">Imagem de Capa</h3>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setEditedCover(e.target.files?.[0] || null)}
+                    className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-secondary file:text-white hover:file:bg-secondary-dark cursor-pointer"
+                  />
+                  {editedCover && (
+                    <p className="text-xs text-green-400 mt-1">✓ {editedCover.name}</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Selecione uma nova imagem de capa (opcional)
+                  </p>
                 </div>
               </div>
             )}
@@ -424,11 +638,28 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({ isOpen, onClose, it
                   {isDownloading ? 'Baixando arquivo...' : (error ? 'Falha no download' : 'Pronto para baixar')}
                 </span>
               </button>
-              <button className="library-modal-button sm:col-span-2 lg:col-span-1 bg-light-card dark:bg-dark-card hover:bg-light-card/80 dark:hover:bg-dark-card/80 text-light-text dark:text-dark-text px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium sm:font-semibold transition-colors border border-light-border dark:border-dark-border flex items-center justify-center gap-2 text-sm sm:text-base">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                </svg>
-                <span className="whitespace-nowrap">Mais Detalhes</span>
+              <button 
+                onClick={handleEditToggle}
+                disabled={isSaving}
+                className="library-modal-button sm:col-span-2 lg:col-span-1 bg-light-card dark:bg-dark-card hover:bg-light-card/80 dark:hover:bg-dark-card/80 text-light-text dark:text-dark-text px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium sm:font-semibold transition-colors border border-light-border dark:border-dark-border flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : isEditing ? (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                  </svg>
+                )}
+                <span className="whitespace-nowrap">
+                  {isSaving ? 'Salvando...' : isEditing ? 'Salvar' : 'Editar'}
+                </span>
               </button>
             </div>
           </div>

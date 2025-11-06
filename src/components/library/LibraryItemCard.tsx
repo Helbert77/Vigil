@@ -106,7 +106,7 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
   if (viewMode === 'list') {
     return (
       <div className={`${baseClasses} flex gap-4 min-h-[120px]`} onClick={handleClick}>
-        <div className="w-32 h-[120px] flex-shrink-0">
+        <div className="w-32 h-full flex-shrink-0 self-stretch">
           <FileThumbnail
             fileUrl={item.coverUrl}
             fileType={getFileTypeFromUrl(item.coverUrl)}
@@ -163,7 +163,7 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
   if (viewMode === 'small') {
     return (
       <div 
-        className={`${baseClasses} small-card p-3 text-center w-full max-w-full`} 
+        className={`${baseClasses} small-card p-2 sm:p-3 text-center w-full max-w-full flex flex-col`} 
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         tabIndex={0}
@@ -171,14 +171,16 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
         aria-label={`Abrir detalhes de ${item.title} por ${item.author}`}
         aria-describedby={`stats-${item.id}`}
       >
-        <div className="w-full flex flex-col items-center">
+        <div className="flex-shrink-0 mb-2">
           <FileThumbnail
             fileUrl={item.coverUrl}
             fileType={getFileTypeFromUrl(item.coverUrl)}
             alt={item.title}
-            className="card-image w-16 h-20 sm:w-18 sm:h-22 md:w-20 md:h-24 object-cover rounded mx-auto mb-2 flex-shrink-0"
+            className="card-image w-12 h-16 sm:w-14 sm:h-18 md:w-16 md:h-20 object-cover rounded mx-auto"
           />
-          <div className="w-full min-h-0 flex-1 flex flex-col">
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col justify-between">
+          <div className="min-h-0">
             <h3 className="card-title text-light-text dark:text-dark-text line-clamp-2 mb-1 text-xs sm:text-sm font-medium leading-tight">{item.title}</h3>
             <p className="card-author text-light-text-secondary dark:text-dark-text-secondary line-clamp-1 text-xs mb-1">{item.author}</p>
             {item.tags && item.tags.length > 0 && (
@@ -188,16 +190,16 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
                 </span>
               </div>
             )}
-            <div id={`stats-${item.id}`} className="flex justify-center gap-1 mt-auto library-card-meta text-light-text-secondary dark:text-dark-text-secondary text-xs">
-              <span className="flex items-center gap-0.5 min-w-0">
-                <svg className="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
-                <span className="truncate">{formatNumber(stats.views)}</span>
-              </span>
-              <span className="flex items-center gap-0.5 min-w-0">
-                <svg className="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
-                <span className="truncate">{formatNumber(stats.downloads)}</span>
-              </span>
-            </div>
+          </div>
+          <div id={`stats-${item.id}`} className="flex justify-center gap-1 mt-2 library-card-meta text-light-text-secondary dark:text-dark-text-secondary text-xs">
+            <span className="flex items-center gap-0.5 min-w-0">
+              <svg className="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
+              <span className="truncate">{formatNumber(stats.views)}</span>
+            </span>
+            <span className="flex items-center gap-0.5 min-w-0">
+              <svg className="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
+              <span className="truncate">{formatNumber(stats.downloads)}</span>
+            </span>
           </div>
         </div>
       </div>
@@ -205,32 +207,38 @@ export const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode
   }
 
   return (
-    <div className={`${baseClasses} large-card`} onClick={handleClick}>
-      <FileThumbnail
-        fileUrl={item.coverUrl}
-        fileType={getFileTypeFromUrl(item.coverUrl)}
-        alt={item.title}
-        className="card-image"
-      />
-      <h3 className="card-title text-light-text dark:text-dark-text">{item.title}</h3>
-      <p className="card-author text-light-text-secondary dark:text-dark-text-secondary">{item.author}</p>
-      <p className="card-description text-light-text-secondary dark:text-dark-text-secondary">{item.description}</p>
-      <div className="library-tags">
-        {item.tags?.slice(0, 4).map(tag => (
-          <span key={tag} className="library-tag">
-            {tag}
-          </span>
-        ))}
+    <div className={`${baseClasses} large-card p-4 flex flex-col`} onClick={handleClick}>
+      <div className="flex-shrink-0 mb-3">
+        <FileThumbnail
+          fileUrl={item.coverUrl}
+          fileType={getFileTypeFromUrl(item.coverUrl)}
+          alt={item.title}
+          className="card-image w-full h-32 sm:h-40 md:h-48 object-cover rounded-lg"
+        />
       </div>
-      <div className="library-stats">
-        <span className="library-stat">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
-          {formatNumber(stats.views)}
-        </span>
-        <span className="library-stat">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
-          {formatNumber(stats.downloads)}
-        </span>
+      <div className="flex-1 min-h-0 flex flex-col">
+        <h3 className="card-title text-light-text dark:text-dark-text text-base sm:text-lg font-semibold line-clamp-2 mb-1">{item.title}</h3>
+        <p className="card-author text-light-text-secondary dark:text-dark-text-secondary text-sm mb-2">{item.author}</p>
+        <p className="card-description text-light-text-secondary dark:text-dark-text-secondary text-sm line-clamp-2 sm:line-clamp-3 mb-3">{item.description}</p>
+        {item.tags && item.tags.length > 0 && (
+          <div className="library-tags flex flex-wrap gap-1.5 mb-3">
+            {item.tags.slice(0, 4).map(tag => (
+              <span key={tag} className="library-tag bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="library-stats flex gap-4 mt-auto pt-2 text-sm text-light-text-secondary dark:text-dark-text-secondary">
+          <span className="library-stat flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
+            {formatNumber(stats.views)}
+          </span>
+          <span className="library-stat flex items-center gap-1.5">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd"/></svg>
+            {formatNumber(stats.downloads)}
+          </span>
+        </div>
       </div>
     </div>
   );

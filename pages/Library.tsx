@@ -8,6 +8,7 @@ import '@/src/styles/library-responsive.css';
 import * as api from '@/src/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
+import { applyLibraryPolicies } from '@/src/utils/applyLibraryPolicies';
 
 type ViewMode = 'list' | 'small' | 'large';
 type SortBy = 'date' | 'title' | 'author';
@@ -25,7 +26,20 @@ const Library: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('todos');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortBy, setSortBy] = useState<'title' | 'author' | 'date' | 'downloads' | 'views'>('title');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
+  // Função para determinar a ordem baseada no tipo de ordenação
+  const getSortOrder = (sortType: typeof sortBy): 'asc' | 'desc' => {
+    // Downloads e Visualizações: decrescente (maior primeiro)
+    if (sortType === 'downloads' || sortType === 'views') {
+      return 'desc';
+    }
+    // Data: decrescente (mais recente primeiro)
+    if (sortType === 'date') {
+      return 'desc';
+    }
+    // Título e Autor: crescente (A-Z)
+    return 'asc';
+  };
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isContributeModalOpen, setIsContributeModalOpen] = useState(false);
@@ -49,6 +63,8 @@ const Library: React.FC = () => {
     const load = async () => {
       try {
         setIsLoading(true);
+        // Tenta aplicar políticas de UPDATE/DELETE se ainda não foram aplicadas
+        await applyLibraryPolicies();
         const data = await libraryDataService.loadLibraryData();
         if (mounted) setLibraryData(data);
       } catch (err: any) {
@@ -172,26 +188,43 @@ const Library: React.FC = () => {
       let cmp = 0;
       switch (sortBy) {
         case 'title':
-          cmp = a.title.localeCompare(b.title);
+          const titleA = (a.title || '').trim().toLowerCase();
+          const titleB = (b.title || '').trim().toLowerCase();
+          cmp = titleA.localeCompare(titleB, 'pt-BR', { sensitivity: 'base' });
           break;
         case 'author':
-          cmp = a.author.localeCompare(b.author);
+          const authorA = (a.author || '').trim().toLowerCase();
+          const authorB = (b.author || '').trim().toLowerCase();
+          cmp = authorA.localeCompare(authorB, 'pt-BR', { sensitivity: 'base' });
           break;
         case 'date':
-          cmp = new Date(a.date).getTime() - new Date(b.date).getTime();
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          cmp = dateA - dateB;
           break;
         case 'downloads':
-          cmp = (a.downloads || 0) - (b.downloads || 0);
+          const downloadsA = Number(a.downloads) || 0;
+          const downloadsB = Number(b.downloads) || 0;
+          cmp = downloadsA - downloadsB;
           break;
         case 'views':
-          cmp = (a.views || 0) - (b.views || 0);
+          const viewsA = Number(a.views) || 0;
+          const viewsB = Number(b.views) || 0;
+          cmp = viewsA - viewsB;
           break;
+        default:
+          cmp = 0;
       }
-      return sortOrder === 'asc' ? cmp : -cmp;
+      // Se os valores são iguais, usa o ID como critério de desempate para ordenação estável
+      if (cmp === 0) {
+        cmp = a.id.localeCompare(b.id);
+      }
+      const order = getSortOrder(sortBy);
+      return order === 'asc' ? cmp : -cmp;
     });
 
     return items;
-  }, [libraryData, activeCategory, selectedTag, query, sortBy, sortOrder]);
+  }, [libraryData, activeCategory, selectedTag, query, sortBy]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -311,8 +344,9 @@ const Library: React.FC = () => {
             </div>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-black text-white text-sm min-h-[44px] shadow-sm"
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="px-3 py-2 border border-light-border dark:border-dark-border rounded-lg bg-black text-white text-sm min-h-[44px] shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Ordenar por"
             >
               <option value="title">Título</option>
               <option value="date">Data</option>
