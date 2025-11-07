@@ -6,11 +6,6 @@ import { logger } from './Logger';
 
 export const applyLibraryPolicies = async (): Promise<boolean> => {
   const storageKey = 'library_policies_applied';
-  
-  // Verifica se já foi aplicado
-  if (localStorage.getItem(storageKey) === 'true') {
-    return true;
-  }
 
   try {
     logger.info('Aplicando políticas de UPDATE e DELETE...', {}, 'library', 'applyLibraryPolicies');
@@ -44,9 +39,9 @@ export const applyLibraryPolicies = async (): Promise<boolean> => {
     const { data, error } = await supabase.rpc('exec_sql', { sql });
 
     if (error) {
-      logger.error('Erro ao aplicar políticas (esperado se não houver função exec_sql)', error, 'library', 'applyLibraryPolicies');
-      // Marca como aplicado mesmo com erro para não tentar novamente
-      localStorage.setItem(storageKey, 'true');
+      logger.error('Erro ao aplicar políticas (provável ausência de função exec_sql ou permissões insuficientes)', error, 'library', 'applyLibraryPolicies');
+      // Não marcar como aplicado em caso de erro, para permitir nova tentativa ao iniciar o app
+      localStorage.setItem(storageKey, 'false');
       return false;
     }
 
@@ -55,7 +50,8 @@ export const applyLibraryPolicies = async (): Promise<boolean> => {
     return true;
   } catch (err) {
     logger.error('Erro ao aplicar políticas', err, 'library', 'applyLibraryPolicies');
-    localStorage.setItem(storageKey, 'true');
+    // Não marcar como aplicado em caso de exceção
+    localStorage.setItem(storageKey, 'false');
     return false;
   }
 };

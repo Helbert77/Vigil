@@ -19,7 +19,7 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "jest", "node"]
   },
   "include": [
     "**/*.ts",

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { LibraryItemCard } from '@/src/components/library/LibraryItemCard';
+import ItemActions from '@/src/components/library/ItemActions';
 import LibraryItemModal from '@/src/components/library/LibraryItemModal';
 import { LibraryItem, LibraryItemType } from '@/src/data/library';
 import { libraryDataService, LibraryData } from '@/src/services/LibraryDataService';
@@ -163,6 +164,31 @@ const Library: React.FC = () => {
   const handleClose = () => {
     setIsModalOpen(false);
     setSelectedItem(null);
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    // Exclusão otimista: remove do estado antes e faz rollback em caso de erro
+    const originalData = libraryData;
+    setLibraryData(prev => {
+      if (!prev) return prev;
+      const items = (prev.items || []).filter(i => i.id !== itemId);
+      return { ...prev, items };
+    });
+
+    try {
+      const { error: delError } = await api.deleteLibraryItem(itemId);
+      if (delError) {
+        throw new Error(delError.message || 'Falha ao apagar item.');
+      }
+      addToast('Item apagado com sucesso.', 'success');
+      return { error: null };
+    } catch (e: any) {
+      // Rollback em caso de erro
+      setLibraryData(originalData);
+      const message = e?.message || 'Erro ao apagar item.';
+      addToast(message, 'error');
+      return { error: { message } };
+    }
   };
 
   const filtered = useMemo(() => {
@@ -391,7 +417,12 @@ const Library: React.FC = () => {
       <div className="library-content-container">
         <div className={`library-grid ${viewMode}-mode`}>
           {filtered.map(item => (
-            <LibraryItemCard key={item.id} item={item} viewMode={viewMode} onClick={handleOpen} />
+            <div key={item.id} className="relative">
+              <div className="absolute top-2 right-2 z-20">
+                <ItemActions item={item} onDelete={handleDeleteItem} />
+              </div>
+              <LibraryItemCard item={item} viewMode={viewMode} onClick={handleOpen} />
+            </div>
           ))}
         </div>
       </div>

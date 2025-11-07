@@ -526,6 +526,37 @@ export const updateLibraryItem = async (id: string, updates: Partial<Omit<Librar
   return { data: mapDbToLibraryItem(data[0]), error: null };
 };
 
+export const deleteLibraryItem = async (id: string): Promise<{ error: any | null }> => {
+  // Verifica se tabela existe
+  const tableExists = await checkTableExists('library_items');
+  if (!tableExists) {
+    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
+    handleApiError(error, 'deleteLibraryItem', { table_name: 'library_items' });
+    return { error };
+  }
+
+  // Retornar registros deletados para saber se algo foi removido
+  const { data, error } = await supabase
+    .from('library_items')
+    .delete()
+    .eq('id', id)
+    .select('id');
+
+  if (error) {
+    handleApiError(error, 'deleteLibraryItem', { id });
+    return { error };
+  }
+
+  // Quando nenhum registro é removido, considerar como erro de "não encontrado"
+  if (!data || data.length === 0) {
+    const notFoundError = { code: 'NOT_FOUND', message: 'Item não encontrado no banco' };
+    handleApiError(notFoundError, 'deleteLibraryItem', { id });
+    return { error: notFoundError };
+  }
+
+  return { error: null };
+};
+
 export const getLibraryItems = async (): Promise<{ data: LibraryItem[] | null; error: any }> => {
   const { data, error } = await supabase.from('library_items').select('*');
 

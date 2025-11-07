@@ -48,44 +48,39 @@ export const SafeImage: React.FC<SafeImageProps> = ({
   useEffect(() => {
     // Reset quando src muda
     setStatus('loading');
-    setCurrentSrc(src);
     startTime.current = performance.now();
 
+    // Decide a fonte candidata ANTES de aplicá-la ao <img>
+    let candidateSrc: string | undefined = src;
+
+    // Valida formato
     const format = getFormatFromUrl(src);
     if (format && !SUPPORTED_FORMATS.includes(format)) {
       logger.warn('Formato de imagem não suportado, usando fallback', { src, format }, 'library', 'SafeImage');
-      if (fallbackSrc) {
-        setCurrentSrc(fallbackSrc);
-        // mantém status como 'loading' para medir o fallback
-        startTime.current = performance.now();
-      }
-      return; // evita tentar carregar src inválido
+      candidateSrc = fallbackSrc;
     }
 
-    // Permitir apenas mesma origem e hosts explicitamente permitidos
+    // Permitir mesma origem, hosts explicitamente permitidos e domínios *.supabase.co
     try {
-      if (src) {
-        const url = new URL(src, window.location.origin);
+      if (candidateSrc) {
+        const url = new URL(candidateSrc, window.location.origin);
         const isSameOrigin = url.origin === window.location.origin;
         const allowedHosts = allowExternalHosts ?? ['images.unsplash.com'];
-        const isAllowed = isSameOrigin || allowedHosts.includes(url.hostname);
+        const isSupabase = url.hostname.endsWith('supabase.co');
+        const isAllowed = isSameOrigin || isSupabase || allowedHosts.includes(url.hostname);
         if (!isAllowed) {
-          logger.warn('Domínio de imagem não permitido, usando fallback', { src, host: url.hostname }, 'library', 'SafeImage');
-          if (fallbackSrc) {
-            setCurrentSrc(fallbackSrc);
-            startTime.current = performance.now();
-          }
-          return;
+          logger.warn('Domínio de imagem não permitido, usando fallback', { src: candidateSrc, host: url.hostname }, 'library', 'SafeImage');
+          candidateSrc = fallbackSrc;
         }
       }
     } catch {
-      // Se não conseguir parsear a URL, tenta fallback
-      if (fallbackSrc) {
-        setCurrentSrc(fallbackSrc);
-        startTime.current = performance.now();
-      }
-      return;
+      // Se não conseguir parsear a URL, usa fallback
+      candidateSrc = fallbackSrc;
     }
+
+    // Finalmente aplica a fonte candidata
+    setCurrentSrc(candidateSrc);
+    startTime.current = performance.now();
   }, [src]);
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
