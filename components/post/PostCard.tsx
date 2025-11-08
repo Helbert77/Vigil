@@ -15,6 +15,7 @@ import { renderTextWithMentions, formatDateDayMonth, formatTimeOnly, formatDateT
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useSimpleTimeAgo } from '../../hooks/useTimeAgoOptimized';
+import ResilientVideo from '@/src/components/common/ResilientVideo';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Icon className={filled ? 'text-red-500' : ''} fill={filled ? 'currentColor' : 'none'}>
@@ -502,11 +503,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                       />
                     )}
                     {post.videoUrl && (
-                      <video 
-                        src={post.videoUrl} 
-                        controls={!showSensitiveWarning} 
-                        className={`rounded-lg w-full bg-dark-bg transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : ''}`} 
-                        onLoadedData={onMediaLoad} 
+                      <ResilientVideo
+                        src={post.videoUrl}
+                        controls={!showSensitiveWarning}
+                        className={`rounded-lg w-full bg-dark-bg transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : ''}`}
+                        onLoadedData={onMediaLoad}
                         style={{ maxHeight: window.innerWidth < 768 ? '256px' : '384px' }}
                       />
                     )}

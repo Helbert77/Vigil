@@ -6,6 +6,7 @@ import CsvIcon from '@/src/components/icons/filetypes/CsvIcon';
 import MdIcon from '@/src/components/icons/filetypes/MdIcon';
 import FileIcon from '@/src/components/icons/filetypes/FileIcon';
 import SafeImage from '@/src/components/common/SafeImage';
+import ResilientVideo from '@/src/components/common/ResilientVideo';
 
 interface FileThumbnailProps {
   fileUrl: string;
@@ -28,9 +29,7 @@ const FileThumbnail: React.FC<FileThumbnailProps> = ({ fileUrl, fileType, alt, c
       case 'video':
         // Para vídeos, mantém todas as classes incluindo rounded
         return (
-          <video src={fileUrl} className={className} controls={false}>
-            Seu navegador não suporta a tag de vídeo.
-          </video>
+          <ResilientVideo src={fileUrl} className={className} controls={false} muted />
         );
       case 'pdf':
         return <PdfIcon className={classNameWithoutRounded || 'w-full h-full max-w-16 max-h-16 mx-auto'} />;

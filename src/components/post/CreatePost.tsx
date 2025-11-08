@@ -10,6 +10,7 @@ import MentionSuggestions from '@/src/components/common/MentionSuggestions';
 import EmojiStickerPicker from '@/src/components/EmojiStickerPicker';
 import { EmojiData } from '@/src/data/emojis';
 import { StickerData } from '@/src/data/stickers';
+import ResilientVideo from '@/src/components/common/ResilientVideo';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
@@ -495,7 +496,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
         {(mediaType === 'image' && imageUrl) || (mediaType === 'video' && videoUrl) ? (
           <div className="relative">
               {imageUrl && <img src={imageUrl} alt="preview" className="rounded-lg max-h-80 w-full object-cover mt-1" />}
-              {videoUrl && <video src={videoUrl} controls className="rounded-lg w-full mt-1" />}
+              {videoUrl && (
+                <ResilientVideo src={videoUrl} controls className="rounded-lg w-full mt-1" />
+              )}
               <button onClick={handleRemoveMedia} className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1"><XIcon/></button>
               <div className="mt-2 flex items-center">
                   <input

@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import { extractHashtags } from '../utils/hashtags';
+import { logger } from '../utils/Logger';
 
 interface DbPost {
   id: string; content: string; image_url?: string; video_url?: string; audio_url?: string; poll_data?: Poll; evidence_board_data?: EvidenceItem[]; created_at: string; likes_count: number; comments_count: number; shares_count: number; views_count: number; community_id?: string; user_id: string; is_pinned?: boolean; media_is_sensitive?: boolean;
@@ -430,14 +431,51 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
   const handleIncrementView = useCallback(async (type: 'post' | 'comment', id: string) => {
     try {
       if (type === 'post') {
-        await api.incrementPostView(id);
+        const res: any = await api.incrementPostView(id);
+        if (res && !res.error) {
+          logger.debug('Incremento de visualização de post bem-sucedido', { postId: id }, 'api', 'usePosts');
+        }
+        // Fallback otimista: se houver erro na RPC, incrementa localmente para manter uniformidade visual
+        if (res && res.error) {
+          logger.warn('Falha ao incrementar visualização via RPC; aplicando fallback local', { postId: id, error: res.error }, 'api', 'usePosts');
+          setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
+        }
       } else {
-        await api.incrementCommentView(id);
+        const res: any = await api.incrementCommentView(id);
+        if (res && res.error) {
+          logger.warn('Falha ao incrementar visualização de comentário via RPC; aplicando fallback local', { commentId: id, error: res.error }, 'api', 'usePosts');
+          // Fallback otimista para comentários: incrementa a view localmente na árvore de comentários
+          setPosts(prev => prev.map(p => {
+            const updateCommentsViews = (comments: Comment[]): Comment[] => {
+              return comments.map(c => {
+                const updated = c.id === id ? { ...c, likes: c.likes, replies: c.replies, user: c.user } : c; // preserve structure
+                // Não temos campo views em Comment no modelo; se existir futuramente, ajustar aqui
+                return {
+                  ...updated,
+                  replies: updated.replies ? updateCommentsViews(updated.replies) : updated.replies
+                };
+              });
+            };
+            return {
+              ...p,
+              comments: updateCommentsViews(p.comments)
+            };
+          }));
+        }
       }
     } catch (error) {
-      // Error log removed for production
+      logger.error('Exceção ao incrementar visualização; aplicando fallback local', error, 'api', 'usePosts');
+      // Fallback em caso de exceção: mantém UI coerente
+      if (type === 'post') {
+        setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
+      } else {
+        setPosts(prev => prev.map(p => ({
+          ...p,
+          comments: p.comments.map(c => ({ ...c }))
+        })));
+      }
     }
-  }, []);
+  }, [setPosts]);
 
   return { posts, isPostsLoading, savedPostIds, handleAddPost, handleDeletePost, handleUpdatePost, handleToggleLike, handleToggleCommentLike, handleToggleSavePost, handleVoteOnPoll, handleAddComment, handleUpdateComment, handleDeleteComment, handleIncrementView };
 };

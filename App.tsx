@@ -44,6 +44,13 @@ import Dashboard from '@/components/admin/Dashboard';
 import Appeals from '@/pages/admin/Appeals';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
+import {
+  buildPathFromSnapshot,
+  parseLocationToSnapshot,
+  pushHistoryState,
+  samePath,
+  type NavigationSnapshot,
+} from '@/src/utils/history';
 
 type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
 
@@ -108,6 +115,21 @@ const App: React.FC = () => {
       markMessagesAsRead();
     }
     setCurrentPage(page);
+    // Build and push a snapshot reflecting current state for static pages
+    const snapshot: NavigationSnapshot = {
+      page,
+      viewedUserId,
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
+      activeTag,
+      searchQuery,
+    };
+    const targetPath = buildPathFromSnapshot(snapshot);
+    const currentFullPath = window.location.pathname + window.location.search;
+    if (!samePath(currentFullPath, targetPath)) {
+      pushHistoryState(snapshot);
+    }
   };
 
   useEffect(() => {
@@ -128,6 +150,40 @@ const App: React.FC = () => {
     } catch (error) {
       // Error handling - log removed for production
     }
+  }, []);
+
+  // Apply a navigation snapshot to local state
+  const applySnapshotToState = (snapshot: NavigationSnapshot) => {
+    setCurrentPage(snapshot.page as Page);
+    setViewedUserId(snapshot.viewedUserId || null);
+    setActiveCommunityId(snapshot.activeCommunityId || null);
+    setActivePostId(snapshot.activePostId || null);
+    setActiveCommentId(snapshot.activeCommentId || null);
+    setActiveTag(snapshot.activeTag || null);
+    setSearchQuery(snapshot.searchQuery || '');
+    if (snapshot.activeCommunityId) {
+      refetchActiveMembers(snapshot.activeCommunityId);
+    }
+  };
+
+  // Initial URL parse and popstate listener
+  useEffect(() => {
+    const initialSnapshot = parseLocationToSnapshot(window.location.pathname, window.location.search);
+    // Ensure current history entry has a usable state
+    pushHistoryState(initialSnapshot, true);
+    applySnapshotToState(initialSnapshot);
+
+    const onPopState = (event: PopStateEvent) => {
+      const state = (event.state || {}) as NavigationSnapshot;
+      if (state && state.page) {
+        applySnapshotToState(state);
+      } else {
+        const fallback = parseLocationToSnapshot(window.location.pathname, window.location.search);
+        applySnapshotToState(fallback);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const handleAddPostAndUpdate = async (text: string, imageUrl?: string, videoUrl?: string, audioUrl?: string, poll?: Poll, communityId?: string, evidenceBoard?: EvidenceItem[]) => {
@@ -159,6 +215,16 @@ const App: React.FC = () => {
     setActivePostId(postId);
     setActiveCommentId(null);
     setCurrentPage('PostDetail');
+    const snapshot: NavigationSnapshot = {
+      page: 'PostDetail',
+      activePostId: postId,
+      activeCommentId: null,
+      viewedUserId,
+      activeCommunityId,
+      activeTag,
+      searchQuery,
+    };
+    pushHistoryState(snapshot);
   };
 
   const handleViewCommentThread = (commentId: string) => {
@@ -170,26 +236,92 @@ const App: React.FC = () => {
       }
       return null;
     };
+    let targetPostId: string | null = null;
     for (const p of posts) {
       if (p.comments.some((c: Comment) => c.id === commentId) || findPostId(p.comments)) {
-        setActivePostId(p.id);
+        targetPostId = p.id;
         break;
       }
     }
+    if (targetPostId) setActivePostId(targetPostId);
     setActiveCommentId(commentId);
     setCurrentPage('PostDetail');
+    const snapshot: NavigationSnapshot = {
+      page: 'PostDetail',
+      activePostId: targetPostId || activePostId,
+      activeCommentId: commentId,
+      viewedUserId,
+      activeCommunityId,
+      activeTag,
+      searchQuery,
+    };
+    pushHistoryState(snapshot);
   };
 
-  const handleViewProfile = (userId: string) => { scrollToTop(); setSearchQuery(''); setViewedUserId(userId); setCurrentPage('Profile'); };
+  const handleViewProfile = (userId: string) => {
+    scrollToTop();
+    setSearchQuery('');
+    setViewedUserId(userId);
+    setCurrentPage('Profile');
+    const snapshot: NavigationSnapshot = {
+      page: 'Profile',
+      viewedUserId: userId,
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
+      activeTag,
+      searchQuery: '',
+    };
+    pushHistoryState(snapshot);
+  };
   const handleViewCommunity = async (communityId: string) => {
     scrollToTop();
     setSearchQuery('');
     setActiveCommunityId(communityId);
     refetchActiveMembers(communityId);
     setCurrentPage('CommunityDetail');
+    const snapshot: NavigationSnapshot = {
+      page: 'CommunityDetail',
+      activeCommunityId: communityId,
+      viewedUserId,
+      activePostId,
+      activeCommentId,
+      activeTag,
+      searchQuery: '',
+    };
+    pushHistoryState(snapshot);
   };
-  const handleViewTag = (tag: string) => { scrollToTop(); setSearchQuery(''); setActiveTag(tag); setCurrentPage('TopicDetail'); };
-  const handleNavigateToAdvancedSearch = (query: string) => { scrollToTop(); setSearchQuery(query); setCurrentPage('Search'); };
+  const handleViewTag = (tag: string) => {
+    scrollToTop();
+    setSearchQuery('');
+    setActiveTag(tag);
+    setCurrentPage('TopicDetail');
+    const snapshot: NavigationSnapshot = {
+      page: 'TopicDetail',
+      activeTag: tag,
+      viewedUserId,
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
+      searchQuery: '',
+    };
+    pushHistoryState(snapshot);
+  };
+  const handleNavigateToAdvancedSearch = (query: string) => {
+    scrollToTop();
+    setSearchQuery(query);
+    setCurrentPage('Search');
+    const snapshot: NavigationSnapshot = {
+      page: 'Search',
+      searchQuery: query,
+      viewedUserId,
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
+      activeTag,
+    };
+    pushHistoryState(snapshot);
+  };
 
   const handleFetchFollows = async (userId: string) => {
     try {
@@ -211,9 +343,22 @@ const App: React.FC = () => {
 
   const forceWebBrowserLogout = () => {
     console.log("Forçando logout no ambiente de navegador web...");
+    // Prefixo das mensagens visualizadas para não serem apagadas no logout
+    const VIEWED_MESSAGES_KEY_PREFIX = 'vigil_viewed_messages_';
 
-    // Limpar localStorage e sessionStorage
-    localStorage.clear();
+    // Limpar localStorage seletivamente (preservar mensagens visualizadas)
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && !key.startsWith(VIEWED_MESSAGES_KEY_PREFIX)) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (e) {
+      // Silencioso: se algo falhar, não interrompe o fluxo de logout
+    }
+
+    // Limpar sessionStorage normalmente
     sessionStorage.clear();
 
     // Limpar todos os cookies do domínio
@@ -331,7 +476,7 @@ const App: React.FC = () => {
           onSendMessage={handleSendMessage} 
           followedUserIds={followedUserIds} 
           allUsers={allUsers} 
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={handleNavigation}
           onViewCommunity={handleViewCommunity}
           onViewTag={handleViewTag}
           onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
@@ -424,7 +569,7 @@ const App: React.FC = () => {
           onCreateCommunity={handleCreateCommunity} 
           onViewCommunity={handleViewCommunity}
           user={appUser}
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={handleNavigation}
         />;
       case 'Timeline':
         return <Timeline />;
@@ -455,7 +600,7 @@ const App: React.FC = () => {
           savedPostIds={savedPostIds}
           onToggleSaveComment={() => {}}
           savedCommentIds={[]}
-          onNavigateBack={() => setCurrentPage('Home')}
+          onNavigateBack={() => handleNavigation('Home')}
           onViewPost={handleViewPost}
           blockedUserIds={blockedUserIds}
           followedUserIds={followedUserIds}
@@ -515,10 +660,10 @@ const App: React.FC = () => {
           onVoteOnPoll={handleVoteOnPoll}
           allUsers={allUsers}
           isJoined={joinedCommunityIds.includes(community.id)}
-          onNavigateBack={() => setCurrentPage('Communities')}
+          onNavigateBack={() => handleNavigation('Communities')}
           communities={communities}
           joinedCommunityIds={joinedCommunityIds}
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={handleNavigation}
         />;
       case 'TopicDetail':
         return activeTag ? <TopicDetail 
@@ -542,7 +687,7 @@ const App: React.FC = () => {
           onOpenFollowModal={handleOpenFollowModal}
           onVoteOnPoll={handleVoteOnPoll}
           allUsers={allUsers}
-          onNavigateBack={() => setCurrentPage('Home')}
+          onNavigateBack={() => handleNavigation('Home')}
         /> : null;
       case 'About':
         return <About />;
@@ -565,7 +710,7 @@ const App: React.FC = () => {
       case 'Premium':
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'TrendingTopics':
-        return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => setCurrentPage('Home')} />;
+        return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => handleNavigation('Home')} />;
       case 'ExploreUsers':
         return <ExploreUsers 
           usersToFollow={filteredContent.filteredUsersToFollow} 
@@ -574,7 +719,7 @@ const App: React.FC = () => {
           currentUser={appUser}
           followedUserIds={followedUserIds}
           onOpenFollowModal={handleOpenFollowModal}
-          onGoBack={() => setCurrentPage('Home')}
+          onGoBack={() => handleNavigation('Home')}
         />;
       default:
         return <Home 

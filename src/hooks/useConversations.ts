@@ -103,6 +103,15 @@ export const useConversations = (appUser: User | null) => {
       
       setConversations(formattedConversations);
       
+      // Baseline: no primeiro carregamento sem histórico local, considerar mensagens existentes como visualizadas
+      const existingViewed = appUser ? getViewedMessages(appUser.id) : new Set<string>();
+      if (appUser && existingViewed.size === 0) {
+        const baselineIds = formattedConversations.flatMap(c => c.messages.map(m => m.id));
+        if (baselineIds.length > 0) {
+          markMessagesAsViewed(appUser.id, baselineIds);
+        }
+      }
+
       const unreadCount = calculateUnreadCount(formattedConversations, appUser.id);
       setUnreadMessagesCount(unreadCount);
       

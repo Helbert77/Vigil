@@ -7,10 +7,19 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
-    return {
+  return {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          // Proxy de desenvolvimento para contornar CORS em hosts externos específicos
+          '/proxy/w3': {
+            target: 'https://www.w3schools.com',
+            changeOrigin: true,
+            secure: true,
+            rewrite: (path) => path.replace(/^\/proxy\/w3/, ''),
+          },
+        }
       },
       plugins: [
         dyadComponentTagger(), 

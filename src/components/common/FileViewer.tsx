@@ -6,6 +6,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { renderAsync } from 'docx-preview';
 import ReactMarkdown from 'react-markdown';
 import Spinner from './Spinner'; // Importando o Spinner
+import ResilientVideo from '@/src/components/common/ResilientVideo';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -85,10 +86,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileType, onClose }) =
         );
       case 'video':
         return (
-          <video controls className="max-w-full max-h-full">
-            <source src={fileUrl} />
-            Seu navegador não suporta a tag de vídeo.
-          </video>
+          <ResilientVideo src={fileUrl} controls className="max-w-full max-h-full" />
         );
       case 'docx':
         return docxContent ? (
