@@ -70,23 +70,19 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
     try {
       setIsSubmittingReport(true);
       logger.debug('Enviando denúncia', { postId: post.id, byUser: currentUser.id, reason }, 'api', 'PostActionsMenu');
-      const { error } = await api.createReport({
+      const result = await api.createReport({
         reporter_id: currentUser.id,
         content_id: post.id,
         content_type: 'post',
         reason,
         notes: notes || undefined,
       });
-      if (error) throw error;
-      addToast('Denúncia enviada com sucesso.', 'success');
+      
+      if (result.error) throw result.error;
+      
+      addToast('Denúncia enviada com sucesso e adicionada à fila de moderação.', 'success');
       setIsReportModalOpen(false);
-      // Redireciona para página de moderação
-      if (onNavigateToModeration) {
-        onNavigateToModeration();
-      } else {
-        pushHistoryState({ page: 'Moderation' });
-      }
-      logger.info('Denúncia registrada e usuário redirecionado para moderação', { postId: post.id }, 'ui', 'PostActionsMenu');
+      logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {
       logger.error('Falha ao enviar denúncia', { postId: post.id, error: err }, 'api', 'PostActionsMenu');
       addToast('Erro ao enviar denúncia. Tente novamente.', 'error');
@@ -123,8 +119,23 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
             </button>
           )}
 
-          {/* Apagar: exclusivo para admin/moderador */}
-          {isModerator && (
+          {/* Apagar: visível para o autor do post */}
+          {isCurrentUserPost && (
+            <Tooltip text="Apagar seu post permanentemente">
+              <button
+                onClick={handleDelete}
+                className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
+                aria-label="Apagar meu post"
+                role="menuitem"
+              >
+                <TrashIcon />
+                <span>Apagar Meu Post</span>
+              </button>
+            </Tooltip>
+          )}
+
+          {/* Apagar: exclusivo para admin/moderador (em posts de outros usuários) */}
+          {isModerator && !isCurrentUserPost && (
             <Tooltip text="Apagar permanentemente o post">
               <button
                 onClick={handleDelete}

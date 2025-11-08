@@ -273,8 +273,90 @@ export const clearViolationHistory = (userId: string) =>
 export const deleteModeratorNote = (noteId: string) =>
   supabase.from('moderator_notes').delete().eq('id', noteId);
 
-export const createReport = (reportData: { reporter_id: string; content_id: string; content_type: 'post' | 'comment'; reason: string; notes?: string; }) =>
-  supabase.from('reports').insert(reportData);
+export const createReport = async (reportData: { reporter_id: string; content_id: string; content_type: 'post' | 'comment'; reason: string; notes?: string; }) => {
+  try {
+    // 1. Inserir a denúncia na tabela reports
+    const { data: reportRecord, error: reportError } = await supabase
+      .from('reports')
+      .insert(reportData)
+      .select()
+      .single();
+
+    if (reportError) {
+      handleApiError(reportError, 'createReport - insert report', reportData);
+      return { data: null, error: reportError };
+    }
+
+    // 2. Buscar o conteúdo denunciado para adicionar à fila de moderação
+    let contentData: any = null;
+    let contentTable = reportData.content_type === 'post' ? 'posts' : 'comments';
+    
+    const { data: content, error: contentError } = await supabase
+      .from(contentTable)
+      .select('*, profiles(*)')
+      .eq('id', reportData.content_id)
+      .single();
+
+    if (contentError) {
+      handleApiError(contentError, 'createReport - fetch content', { content_type: reportData.content_type, content_id: reportData.content_id });
+      // Continua mesmo se não encontrar o conteúdo
+    } else {
+      contentData = content;
+    }
+
+    // 3. Calcular severity score baseado no motivo
+    let severityScore = 50; // Padrão médio
+    const reasonLower = reportData.reason.toLowerCase();
+    
+    if (reasonLower.includes('spam')) severityScore = 60;
+    else if (reasonLower.includes('harassment') || reasonLower.includes('assédio')) severityScore = 85;
+    else if (reasonLower.includes('hate') || reasonLower.includes('ódio')) severityScore = 95;
+    else if (reasonLower.includes('violence') || reasonLower.includes('violência')) severityScore = 90;
+    else if (reasonLower.includes('sexual')) severityScore = 90;
+    else if (reasonLower.includes('misinformation') || reasonLower.includes('desinformação')) severityScore = 70;
+    else if (reasonLower.includes('inappropriate') || reasonLower.includes('inapropriado')) severityScore = 65;
+
+    // 4. Determinar tipos de violação
+    const violationTypes: string[] = [];
+    if (reasonLower.includes('spam')) violationTypes.push('spam');
+    if (reasonLower.includes('harassment') || reasonLower.includes('assédio')) violationTypes.push('harassment');
+    if (reasonLower.includes('hate') || reasonLower.includes('ódio')) violationTypes.push('hate_speech');
+    if (reasonLower.includes('violence') || reasonLower.includes('violência')) violationTypes.push('violence');
+    if (reasonLower.includes('sexual')) violationTypes.push('sexual_content');
+    if (reasonLower.includes('misinformation') || reasonLower.includes('desinformação')) violationTypes.push('misinformation');
+    
+    if (violationTypes.length === 0) violationTypes.push('other');
+
+    // 5. Inserir na fila de moderação
+    const moderationQueueData = {
+      content_id: reportData.content_id,
+      content_type: reportData.content_type,
+      content_text: contentData?.content || contentData?.text || 'Conteúdo não disponível',
+      author_id: contentData?.user_id || contentData?.profiles?.id || null,
+      reporter_id: reportData.reporter_id,
+      report_reason: reportData.reason,
+      report_notes: reportData.notes,
+      severity_score: severityScore,
+      violation_types: violationTypes,
+      status: 'pending'
+    };
+
+    const { error: queueError } = await supabase
+      .from('moderation_queue')
+      .insert(moderationQueueData);
+
+    if (queueError) {
+      handleApiError(queueError, 'createReport - insert moderation_queue', moderationQueueData);
+      // Não retorna erro, pois a denúncia já foi criada
+      console.warn('Denúncia criada mas não adicionada à fila de moderação:', queueError);
+    }
+
+    return { data: reportRecord, error: null };
+  } catch (error) {
+    handleApiError(error, 'createReport - general', reportData);
+    return { data: null, error };
+  }
+};
 
 export const clearResolvedModerationQueue = () =>
   supabase.rpc('clear_resolved_moderation_queue');
