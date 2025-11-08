@@ -36,16 +36,16 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       annually: { value: 0, display: "Grátis" },
     },
     basic: {
-      monthly: { value: 3.25, display: "€3,25/mês" },
-      annually: { value: 34.32, display: "€34,32/ano" },
+      monthly: { value: 2.99, display: "€ 2,99/mês" },
+      annually: { value: 28.70, display: "€ 28,70/ano" },
     },
     pro: {
-      monthly: { value: 8.95, display: "€8,95/mês" },
-      annually: { value: 91.29, display: "€91,29/ano" },
+      monthly: { value: 6.99, display: "€ 6,99/mês" },
+      annually: { value: 67.10, display: "€ 67,10/ano" },
     },
     premium: {
-      monthly: { value: 35.95, display: "€35,95/mês" },
-      annually: { value: 358.06, display: "€358,06/ano" },
+      monthly: { value: 14.99, display: "€ 14,99/mês" },
+      annually: { value: 143.90, display: "€ 143,90/ano" },
     },
   };
 
@@ -130,32 +130,32 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   return (
     <div className="py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto text-center mb-12">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
-          Torne-se Premium <span className="animated-gradient">🚀</span>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+          Escolha o quanto de verdade você quer enxergar
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-          Desbloqueie todo o potencial do Vigil com planos flexíveis e recursos exclusivos.
+          Cada plano desbloqueia um novo nível de liberdade, acesso e conexão. O despertar começa com uma escolha.
         </p>
       </div>
 
-      <div className="flex justify-center mb-8">
-        <div className="inline-flex rounded-full bg-light-bg dark:bg-dark-bg p-1 shadow-sm">
+      <div className="flex justify-center mb-12">
+        <div className="inline-flex rounded-full bg-light-bg dark:bg-dark-bg p-1 shadow-sm border border-light-border dark:border-dark-border">
           <button
             onClick={() => setBillingCycle('annually')}
-            className={`px-6 py-1 rounded-full text-sm font-semibold transition-colors duration-200 flex items-center
+            className={`px-6 py-1 rounded-full text-sm font-semibold transition-all duration-200 flex items-center flex-1 justify-center
               ${billingCycle === 'annually'
-                ? 'bg-dark-bg text-white shadow-md border border-primary'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                ? 'bg-dark-bg dark:bg-gray-800 text-primary dark:text-blue-400 shadow-md'
+                : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
-            Anual <span className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white px-2 py-0.5 rounded-full text-xs font-bold ml-2">mais vantajoso</span>
+            Anual
           </button>
           <button
             onClick={() => setBillingCycle('monthly')}
-            className={`px-6 py-1 rounded-full text-sm font-semibold transition-colors duration-200 flex items-center
+            className={`px-6 py-1 rounded-full text-sm font-semibold transition-all duration-200 flex items-center flex-1 justify-center
               ${billingCycle === 'monthly'
-                ? 'bg-dark-bg text-white shadow-md border border-primary'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                ? 'bg-dark-bg dark:bg-gray-800 text-primary dark:text-blue-400 shadow-md'
+                : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
             Mensal
@@ -163,7 +163,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto items-start">
         <PricingCard
           title="Basic"
           price={prices.basic[billingCycle].display}
@@ -181,23 +181,32 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           annualSavingsPercentage={basicSavings}
         />
 
-        <PricingCard
-          title="Pro"
-          price={prices.pro[billingCycle].display}
-          features={[
-            "Tudo do plano Basic",
-            "Selo verificado",
-            "Suporte prioritário por e-mail",
-            "Anúncios Reduzidos",
-          ]}
-          onSelect={() => setSelectedPlan("pro")}
-          onConfirm={handleConfirmPlan}
-          isSelected={selectedPlan === 'pro'}
-          currentPlan={currentPlan}
-          isUpdatingPlan={isUpdatingPlan}
-          billingCycle={billingCycle}
-          annualSavingsPercentage={proSavings}
-        />
+        <div className="relative h-full">
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+            <span className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold inline-block">
+              mais vantajoso
+            </span>
+          </div>
+          <div className="h-full">
+            <PricingCard
+              title="Pro"
+              price={prices.pro[billingCycle].display}
+              features={[
+                "Tudo do plano Basic",
+                "Selo verificado",
+                "Suporte prioritário por e-mail",
+                "Anúncios Reduzidos",
+              ]}
+              onSelect={() => setSelectedPlan("pro")}
+              onConfirm={handleConfirmPlan}
+              isSelected={selectedPlan === 'pro'}
+              currentPlan={currentPlan}
+              isUpdatingPlan={isUpdatingPlan}
+              billingCycle={billingCycle}
+              annualSavingsPercentage={proSavings}
+            />
+          </div>
+        </div>
 
         <PricingCard
           title="Premium"
@@ -233,10 +242,13 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       </Card>
 
       <div className="mt-16 text-center text-gray-500 dark:text-gray-400 text-sm">
-        <button onClick={() => setIsCancelModalOpen(true)} className="underline hover:text-primary transition-colors">
-          Cancelar a qualquer momento.
-        </button>
-        <span className="ml-1">Sem taxas ocultas.</span>
+        {currentPlan !== 'free' && (
+          <button onClick={() => setIsCancelModalOpen(true)} className="underline hover:text-primary transition-colors">
+            Cancelar a qualquer momento.
+          </button>
+        )}
+        {currentPlan !== 'free' && <span className="ml-1">Sem taxas ocultas.</span>}
+        {currentPlan === 'free' && <span>Sem taxas ocultas.</span>}
       </div>
 
       <CancellationModal
