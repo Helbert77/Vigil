@@ -70,7 +70,6 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
   }
 };
 import { Poll, EvidenceItem, User } from '@/types';
-import { LibraryItem } from '../data/library';
 
 // --- Session Management ---
 export const ensureValidSession = async () => {
@@ -113,19 +112,7 @@ export const ensureValidSession = async () => {
   }
 };
 
-// Tenta criar/configurar a tabela library_items automaticamente via RPC exec_sql
-export const ensureLibraryItemsTable = async (): Promise<boolean> => {
-  try {
-    const exists = await checkTableExists('library_items');
-    if (!exists) {
-      console.warn('Tabela "library_items" ausente; pulando criação automática (sem RPC).');
-    }
-    return exists;
-  } catch (err: any) {
-    handleApiError(err, 'ensureLibraryItemsTable');
-    return false;
-  }
-};
+// Removido: funcionalidades da tabela library_items
 
 // --- Auth API ---
 export const logout = async () => {
@@ -419,155 +406,7 @@ export const updateUser = (userId: string, updates: { [key: string]: any }) =>
 export const updateUserRole = (userId: string, role: 'user' | 'moderator' | 'admin') =>
   supabase.from('profiles').update({ role }).eq('id', userId);
 
-// --- Library API ---
-// Mapeia nomes camelCase do frontend para snake_case do banco
-const mapLibraryItemToDb = (item: Omit<LibraryItem, 'id' | 'downloads' | 'views'>) => ({
-  type: item.type,
-  title: item.title,
-  author: item.author,
-  description: item.description,
-  cover_url: item.coverUrl,
-  media: item.media,
-  date: item.date,
-  published_date: item.publishedDate,
-  category: item.category,
-  tags: item.tags,
-  read_url: item.readUrl,
-  download_url: item.downloadUrl,
-});
-
-// Converte registro do banco para o tipo LibraryItem do frontend
-const mapDbToLibraryItem = (row: any): LibraryItem => ({
-  id: row.id,
-  type: row.type,
-  title: row.title,
-  author: row.author,
-  description: row.description ?? '',
-  coverUrl: row.cover_url ?? '',
-  media: row.media ?? undefined,
-  date: row.date ? new Date(row.date).toISOString() : new Date().toISOString(),
-  publishedDate: row.published_date ? new Date(row.published_date).toISOString() : undefined,
-  category: row.category ?? undefined,
-  tags: row.tags ?? [],
-  readUrl: row.read_url ?? undefined,
-  downloadUrl: row.download_url ?? undefined,
-  downloads: row.downloads ?? 0,
-  views: row.views ?? 0,
-});
-
-export const addLibraryItem = async (item: Omit<LibraryItem, 'id' | 'downloads' | 'views'>) => {
-  // Verifica se tabela existe; tenta criar automaticamente se ausente
-  let tableExists = await checkTableExists('library_items');
-  if (!tableExists) {
-    const created = await ensureLibraryItemsTable();
-    tableExists = created;
-  }
-
-  if (!tableExists) {
-    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
-    handleApiError(error, 'addLibraryItem', { table_name: 'library_items' });
-    return { data: null, error };
-  }
-
-  const dbItem = mapLibraryItemToDb(item);
-  const { data, error } = await supabase.from('library_items').insert(dbItem).select().single();
-  if (error) {
-    // Log detalhado e retorna erro para que UI possa fazer fallback
-    handleApiError(error, 'addLibraryItem', { table_name: 'library_items' });
-    return { data: null, error };
-  }
-  return { data: mapDbToLibraryItem(data), error: null };
-};
-
-export const updateLibraryItem = async (id: string, updates: Partial<Omit<LibraryItem, 'id'>>) => {
-  // Verifica se tabela existe
-  const tableExists = await checkTableExists('library_items');
-  if (!tableExists) {
-    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
-    handleApiError(error, 'updateLibraryItem', { table_name: 'library_items' });
-    return { data: null, error };
-  }
-
-  // Converte os campos para o formato do banco de dados
-  const dbUpdates: any = {};
-  if (updates.type !== undefined) dbUpdates.type = updates.type;
-  if (updates.title !== undefined) dbUpdates.title = updates.title;
-  if (updates.author !== undefined) dbUpdates.author = updates.author;
-  if (updates.description !== undefined) dbUpdates.description = updates.description;
-  if (updates.coverUrl !== undefined) dbUpdates.cover_url = updates.coverUrl;
-  if (updates.media !== undefined) dbUpdates.media = updates.media;
-  if (updates.date !== undefined) dbUpdates.date = updates.date;
-  if (updates.publishedDate !== undefined) dbUpdates.published_date = updates.publishedDate;
-  if (updates.category !== undefined) dbUpdates.category = updates.category;
-  if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
-  if (updates.readUrl !== undefined) dbUpdates.read_url = updates.readUrl;
-  if (updates.downloadUrl !== undefined) dbUpdates.download_url = updates.downloadUrl;
-  if (updates.views !== undefined) dbUpdates.views = updates.views;
-  if (updates.downloads !== undefined) dbUpdates.downloads = updates.downloads;
-
-  const { data, error } = await supabase
-    .from('library_items')
-    .update(dbUpdates)
-    .eq('id', id)
-    .select();
-
-  if (error) {
-    handleApiError(error, 'updateLibraryItem', { item_id: id });
-    return { data: null, error };
-  }
-
-  // Verifica se algum registro foi atualizado
-  if (!data || data.length === 0) {
-    const notFoundError = { code: 'NOT_FOUND', message: 'Item não encontrado' };
-    handleApiError(notFoundError, 'updateLibraryItem', { item_id: id });
-    return { data: null, error: notFoundError };
-  }
-
-  return { data: mapDbToLibraryItem(data[0]), error: null };
-};
-
-export const deleteLibraryItem = async (id: string): Promise<{ error: any | null }> => {
-  // Verifica se tabela existe
-  const tableExists = await checkTableExists('library_items');
-  if (!tableExists) {
-    const error = { code: 'PGRST205', message: 'Tabela library_items não existe no banco.' };
-    handleApiError(error, 'deleteLibraryItem', { table_name: 'library_items' });
-    return { error };
-  }
-
-  // Retornar registros deletados para saber se algo foi removido
-  const { data, error } = await supabase
-    .from('library_items')
-    .delete()
-    .eq('id', id)
-    .select('id');
-
-  if (error) {
-    handleApiError(error, 'deleteLibraryItem', { id });
-    return { error };
-  }
-
-  // Quando nenhum registro é removido, considerar como erro de "não encontrado"
-  if (!data || data.length === 0) {
-    const notFoundError = { code: 'NOT_FOUND', message: 'Item não encontrado no banco' };
-    handleApiError(notFoundError, 'deleteLibraryItem', { id });
-    return { error: notFoundError };
-  }
-
-  return { error: null };
-};
-
-export const getLibraryItems = async (): Promise<{ data: LibraryItem[] | null; error: any }> => {
-  const { data, error } = await supabase.from('library_items').select('*');
-
-  if (error) {
-    handleApiError(error, 'getLibraryItems');
-    return { data: null, error };
-  }
-
-  const mapped = data.map(mapDbToLibraryItem);
-  return { data: mapped, error: null };
-};
+// Removido: API da Library e mapeamentos
 
 // --- User Data API ---
 export const fetchInitialData = async (user: User) => {

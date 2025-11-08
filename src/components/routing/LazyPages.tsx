@@ -31,8 +31,7 @@ export const LazyAppeals = lazy(() => import('@/pages/admin/Appeals'));
 export const LazyPremiumPage = lazy(() => import('@/src/pages/PremiumPage'));
 export const LazyTrendingTopicsPage = lazy(() => import('@/pages/TrendingTopics'));
 export const LazyExploreUsers = lazy(() => import('@/components/ExploreUsers'));
-// Biblioteca
-export const LazyLibrary = lazy(() => import('@/pages/Library'));
+// Páginas de biblioteca removidas
 
 // Teste de Analytics
 export const LazyTestAnalytics = lazy(() => import('@/src/pages/TestAnalytics'));

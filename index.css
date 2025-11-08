@@ -1,5 +1,4 @@
-/* Cross-Browser Compatibility Styles */
-@import './src/styles/cross-browser.css';
+/* Cross-Browser Compatibility Styles (removido: cross-browser.css) */
 
 /* Timeline Animations */
 @keyframes float {

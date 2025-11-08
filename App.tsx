@@ -9,7 +9,6 @@ import Notifications from '@/pages/Notifications';
 import Messages from '@/pages/Messages';
 import Saved from '@/pages/Saved';
 import Communities from '@/pages/Communities';
-import Library from '@/pages/Library';
 import PostDetail from '@/pages/PostDetail';
 import Search from '@/pages/Search';
 import CommunityDetail from '@/pages/CommunityDetail';
@@ -46,7 +45,7 @@ import Appeals from '@/pages/admin/Appeals';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
 
-type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Library' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
+type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
 
 const App: React.FC = () => {
   const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
@@ -427,8 +426,6 @@ const App: React.FC = () => {
           user={appUser}
           setCurrentPage={setCurrentPage}
         />;
-      case 'Library':
-        return <Library />;
       case 'Timeline':
         return <Timeline />;
       case 'PostDetail':

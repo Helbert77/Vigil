@@ -29,7 +29,6 @@ import {
   LazyPremiumPage,
   LazyTrendingTopicsPage,
   LazyExploreUsers,
-  LazyLibrary,
   LazyTestAnalytics,
   LazyLogin,
   LazyUpdatePassword,
@@ -441,8 +440,7 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
           />
         } />
 
-        {/* Biblioteca */}
-        <Route path="/library" element={<LazyLibrary />} />
+        {/* Bibliotecas removidas */}
 
         {/* Teste de Analytics */}
         <Route path="/test-analytics" element={<LazyTestAnalytics />} />
