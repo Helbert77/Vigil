@@ -5,7 +5,7 @@ import {
   pushHistoryState,
   samePath,
   type NavigationSnapshot,
-} from './history';
+} from '../src/utils/history';
 
 describe('utils/history', () => {
   beforeEach(() => {
@@ -107,3 +107,4 @@ describe('utils/history', () => {
     });
   });
 });
+

@@ -16,8 +16,7 @@ module.exports = {
     }]
   },
   testMatch: [
-    '<rootDir>/tests/**/*.test.(ts|tsx)',
-    '<rootDir>/src/**/*.test.(ts|tsx)'
+    '<rootDir>/tests/**/*.test.(ts|tsx)'
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],

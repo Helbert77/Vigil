@@ -69,7 +69,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
   const handleSubmitReport = async (reason: string, notes: string) => {
     try {
       setIsSubmittingReport(true);
-      logger.debug('Enviando denúncia', { postId: post.id, byUser: currentUser.id, reason }, 'api', 'PostActionsMenu');
+      
       const result = await api.createReport({
         reporter_id: currentUser.id,
         content_id: post.id,
@@ -78,14 +78,23 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
         notes: notes || undefined,
       });
       
-      if (result.error) throw result.error;
+      if (result.error) {
+        // Se for denúncia duplicada, mostrar mensagem específica
+        if (result.error.code === 'DUPLICATE_REPORT') {
+          addToast(result.error.message || 'Você já denunciou este conteúdo.', 'info');
+          setIsReportModalOpen(false);
+          return;
+        }
+        throw result.error;
+      }
       
       addToast('Denúncia enviada com sucesso e adicionada à fila de moderação.', 'success');
       setIsReportModalOpen(false);
       logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {
       logger.error('Falha ao enviar denúncia', { postId: post.id, error: err }, 'api', 'PostActionsMenu');
-      addToast('Erro ao enviar denúncia. Tente novamente.', 'error');
+      const errorMessage = err?.message || 'Erro ao enviar denúncia. Tente novamente.';
+      addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingReport(false);
     }

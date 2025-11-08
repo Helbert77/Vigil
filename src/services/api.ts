@@ -275,6 +275,30 @@ export const deleteModeratorNote = (noteId: string) =>
 
 export const createReport = async (reportData: { reporter_id: string; content_id: string; content_type: 'post' | 'comment'; reason: string; notes?: string; }) => {
   try {
+    // 0. Verificar se já existe uma denúncia deste usuário para este conteúdo
+    const { data: existingReport, error: checkError } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('reporter_id', reportData.reporter_id)
+      .eq('content_id', reportData.content_id)
+      .eq('content_type', reportData.content_type)
+      .maybeSingle();
+
+    if (checkError) {
+      console.warn('Erro ao verificar denúncia existente:', checkError);
+    }
+
+    // Se já existe uma denúncia, retornar erro amigável
+    if (existingReport) {
+      return { 
+        data: null, 
+        error: { 
+          message: 'Você já denunciou este conteúdo anteriormente.',
+          code: 'DUPLICATE_REPORT'
+        } 
+      };
+    }
+
     // 1. Inserir a denúncia na tabela reports
     const { data: reportRecord, error: reportError } = await supabase
       .from('reports')
@@ -283,13 +307,23 @@ export const createReport = async (reportData: { reporter_id: string; content_id
       .single();
 
     if (reportError) {
+      // Se for erro de duplicata, retornar mensagem amigável
+      if (reportError.code === '23505' || reportError.message?.includes('duplicate')) {
+        return { 
+          data: null, 
+          error: { 
+            message: 'Você já denunciou este conteúdo anteriormente.',
+            code: 'DUPLICATE_REPORT'
+          } 
+        };
+      }
       handleApiError(reportError, 'createReport - insert report', reportData);
       return { data: null, error: reportError };
     }
 
-    // 2. Buscar o conteúdo denunciado para adicionar à fila de moderação
+    // 2. Buscar o conteúdo denunciado
     let contentData: any = null;
-    let contentTable = reportData.content_type === 'post' ? 'posts' : 'comments';
+    const contentTable = reportData.content_type === 'post' ? 'posts' : 'comments';
     
     const { data: content, error: contentError } = await supabase
       .from(contentTable)
@@ -297,24 +331,21 @@ export const createReport = async (reportData: { reporter_id: string; content_id
       .eq('id', reportData.content_id)
       .single();
 
-    if (contentError) {
-      handleApiError(contentError, 'createReport - fetch content', { content_type: reportData.content_type, content_id: reportData.content_id });
-      // Continua mesmo se não encontrar o conteúdo
-    } else {
+    if (!contentError) {
       contentData = content;
     }
 
-    // 3. Calcular severity score baseado no motivo
-    let severityScore = 50; // Padrão médio
+    // 3. Calcular severity score
+    let severityScore = 50;
     const reasonLower = reportData.reason.toLowerCase();
     
     if (reasonLower.includes('spam')) severityScore = 60;
     else if (reasonLower.includes('harassment') || reasonLower.includes('assédio')) severityScore = 85;
     else if (reasonLower.includes('hate') || reasonLower.includes('ódio')) severityScore = 95;
     else if (reasonLower.includes('violence') || reasonLower.includes('violência')) severityScore = 90;
+    else if (reasonLower.includes('self_harm') || reasonLower.includes('autopreservação')) severityScore = 95;
     else if (reasonLower.includes('sexual')) severityScore = 90;
     else if (reasonLower.includes('misinformation') || reasonLower.includes('desinformação')) severityScore = 70;
-    else if (reasonLower.includes('inappropriate') || reasonLower.includes('inapropriado')) severityScore = 65;
 
     // 4. Determinar tipos de violação
     const violationTypes: string[] = [];
@@ -322,6 +353,7 @@ export const createReport = async (reportData: { reporter_id: string; content_id
     if (reasonLower.includes('harassment') || reasonLower.includes('assédio')) violationTypes.push('harassment');
     if (reasonLower.includes('hate') || reasonLower.includes('ódio')) violationTypes.push('hate_speech');
     if (reasonLower.includes('violence') || reasonLower.includes('violência')) violationTypes.push('violence');
+    if (reasonLower.includes('self_harm')) violationTypes.push('self_harm');
     if (reasonLower.includes('sexual')) violationTypes.push('sexual_content');
     if (reasonLower.includes('misinformation') || reasonLower.includes('desinformação')) violationTypes.push('misinformation');
     
@@ -331,11 +363,8 @@ export const createReport = async (reportData: { reporter_id: string; content_id
     const moderationQueueData = {
       content_id: reportData.content_id,
       content_type: reportData.content_type,
-      content_text: contentData?.content || contentData?.text || 'Conteúdo não disponível',
-      author_id: contentData?.user_id || contentData?.profiles?.id || null,
-      reporter_id: reportData.reporter_id,
-      report_reason: reportData.reason,
-      report_notes: reportData.notes,
+      content_text: contentData?.content || 'Conteúdo não disponível',
+      author_id: contentData?.user_id || null,
       severity_score: severityScore,
       violation_types: violationTypes,
       status: 'pending'
@@ -346,9 +375,7 @@ export const createReport = async (reportData: { reporter_id: string; content_id
       .insert(moderationQueueData);
 
     if (queueError) {
-      handleApiError(queueError, 'createReport - insert moderation_queue', moderationQueueData);
-      // Não retorna erro, pois a denúncia já foi criada
-      console.warn('Denúncia criada mas não adicionada à fila de moderação:', queueError);
+      console.error('Erro ao adicionar à fila de moderação:', queueError);
     }
 
     return { data: reportRecord, error: null };

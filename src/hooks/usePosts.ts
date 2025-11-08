@@ -432,18 +432,15 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
     try {
       if (type === 'post') {
         const res: any = await api.incrementPostView(id);
-        if (res && !res.error) {
-          logger.debug('Incremento de visualização de post bem-sucedido', { postId: id }, 'api', 'usePosts');
-        }
         // Fallback otimista: se houver erro na RPC, incrementa localmente para manter uniformidade visual
         if (res && res.error) {
-          logger.warn('Falha ao incrementar visualização via RPC; aplicando fallback local', { postId: id, error: res.error }, 'api', 'usePosts');
+          // Log removido para produção - incrementos são muito frequentes
           setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
         }
       } else {
         const res: any = await api.incrementCommentView(id);
         if (res && res.error) {
-          logger.warn('Falha ao incrementar visualização de comentário via RPC; aplicando fallback local', { commentId: id, error: res.error }, 'api', 'usePosts');
+          // Log removido para produção - incrementos são muito frequentes
           // Fallback otimista para comentários: incrementa a view localmente na árvore de comentários
           setPosts(prev => prev.map(p => {
             const updateCommentsViews = (comments: Comment[]): Comment[] => {
@@ -464,7 +461,8 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         }
       }
     } catch (error) {
-      logger.error('Exceção ao incrementar visualização; aplicando fallback local', error, 'api', 'usePosts');
+      // Log de erro mantido apenas para exceções reais
+      logger.error('Exceção crítica ao incrementar visualização', error, 'api', 'usePosts');
       // Fallback em caso de exceção: mantém UI coerente
       if (type === 'post') {
         setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));

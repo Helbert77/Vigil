@@ -402,10 +402,10 @@ export class CategoryLogger {
 
 // Instância global do logger
 export const logger = Logger.getInstance({
-  level: process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : LogLevel.INFO,
+  level: process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.INFO,
   enableConsole: true,
   enableStorage: true,
-  maxStorageEntries: 1000
+  maxStorageEntries: 500
 });
 
 // Loggers específicos para diferentes partes da aplicação
