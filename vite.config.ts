@@ -12,9 +12,15 @@ export default defineConfig(({ mode }) => {
       build: {
         outDir: 'dist',
         sourcemap: false,
+        chunkSizeWarningLimit: 1500,
         rollupOptions: {
           output: {
             manualChunks: undefined,
+          },
+          onwarn(warning, warn) {
+            // Suprimir avisos que não são erros críticos
+            if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return;
+            warn(warning);
           },
         },
       },
@@ -37,6 +43,26 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
+          devOptions: {
+            enabled: false
+          },
+          workbox: {
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+            maximumFileSizeToCacheInBytes: 3000000,
+            runtimeCaching: [
+              {
+                urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+                handler: 'NetworkFirst',
+                options: {
+                  cacheName: 'supabase-cache',
+                  expiration: {
+                    maxEntries: 50,
+                    maxAgeSeconds: 60 * 60 * 24 // 24 horas
+                  }
+                }
+              }
+            ]
+          },
           manifest: {
             name: 'Vigil',
             short_name: 'Vigil',
@@ -63,7 +89,9 @@ export default defineConfig(({ mode }) => {
               src: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
               dest: ''
             }
-          ]
+          ],
+          structured: true,
+          silent: false
         })
       ].filter(Boolean),
       define: {
