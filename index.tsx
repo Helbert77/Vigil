@@ -5,8 +5,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { PresenceProvider } from './src/contexts/PresenceContext';
-import ErrorBoundary from './src/components/common/ErrorBoundary';
+import { PresenceProvider } from '@/src/contexts/PresenceContext';
+import ErrorBoundary from '@/src/components/common/ErrorBoundary';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

@@ -7,7 +7,17 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const isProduction = mode === 'production';
   return {
+      build: {
+        outDir: 'dist',
+        sourcemap: false,
+        rollupOptions: {
+          output: {
+            manualChunks: undefined,
+          },
+        },
+      },
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -22,7 +32,7 @@ export default defineConfig(({ mode }) => {
         }
       },
       plugins: [
-        dyadComponentTagger(), 
+        !isProduction && dyadComponentTagger(), 
         react(),
         VitePWA({
           registerType: 'autoUpdate',
@@ -55,7 +65,7 @@ export default defineConfig(({ mode }) => {
             }
           ]
         })
-      ],
+      ].filter(Boolean),
       define: {
         // Removido: Chaves API não devem ser expostas no frontend
         // Use o serviço SecureApiService para chamadas seguras
