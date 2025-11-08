@@ -8,6 +8,7 @@ export interface User {
   bannerUrl?: string;
   bio?: string;
   joinDate: string;
+  createdAt?: string; // Data raw do banco para cálculos (ISO string)
   followingCount: number;
   followersCount: number;
   theme?: 'light' | 'dark';

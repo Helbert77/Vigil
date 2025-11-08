@@ -3,6 +3,8 @@ import { User } from '../types';
 import Card from './common/Card';
 import Avatar from './common/Avatar';
 import UserLink from './common/UserLink';
+import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
+import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 
 interface ExploreUsersProps {
   currentUser: User;
@@ -26,6 +28,7 @@ interface UserItemProps {
   onViewProfile: (userId: string) => void;
   isCurrentUser: boolean;
   onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
+  isRemoving?: boolean;
 }
 
 const UserItem: React.FC<UserItemProps> = React.memo(({
@@ -34,12 +37,27 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
   isCurrentUser,
   onFollowToggle,
   onViewProfile,
-  onOpenFollowModal
+  onOpenFollowModal,
+  isRemoving = false
 }) => {
+  // Calcular se o usuário é novo (menos de 30 dias)
+  const isNewUser = useMemo(() => {
+    if (!user.createdAt) return false;
+    
+    // Usar a data raw do banco (ISO string)
+    const createdDate = new Date(user.createdAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    // Verificar se foi criado há menos de 30 dias
+    return createdDate >= thirtyDaysAgo;
+  }, [user.createdAt]);
+
   const getBadgeText = () => {
+    if (isNewUser) {
+      return 'Novo na plataforma';
+    }
     switch (user.relationshipType) {
-      case 'new':
-        return 'Novo na plataforma';
       case 'follower_of_followed':
         return `Seguidor de ${user.relationshipDetail}`;
       case 'followed_by_followed':
@@ -50,70 +68,89 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
   };
 
   const getBadgeColor = () => {
+    if (isNewUser) {
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    }
     switch (user.relationshipType) {
-      case 'new':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'follower_of_followed':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'followed_by_followed':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return '';
     }
   };
 
+  const badgeText = getBadgeText();
+  const badgeColor = getBadgeColor();
+
   return (
-    <div className="flex items-start justify-between gap-4 p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
-      <div className="flex items-start space-x-3 flex-1 min-w-0">
-        <Avatar src={user.avatarUrl} alt={user.name} size="lg" />
-        <div className="flex-1 min-w-0 space-y-2">
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <UserLink
-                user={user}
-                isFollowing={isFollowing}
-                onFollowToggle={onFollowToggle}
-                onViewProfile={onViewProfile}
-                isCurrentUser={isCurrentUser}
-                onOpenFollowModal={onOpenFollowModal}
-              >
-                <p className="font-bold text-gray-900 dark:text-white truncate text-base">
-                  {user.name}
-                </p>
-              </UserLink>
-              {(user.plan === 'pro' || user.plan === 'premium') && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {user.plan === 'premium' ? '★' : '✓'}
-                </span>
-              )}
-              {user.role && ['admin', 'moderator'].includes(user.role) && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                  {user.role === 'admin' ? 'Admin' : 'Mod'}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate mb-2">
+    <div className={`flex items-start justify-between gap-3 md:gap-4 p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all duration-200 ease-out ${isRemoving ? 'opacity-0 -translate-x-4 scale-95 pointer-events-none' : 'opacity-100 translate-x-0 scale-100'}`} style={isRemoving ? { marginTop: '-100px', paddingTop: 0, paddingBottom: 0, height: 0 } : {}}>
+      <div className="flex items-start space-x-2 md:space-x-3 flex-1 min-w-0">
+        <div className="flex-shrink-0">
+          <Avatar src={user.avatarUrl} alt={user.name} size="md" />
+        </div>
+        <div className="flex-1 min-w-0 space-y-1.5 md:space-y-2">
+          {/* Nome + @username + badges na mesma linha */}
+          <div className="flex items-center gap-1 flex-wrap">
+            <UserLink
+              user={user}
+              isFollowing={isFollowing}
+              onFollowToggle={onFollowToggle}
+              onViewProfile={onViewProfile}
+              isCurrentUser={isCurrentUser}
+              onOpenFollowModal={onOpenFollowModal}
+            >
+              <span className="font-bold text-gray-900 dark:text-white text-sm md:text-base hover:underline">
+                {user.name}
+              </span>
+            </UserLink>
+            
+            {/* Badges de verificação */}
+            {(user.plan === 'pro' || user.plan === 'premium') && (
+              <VerifiedBadgeIcon plan={user.plan} className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            )}
+            {user.role && ['admin', 'moderator'].includes(user.role) && (
+              <ModeratorBadgeIcon className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            )}
+            
+            {/* Username */}
+            <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               @{user.username}
-            </p>
-            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-              <span>
-                <span className="font-semibold text-gray-900 dark:text-white">{user.followingCount || 0}</span> seguindo
-              </span>
-              <span>
-                <span className="font-semibold text-gray-900 dark:text-white">{user.followersCount || 0}</span> seguidores
-              </span>
-            </div>
-          </div>
-          <div className="inline-block">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getBadgeColor()}`}>
-              {getBadgeText()}
             </span>
           </div>
+
+          {/* Bio do usuário */}
+          {user.bio && (
+            <p className="text-xs md:text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+              {user.bio}
+            </p>
+          )}
+
+          {/* Contadores de seguindo/seguidores */}
+          <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
+            <span>
+              <span className="font-semibold text-gray-900 dark:text-white">{user.followingCount || 0}</span> seguindo
+            </span>
+            <span>
+              <span className="font-semibold text-gray-900 dark:text-white">{user.followersCount || 0}</span> seguidores
+            </span>
+          </div>
+
+          {/* Badge de relacionamento ou novo usuário */}
+          {badgeText && (
+            <div className="inline-block">
+              <span className={`inline-flex items-center px-2 md:px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+                {badgeText}
+              </span>
+            </div>
+          )}
         </div>
       </div>
+      
       <button 
         onClick={() => onFollowToggle(user.id)}
-        className={`font-bold py-2 px-4 rounded-full text-sm transition-all duration-200 transform active:scale-95 flex-shrink-0 min-w-[90px] ${
+        className={`font-bold py-1.5 px-3 md:py-2 md:px-4 rounded-full text-xs md:text-sm transition-all duration-200 transform active:scale-95 flex-shrink-0 min-w-[80px] md:min-w-[90px] ${
           isFollowing 
             ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
             : 'bg-primary hover:bg-gray-600 text-white'
@@ -139,13 +176,14 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [removingUserIds, setRemovingUserIds] = useState<Set<string>>(new Set());
 
   // Converter usuários reais para o formato com relacionamento usando useMemo para otimização
   const convertedUsers = useMemo(() => {
     if (!usersToFollow) return [];
     return usersToFollow.map(user => ({
       ...user,
-      relationshipType: 'new' as const, // Por enquanto, todos são marcados como "novos"
+      relationshipType: 'new' as const, // Tipo padrão (verificação real é feita no componente)
       relationshipDetail: undefined
     }));
   }, [usersToFollow]);
@@ -165,9 +203,6 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
       setHasMore(false);
       return;
     }
-
-    // Simular um pequeno delay para melhor UX
-    await new Promise(resolve => setTimeout(resolve, 300));
 
     const usersPerPage = 10;
     const startIndex = (pageNum - 1) * usersPerPage;
@@ -196,7 +231,8 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
       setUsers([]);
       setHasMore(false);
     }
-  }, [convertedUsers, loadUsers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [convertedUsers]);
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
@@ -206,19 +242,47 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
     }
   };
 
+  // Wrapper para adicionar animação de fade-out
+  const handleFollowToggleWithAnimation = useCallback((userId: string) => {
+    // Se já está seguindo, apenas chama a função original
+    if (followedUserIds.includes(userId)) {
+      onFollowToggle(userId);
+      return;
+    }
+
+    // Adiciona à lista de remoção (inicia animação de fade-out)
+    setRemovingUserIds(prev => new Set(prev).add(userId));
+    
+    // Chama a função original
+    onFollowToggle(userId);
+    
+    // Remove visualmente após a animação
+    setTimeout(() => {
+      setRemovingUserIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    }, 200); // Duração da animação
+  }, [followedUserIds, onFollowToggle]);
+
   // Scroll infinito
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + document.documentElement.scrollTop
         >= document.documentElement.offsetHeight - 1000
+        && !loadingMore && hasMore
       ) {
-        handleLoadMore();
+        const nextPage = page + 1;
+        setPage(nextPage);
+        loadUsers(nextPage);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, loadingMore, hasMore]);
 
   if (loading) {
@@ -285,10 +349,11 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
               key={user.id}
               user={user}
               isFollowing={followedUserIds.includes(user.id)}
-              onFollowToggle={onFollowToggle}
+              onFollowToggle={handleFollowToggleWithAnimation}
               onViewProfile={onViewProfile}
               isCurrentUser={user.id === currentUser.id}
               onOpenFollowModal={onOpenFollowModal}
+              isRemoving={removingUserIds.has(user.id)}
             />
           ))}
         </div>

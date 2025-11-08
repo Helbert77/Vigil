@@ -431,22 +431,22 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
   const handleIncrementView = useCallback(async (type: 'post' | 'comment', id: string) => {
     try {
       if (type === 'post') {
-        const res: any = await api.incrementPostView(id);
-        // Fallback otimista: se houver erro na RPC, incrementa localmente para manter uniformidade visual
-        if (res && res.error) {
-          // Log removido para produção - incrementos são muito frequentes
+        const result = await api.incrementPostView(id);
+        
+        if (result.error) {
+          // Se houver erro, incrementa localmente
           setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
+        } else if (result.data !== null && result.data !== undefined) {
+          // Atualiza com o valor retornado do banco
+          setPosts(prev => prev.map(p => p.id === id ? { ...p, views: result.data } : p));
         }
       } else {
         const res: any = await api.incrementCommentView(id);
         if (res && res.error) {
-          // Log removido para produção - incrementos são muito frequentes
-          // Fallback otimista para comentários: incrementa a view localmente na árvore de comentários
           setPosts(prev => prev.map(p => {
             const updateCommentsViews = (comments: Comment[]): Comment[] => {
               return comments.map(c => {
-                const updated = c.id === id ? { ...c, likes: c.likes, replies: c.replies, user: c.user } : c; // preserve structure
-                // Não temos campo views em Comment no modelo; se existir futuramente, ajustar aqui
+                const updated = c.id === id ? { ...c, likes: c.likes, replies: c.replies, user: c.user } : c;
                 return {
                   ...updated,
                   replies: updated.replies ? updateCommentsViews(updated.replies) : updated.replies
@@ -461,16 +461,9 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         }
       }
     } catch (error) {
-      // Log de erro mantido apenas para exceções reais
       logger.error('Exceção crítica ao incrementar visualização', error, 'api', 'usePosts');
-      // Fallback em caso de exceção: mantém UI coerente
       if (type === 'post') {
         setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
-      } else {
-        setPosts(prev => prev.map(p => ({
-          ...p,
-          comments: p.comments.map(c => ({ ...c }))
-        })));
       }
     }
   }, [setPosts]);

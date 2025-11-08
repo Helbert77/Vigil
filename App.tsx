@@ -483,7 +483,20 @@ const App: React.FC = () => {
           savedPostIds={savedPostIds}
         />;
       case 'Profile':
-        const userToView = viewedUserId ? allUsers.find(u => u.id === viewedUserId) : appUser;
+        // Sempre buscar de allUsers primeiro para garantir dados atualizados em tempo real
+        const userToView = viewedUserId 
+          ? allUsers.find(u => u.id === viewedUserId) 
+          : allUsers.find(u => u.id === appUser.id) || appUser;
+        
+        console.log('🔍 [App.tsx Profile] Usuário sendo exibido:', {
+          viewedUserId,
+          userToView_id: userToView?.id,
+          userToView_username: userToView?.username,
+          userToView_joinDate: userToView?.joinDate,
+          userToView_createdAt: userToView?.createdAt,
+          source: viewedUserId ? 'allUsers (outro usuário)' : allUsers.find(u => u.id === appUser.id) ? 'allUsers (próprio)' : 'appUser (fallback)'
+        });
+        
         if (!userToView) return null;
         return <Profile 
           user={userToView} 

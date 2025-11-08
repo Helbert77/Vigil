@@ -440,8 +440,29 @@ export const toggleSavePost = (postId: string, userId: string, isCurrentlySaved:
 export const voteOnPoll = (postId: string, optionIndex: number) =>
   supabase.rpc('vote_on_poll', { post_id_in: postId, option_index_in: optionIndex });
 
-export const incrementPostView = (postId: string) =>
-  supabase.rpc('increment_post_view', { post_id_in: postId });
+export const incrementPostView = async (postId: string) => {
+  // Buscar valor atual
+  const { data: currentPost } = await supabase
+    .from('posts')
+    .select('views_count')
+    .eq('id', postId)
+    .single();
+  
+  const currentViews = currentPost?.views_count || 0;
+  
+  // Incrementar diretamente na tabela
+  const result = await supabase
+    .from('posts')
+    .update({ views_count: currentViews + 1 })
+    .eq('id', postId)
+    .select('views_count')
+    .single();
+  
+  return {
+    data: result.data?.views_count,
+    error: result.error
+  };
+};
 
 // --- Comments API ---
 export const addComment = (commentData: { post_id: string; user_id: string; content: string; image_url?: string; parent_comment_id?: string }) =>
