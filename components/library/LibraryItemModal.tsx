@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LibraryItem, User } from '../../types';
 import { Icon } from '../icons/Icon';
 import { useToast } from '../../hooks/useToast';
 import FileViewer from './FileViewer';
+import { supabase } from '../../integrations/supabase/client';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const EyeIcon = () => <Icon className="h-5 w-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
@@ -10,6 +11,7 @@ const DownloadIcon = () => <Icon className="h-5 w-5"><path d="M21 15v4a2 2 0 0 1
 const BookOpenIcon = () => <Icon className="h-5 w-5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></Icon>;
 const EditIcon = () => <Icon className="h-5 w-5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></Icon>;
 const TrashIcon = () => <Icon className="h-5 w-5"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></Icon>;
+const UploadIcon = () => <Icon className="h-5 w-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></Icon>;
 
 interface LibraryItemModalProps {
   item: LibraryItem;
@@ -31,14 +33,28 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   const { addToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editForm, setEditForm] = useState({
     title: item.title,
     author: item.author,
     description: item.description || '',
-    file_url: item.file_url || ''
+    cover_url: item.cover_url || '',
+    tags: item.tags?.join(', ') || ''
   });
 
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
+
+  // Atualizar o formulário quando o item mudar (atualização em tempo real)
+  useEffect(() => {
+    setEditForm({
+      title: item.title,
+      author: item.author,
+      description: item.description || '',
+      cover_url: item.cover_url || '',
+      tags: item.tags?.join(', ') || ''
+    });
+  }, [item]);
 
   const handleRead = () => {
     if (!item.file_url) {
@@ -89,13 +105,45 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = file.name.replace(/\.[^/.]+$/, '');
+    const filePath = `${Date.now()}-${fileName}.${fileExt}`;
+
+    const { error } = await supabase.storage.from('library-media').upload(filePath, file);
+
+    if (error) {
+      addToast('Falha ao enviar o arquivo.', 'error');
+      console.error(error);
+    } else {
+      const { data } = supabase.storage.from('library-media').getPublicUrl(filePath);
+      setEditForm({ ...editForm, cover_url: data.publicUrl });
+    }
+    setIsUploading(false);
+  };
+
   const handleSaveEdit = () => {
     if (!editForm.title.trim() || !editForm.author.trim()) {
       addToast('Título e autor são obrigatórios', 'error');
       return;
     }
 
-    onUpdate(item.id, editForm);
+    const tagsArray = editForm.tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag);
+
+    onUpdate(item.id, {
+      title: editForm.title.trim(),
+      author: editForm.author.trim(),
+      description: editForm.description.trim() || undefined,
+      cover_url: editForm.cover_url || undefined,
+      tags: tagsArray.length > 0 ? tagsArray : undefined
+    });
     setIsEditing(false);
   };
 
@@ -142,87 +190,106 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
           className="bg-light-card dark:bg-dark-card rounded-lg shadow-2xl w-full max-w-4xl my-8"
           onClick={(e) => e.stopPropagation()}
         >
-        {/* Header */}
-        <div className="relative p-6 border-b border-light-border dark:border-dark-border">
+        {/* Header com botão fechar */}
+        <div className="relative p-4">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors z-10"
           >
             <XIcon />
           </button>
-
-          {!isEditing ? (
-            <>
-              <span className={`${getTypeColor()} text-white text-sm font-semibold px-3 py-1 rounded-full inline-block mb-3`}>
-                {getTypeLabel()}
-              </span>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 pr-10">
-                {item.title}
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                por {item.author}
-              </p>
-            </>
-          ) : (
-            <div className="space-y-4 pr-10">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Título
-                </label>
-                <input
-                  type="text"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Autor
-                </label>
-                <input
-                  type="text"
-                  value={editForm.author}
-                  onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
-                  className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Cover and Stats */}
+        <div className="px-6 pb-6 space-y-6">
+          {/* Cover and Info */}
           <div className="flex flex-col md:flex-row gap-6">
             {/* Cover */}
-            <div className="flex-shrink-0 w-full md:w-64 aspect-[2/3] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden">
-              {item.cover_url ? (
-                <img
-                  src={item.cover_url}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                  <BookOpenIcon />
-                </div>
+            <div className="flex-shrink-0 w-full md:w-48 flex flex-col">
+              <div
+                className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-3"
+                style={{ minHeight: '400px' }}
+              >
+                {(isEditing ? editForm.cover_url : item.cover_url) ? (
+                  <img
+                    src={isEditing ? editForm.cover_url : item.cover_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                    <BookOpenIcon />
+                  </div>
+                )}
+              </div>
+              
+              {/* Botão de upload da capa (apenas em modo edição) */}
+              {isEditing && isAdmin && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*,application/pdf,.doc,.docx,.txt,.epub,.mobi"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50"
+                  >
+                    <UploadIcon />
+                    <span>{isUploading ? 'Enviando...' : 'Alterar Capa'}</span>
+                  </button>
+                </>
               )}
             </div>
 
             {/* Info */}
-            <div className="flex-1 space-y-4">
-              {/* Stats */}
-              <div className="flex items-center gap-6 text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-2">
-                  <EyeIcon />
-                  <span className="text-sm font-medium">{item.views} visualizações</span>
+            <div className="flex-1 flex flex-col gap-4">
+              {/* Título, Autor e Badge (movidos do header) */}
+              {!isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white leading-snug">
+                        {item.title}
+                      </h2>
+                      <span className={`${getTypeColor()} text-white text-xs font-semibold px-2 py-1 rounded-full inline-flex items-center`}>
+                        {getTypeLabel()}
+                      </span>
+                    </div>
+                    <p className="text-base text-gray-600 dark:text-gray-400">
+                      por {item.author}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Título
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                      className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Autor
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.author}
+                      onChange={(e) => setEditForm({ ...editForm, author: e.target.value })}
+                      className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DownloadIcon />
-                  <span className="text-sm font-medium">{item.downloads} downloads</span>
-                </div>
-              </div>
+              )}
 
               {/* Description */}
               {!isEditing ? (
@@ -270,6 +337,18 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                       </p>
                     </div>
                   )}
+
+                  {/* Stats - acima da linha divisória */}
+                  <div className="flex items-center gap-6 text-gray-600 dark:text-gray-400 mt-auto">
+                    <div className="flex items-center gap-2">
+                      <EyeIcon />
+                      <span className="text-sm font-medium">{item.views} visualizações</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DownloadIcon />
+                      <span className="text-sm font-medium">{item.downloads} downloads</span>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div className="space-y-4">
@@ -282,17 +361,19 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                       rows={4}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                      placeholder="Descrição do item"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Link/URL do Arquivo
+                      Tags (separadas por vírgula)
                     </label>
                     <input
-                      type="url"
-                      value={editForm.file_url}
-                      onChange={(e) => setEditForm({ ...editForm, file_url: e.target.value })}
+                      type="text"
+                      value={editForm.tags}
+                      onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                      placeholder="Ex: romance, aventura, suspense"
                     />
                   </div>
                 </div>
@@ -302,15 +383,15 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="p-6 border-t border-light-border dark:border-dark-border">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Botões de ação principais - sempre visíveis */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="px-6 pb-6">
+          <div className="border-t border-light-border dark:border-dark-border pt-6 md:ml-[13.5rem]">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
+            {/* Botões de ação principais - sempre visíveis e habilitados */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {item.type === 'link' ? (
                 <button
                   onClick={handleRead}
-                  disabled={!item.file_url}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                 >
                   <BookOpenIcon />
                   <span>Abrir Link</span>
@@ -319,16 +400,14 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 <>
                   <button
                     onClick={handleRead}
-                    disabled={!item.file_url}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                   >
                     <BookOpenIcon />
                     <span>Ler Online</span>
                   </button>
                   <button
                     onClick={handleDownload}
-                    disabled={!item.file_url}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                   >
                     <DownloadIcon />
                     <span>Download</span>
@@ -344,7 +423,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   <>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <EditIcon />
                       <span>Editar</span>
@@ -364,7 +443,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                         handleSaveEdit();
                         setIsEditing(false);
                       }}
-                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <EditIcon />
                       <span>Salvar</span>
@@ -380,6 +459,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

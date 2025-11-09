@@ -32,20 +32,21 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
 
     setIsUploading(true);
     const fileExt = file.name.split('.').pop();
-    const filePath = `library-files/${Date.now()}.${fileExt}`;
+    const fileName = file.name.replace(/\.[^/.]+$/, ''); // Nome sem extensão
+    const filePath = `${Date.now()}-${fileName}.${fileExt}`;
 
-    const { error } = await supabase.storage.from('posts-media').upload(filePath, file);
+    // Upload para o bucket específico da biblioteca
+    const { error } = await supabase.storage.from('library-media').upload(filePath, file);
 
     if (error) {
       addToast('Falha ao enviar o arquivo.', 'error');
       console.error(error);
     } else {
-      const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
+      // Obter URL pública do arquivo no novo bucket
+      const { data } = supabase.storage.from('library-media').getPublicUrl(filePath);
       
       // A capa é sempre o arquivo enviado (imagem, vídeo, PDF, etc)
       setForm({ ...form, cover_url: data.publicUrl, file_url: data.publicUrl });
-      
-      addToast('Arquivo enviado com sucesso!', 'success');
     }
     setIsUploading(false);
   };
@@ -75,7 +76,6 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
 
     onAdd(item);
     onClose();
-    addToast('Item adicionado com sucesso!', 'success');
   };
 
   return (

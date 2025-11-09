@@ -39,10 +39,16 @@ const Library: React.FC<LibraryProps> = ({
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
+
+  // Buscar o item selecionado atualizado do array
+  const selectedItem = useMemo(() => {
+    if (!selectedItemId) return null;
+    return items.find(item => item.id === selectedItemId) || null;
+  }, [selectedItemId, items]);
 
   const filteredAndSortedItems = useMemo(() => {
     let filtered = items;
@@ -84,7 +90,7 @@ const Library: React.FC<LibraryProps> = ({
   }, [items, categoryFilter, searchQuery, sortBy]);
 
   const handleItemClick = (item: LibraryItem) => {
-    setSelectedItem(item);
+    setSelectedItemId(item.id);
     onIncrementView(item.id);
   };
 
@@ -238,7 +244,7 @@ const Library: React.FC<LibraryProps> = ({
         <LibraryItemModal
           item={selectedItem}
           user={user}
-          onClose={() => setSelectedItem(null)}
+          onClose={() => setSelectedItemId(null)}
           onUpdate={onUpdateItem}
           onDelete={onDeleteItem}
           onDownload={onIncrementDownload}
