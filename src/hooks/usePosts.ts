@@ -61,6 +61,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
           const commentMap = new Map(allComments.map(c => [c.id, c]));
           const rootComments: Comment[] = [];
           allComments.forEach(c => { if (c.parent_comment_id && commentMap.has(c.parent_comment_id)) { commentMap.get(c.parent_comment_id)?.replies?.push(c); } else { rootComments.push(c); } });
+          
           return {
             id: dbPost.id, user: postUser, text: dbPost.content, imageUrl: dbPost.image_url, videoUrl: dbPost.video_url, audioUrl: dbPost.audio_url, poll: dbPost.poll_data, evidenceBoard: dbPost.evidence_board_data,
             timestamp: dbPost.created_at, likes: dbPost.likes_count, comments: rootComments, commentsCount: dbPost.comments_count, shares: dbPost.shares_count, communityId: dbPost.community_id,
@@ -429,41 +430,44 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
   }, [addToast, fetchPosts]);
 
   const handleIncrementView = useCallback(async (type: 'post' | 'comment', id: string) => {
-    try {
-      if (type === 'post') {
-        const result = await api.incrementPostView(id);
-        
-        if (result.error) {
-          // Se houver erro, incrementa localmente
-          setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
-        } else if (result.data !== null && result.data !== undefined) {
-          // Atualiza com o valor retornado do banco
-          setPosts(prev => prev.map(p => p.id === id ? { ...p, views: result.data } : p));
-        }
-      } else {
-        const res: any = await api.incrementCommentView(id);
-        if (res && res.error) {
-          setPosts(prev => prev.map(p => {
-            const updateCommentsViews = (comments: Comment[]): Comment[] => {
-              return comments.map(c => {
-                const updated = c.id === id ? { ...c, likes: c.likes, replies: c.replies, user: c.user } : c;
-                return {
-                  ...updated,
-                  replies: updated.replies ? updateCommentsViews(updated.replies) : updated.replies
-                };
-              });
-            };
-            return {
-              ...p,
-              comments: updateCommentsViews(p.comments)
-            };
-          }));
-        }
+    if (type === 'post') {
+      // 1. Atualiza otimisticamente no frontend
+      setPosts(prev => prev.map(p => 
+        p.id === id ? { ...p, views: p.views + 1 } : p
+      ));
+      
+      // 2. Salva no banco de dados de forma assíncrona usando RPC
+      try {
+        await supabase.rpc('increment_post_views', { post_id: id });
+      } catch (error) {
+        // Silenciosamente ignora erros - o incremento local já foi feito
       }
-    } catch (error) {
-      logger.error('Exceção crítica ao incrementar visualização', error, 'api', 'usePosts');
-      if (type === 'post') {
-        setPosts(prev => prev.map(p => p.id === id ? { ...p, views: (p.views || 0) + 1 } : p));
+    } else {
+      // Para comentários
+      // 1. Atualiza otimisticamente no frontend
+      setPosts(prev => prev.map(p => {
+        const updateCommentsViews = (comments: Comment[]): Comment[] => {
+          return comments.map(c => {
+            if (c.id === id) {
+              return { ...c, views: c.views + 1 };
+            }
+            return {
+              ...c,
+              replies: c.replies ? updateCommentsViews(c.replies) : c.replies
+            };
+          });
+        };
+        return {
+          ...p,
+          comments: updateCommentsViews(p.comments)
+        };
+      }));
+      
+      // 2. Salva no banco de dados de forma assíncrona usando RPC
+      try {
+        await supabase.rpc('increment_comment_views', { comment_id: id });
+      } catch (error) {
+        // Silenciosamente ignora erros - o incremento local já foi feito
       }
     }
   }, [setPosts]);

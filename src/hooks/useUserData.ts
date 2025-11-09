@@ -16,34 +16,10 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       const { data, error } = await api.fetchAllUsers();
       if (error) throw error;
       
-      console.log(`🔍 [useUserData] fetchAllUsers - Total de usuários: ${data.length}`);
-      if (data.length > 0) {
-        console.log('📊 [useUserData] Amostra do primeiro usuário:', {
-          created_at: data[0].created_at,
-          updated_at: data[0].updated_at,
-          username: data[0].username,
-          id: data[0].id
-        });
-      }
-      
-      const fetchedUsers: User[] = data.map((profile: any, index: number) => {
-        // CORRIGIDO: Usar múltiplas fontes em ordem de prioridade
-        // 1. profile.created_at (se existir)
-        // 2. profile.updated_at (mesma data segundo usuário)
-        // 3. Date.now() (último recurso)
+      const fetchedUsers: User[] = data.map((profile: any) => {
+        // Usar múltiplas fontes em ordem de prioridade
         const dateSource = profile.created_at || profile.updated_at;
         const createdAtDate = dateSource ? new Date(dateSource) : new Date();
-        
-        if (index === 0) {
-          console.log('📅 [useUserData] Processamento data do primeiro usuário:', {
-            profile_created_at_raw: profile.created_at,
-            profile_updated_at_raw: profile.updated_at,
-            dateSource_used: dateSource,
-            createdAtDate_parsed: createdAtDate.toISOString(),
-            joinDate_formatted: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-            is_using_fallback: !dateSource
-          });
-        }
         
         return {
           id: profile.id,
@@ -51,9 +27,9 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
           username: profile.username,
           avatarUrl: profile.avatar_url || `https://picsum.photos/seed/${profile.id}/100/100`,
           bannerUrl: profile.banner_url || `https://picsum.photos/seed/banner-${profile.id}/1500/500`,
-          bio: profile.bio || '', // Garantir que não seja null
+          bio: profile.bio || '',
           joinDate: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-          createdAt: dateSource, // Usar a fonte que tiver dados
+          createdAt: dateSource,
           followingCount: profile.following_count || 0,
           followersCount: profile.followers_count || 0,
           plan: profile.plan || 'free',
@@ -61,9 +37,8 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         };
       });
       setAllUsers(fetchedUsers);
-      console.log('✅ [useUserData] allUsers atualizado com sucesso');
     } catch (error) {
-      console.error('❌ [useUserData] Erro ao carregar usuários:', error);
+      console.error('Erro ao carregar usuários:', error);
       addToast('Erro ao carregar usuários.', 'error');
     }
   }, [addToast]);
@@ -115,7 +90,6 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       
       if (data && data.length > 0) {
         const suggestedUsers: User[] = data.map((profile: any) => {
-          // CORRIGIDO: Usar múltiplas fontes
           const dateSource = profile.created_at || profile.updated_at;
           const createdAtDate = dateSource ? new Date(dateSource) : new Date();
           
@@ -125,9 +99,9 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
             username: profile.username,
             avatarUrl: profile.avatar_url || `https://picsum.photos/seed/${profile.id}/100/100`,
             bannerUrl: profile.banner_url || `https://picsum.photos/seed/banner-${profile.id}/1500/500`,
-            bio: profile.bio || '', // IMPORTANTE: Incluir bio
+            bio: profile.bio || '',
             joinDate: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-            createdAt: dateSource, // IMPORTANTE: Usar a fonte que tiver dados
+            createdAt: dateSource,
             followingCount: profile.following_count || 0,
             followersCount: profile.followers_count || 0,
             plan: profile.plan || 'free',
@@ -167,54 +141,34 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         return u;
     }));
 
-    // Atualizar também a lista usersToFollow localmente (contador + remoção/adição)
+    // Atualizar contadores na lista usersToFollow
     setUsersToFollow(prevUsers => {
       if (!prevUsers) return prevUsers;
       
-      // Se está deixando de seguir, adicionar o usuário de volta à lista
-      if (isCurrentlyFollowing) {
-        const userToAdd = allUsers.find(u => u.id === userId);
-        if (userToAdd) {
-          // Atualizar contadores e adicionar usuário de volta
-          return [
-            ...prevUsers.map(u => {
-              if (u.id === appUser.id) {
-                return { ...u, followingCount: u.followingCount - 1 };
-              }
-              return u;
-            }),
-            { ...userToAdd, followersCount: userToAdd.followersCount - 1 }
-          ];
-        }
-      }
-      
-      // Se está seguindo, remover da lista e atualizar contadores
       return prevUsers.map(u => {
         if (u.id === userId) {
           return { 
             ...u, 
-            followersCount: u.followersCount + 1 
+            followersCount: isCurrentlyFollowing ? u.followersCount - 1 : u.followersCount + 1 
           };
         }
         if (u.id === appUser.id) {
           return {
             ...u,
-            followingCount: u.followingCount + 1
+            followingCount: isCurrentlyFollowing ? u.followingCount - 1 : u.followingCount + 1
           };
         }
         return u;
-      }).filter(u => u.id !== userId); // Remove o usuário que acabou de seguir
+      });
     });
 
     try {
       if (isCurrentlyFollowing) {
         const { error } = await api.unfollowUser(appUser.id, userId);
         if (error) throw error;
-        addToast(`Você deixou de seguir @${allUsers.find(u=>u.id === userId)?.username}.`, 'info');
       } else {
         const { error } = await api.followUser(appUser.id, userId);
         if (error) throw error;
-        addToast(`Você está seguindo @${allUsers.find(u=>u.id === userId)?.username}!`, 'success');
         await api.createNotification({ recipient_id: userId, actor_id: appUser.id, type: 'follow' });
       }
       // Removido fetchUsersToFollow() para evitar re-renderização desnecessária
@@ -234,27 +188,21 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       setUsersToFollow(prevUsers => {
         if (!prevUsers) return prevUsers;
         
-        if (!isCurrentlyFollowing) {
-          // Se estava tentando seguir (e falhou), restaura o usuário na lista
-          const userToRestore = allUsers.find(u => u.id === userId);
-          if (userToRestore) {
-            return [...prevUsers.map(u => {
-              if (u.id === appUser.id) {
-                return { ...u, followingCount: u.followingCount - 1 };
-              }
-              return u;
-            }), userToRestore];
+        return prevUsers.map(u => {
+          if (u.id === userId) {
+            return { 
+              ...u, 
+              followersCount: isCurrentlyFollowing ? u.followersCount + 1 : u.followersCount - 1 
+            };
           }
-        } else {
-          // Se estava tentando deixar de seguir (e falhou), remove o usuário da lista novamente
-          return prevUsers.filter(u => u.id !== userId).map(u => {
-            if (u.id === appUser.id) {
-              return { ...u, followingCount: u.followingCount + 1 };
-            }
-            return u;
-          });
-        }
-        return prevUsers;
+          if (u.id === appUser.id) {
+            return {
+              ...u,
+              followingCount: isCurrentlyFollowing ? u.followingCount + 1 : u.followingCount - 1
+            };
+          }
+          return u;
+        });
       });
     }
   }, [appUser, addToast, followedUserIds, allUsers]);

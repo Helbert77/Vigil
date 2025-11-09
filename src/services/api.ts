@@ -440,28 +440,21 @@ export const toggleSavePost = (postId: string, userId: string, isCurrentlySaved:
 export const voteOnPoll = (postId: string, optionIndex: number) =>
   supabase.rpc('vote_on_poll', { post_id_in: postId, option_index_in: optionIndex });
 
+// Não fazemos nada no backend - apenas incrementamos localmente
+// O contador de views é gerenciado apenas no frontend para performance
 export const incrementPostView = async (postId: string) => {
-  // Buscar valor atual
-  const { data: currentPost } = await supabase
-    .from('posts')
-    .select('views_count')
-    .eq('id', postId)
-    .single();
+  // Retorna sucesso sem fazer chamada ao banco
+  return { data: null, error: null };
+};
+
+// --- Support API ---
+export const submitSupportTicket = async (ticketData: any) => {
+  const { data, error } = await supabase.functions.invoke('send-support-email', {
+    body: ticketData
+  });
   
-  const currentViews = currentPost?.views_count || 0;
-  
-  // Incrementar diretamente na tabela
-  const result = await supabase
-    .from('posts')
-    .update({ views_count: currentViews + 1 })
-    .eq('id', postId)
-    .select('views_count')
-    .single();
-  
-  return {
-    data: result.data?.views_count,
-    error: result.error
-  };
+  if (error) throw error;
+  return data;
 };
 
 // --- Comments API ---

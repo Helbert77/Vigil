@@ -54,31 +54,9 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         .single();
       
       if (profile) {
-        // LOGS: Mapear dados brutos do perfil
-        console.log('🔍 [SessionContext] Dados brutos do profile:', {
-          profile_created_at: profile.created_at,
-          profile_updated_at: profile.updated_at,
-          auth_user_created_at: currentSession.user.created_at,
-          profile_id: profile.id
-        });
-        
-        // CORRIGIDO: Usar múltiplas fontes em ordem de prioridade
-        // 1. profile.created_at (se existir)
-        // 2. profile.updated_at (mesma data segundo usuário)
-        // 3. auth.users.created_at (backup)
-        // 4. Date.now() (último recurso)
+        // Usar múltiplas fontes em ordem de prioridade
         const dateSource = profile.created_at || profile.updated_at || currentSession.user.created_at;
         const createdAtDate = dateSource ? new Date(dateSource) : new Date();
-        
-        console.log('📅 [SessionContext] Processamento da data:', {
-          profile_created_at_raw: profile.created_at,
-          profile_updated_at_raw: profile.updated_at,
-          auth_user_created_at_raw: currentSession.user.created_at,
-          dateSource_used: dateSource,
-          createdAtDate_parsed: createdAtDate.toISOString(),
-          joinDate_formatted: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-          is_using_fallback: !dateSource
-        });
         
         const appUser: User = {
           id: profile.id,
@@ -86,9 +64,9 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           username: profile.username,
           avatarUrl: profile.avatar_url || '',
           bannerUrl: profile.banner_url || '',
-          bio: profile.bio || '', // Garantir que não seja null
+          bio: profile.bio || '',
           joinDate: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-          createdAt: dateSource, // Usar a fonte que tiver dados
+          createdAt: dateSource,
           followingCount: profile.following_count || 0,
           followersCount: profile.followers_count || 0,
           theme: profile.theme || 'light',
@@ -100,13 +78,6 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           role: profile.role || 'user',
           plan: profile.plan || 'free',
         };
-        
-        console.log('✅ [SessionContext] appUser final:', {
-          joinDate: appUser.joinDate,
-          createdAt: appUser.createdAt,
-          id: appUser.id,
-          username: appUser.username
-        });
         
         setUser(appUser);
       }

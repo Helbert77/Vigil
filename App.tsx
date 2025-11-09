@@ -29,6 +29,7 @@ import Login from '@/pages/Login';
 import UpdatePassword from '@/pages/UpdatePassword';
 import FollowListModal from '@/components/profile/FollowListModal';
 import { UsersProvider } from '@/contexts/UsersContext';
+import SupportButton from '@/components/support/SupportButton';
 import { useUserData } from '@/src/hooks/useUserData';
 import { usePosts } from '@/src/hooks/usePosts';
 import { useCommunities } from '@/src/hooks/useCommunities';
@@ -488,15 +489,6 @@ const App: React.FC = () => {
           ? allUsers.find(u => u.id === viewedUserId) 
           : allUsers.find(u => u.id === appUser.id) || appUser;
         
-        console.log('🔍 [App.tsx Profile] Usuário sendo exibido:', {
-          viewedUserId,
-          userToView_id: userToView?.id,
-          userToView_username: userToView?.username,
-          userToView_joinDate: userToView?.joinDate,
-          userToView_createdAt: userToView?.createdAt,
-          source: viewedUserId ? 'allUsers (outro usuário)' : allUsers.find(u => u.id === appUser.id) ? 'allUsers (próprio)' : 'appUser (fallback)'
-        });
-        
         if (!userToView) return null;
         return <Profile 
           user={userToView} 
@@ -882,6 +874,11 @@ const App: React.FC = () => {
             onViewProfile={(id) => { setIsFollowModalOpen(false); handleViewProfile(id); }} 
             onFetchFollows={handleFetchFollows} 
           />
+        )}
+        
+        {/* Botão de Suporte Flutuante - Apenas para usuários Basic, Pro e Premium */}
+        {(appUser.plan === 'basic' || appUser.plan === 'pro' || appUser.plan === 'premium') && (
+          <SupportButton user={appUser} variant="floating" />
         )}
       </div>
     </UsersProvider>
