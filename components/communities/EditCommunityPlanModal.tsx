@@ -24,7 +24,7 @@ const EditCommunityPlanModal: React.FC<EditCommunityPlanModalProps> = ({ isOpen,
       await onUpdate(community.id, requiredPlan);
       onClose();
     } catch (error) {
-      // Erro já tratado no hook
+      // Erro já tratado no hook com toast
     } finally {
       setIsUpdating(false);
     }

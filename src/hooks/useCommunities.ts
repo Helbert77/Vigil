@@ -191,7 +191,7 @@ export const useCommunities = (appUser: User | null) => {
     if (!appUser) return;
     
     try {
-      const { error } = await api.updateCommunityPlan(communityId, requiredPlan);
+      const { data, error } = await api.updateCommunityPlan(communityId, requiredPlan);
       if (error) throw error;
       
       // Atualizar localmente

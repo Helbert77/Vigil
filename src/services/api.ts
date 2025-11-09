@@ -860,8 +860,26 @@ export const leaveCommunity = (userId: string, communityId: string) =>
 export const createCommunity = (communityData: { id: string; name: string; description: string; rules: string[]; tag: string; banner_url: string; required_plan?: string; creator_id?: string; }) =>
   supabase.from('communities').insert(communityData).select().single();
 
-export const updateCommunityPlan = (communityId: string, requiredPlan: string) =>
-  supabase.from('communities').update({ required_plan: requiredPlan }).eq('id', communityId).select();
+export const updateCommunityPlan = async (communityId: string, requiredPlan: string) => {
+  // Primeiro, atualizar sem select para garantir que funcione
+  const { error: updateError } = await supabase
+    .from('communities')
+    .update({ required_plan: requiredPlan })
+    .eq('id', communityId);
+  
+  if (updateError) {
+    return { data: null, error: updateError };
+  }
+  
+  // Depois, buscar os dados atualizados
+  const { data, error } = await supabase
+    .from('communities')
+    .select('*')
+    .eq('id', communityId)
+    .single();
+  
+  return { data, error };
+};
 
 export const fetchActiveMembers = (communityId: string) =>
   supabase.rpc('get_community_active_members', { community_id_in: communityId });
