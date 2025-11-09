@@ -33,27 +33,26 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
     title: item.title,
     author: item.author,
     description: item.description || '',
-    read_url: item.read_url || '',
-    download_url: item.download_url || ''
+    file_url: item.file_url || ''
   });
 
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
 
   const handleRead = () => {
-    if (item.read_url) {
-      window.open(item.read_url, '_blank');
+    if (item.file_url) {
+      window.open(item.file_url, '_blank');
     } else {
-      addToast('Link de leitura não disponível', 'error');
+      addToast('Link não disponível', 'error');
     }
   };
 
   const handleDownload = () => {
-    if (item.download_url) {
-      window.open(item.download_url, '_blank');
+    if (item.file_url) {
+      window.open(item.file_url, '_blank');
       onDownload(item.id);
       addToast('Download iniciado!', 'success');
     } else {
-      addToast('Link de download não disponível', 'error');
+      addToast('Arquivo não disponível', 'error');
     }
   };
 
@@ -82,6 +81,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       case 'article': return 'Artigo';
       case 'magazine': return 'Revista';
       case 'document': return 'Documento';
+      case 'link': return 'Link';
     }
   };
 
@@ -91,6 +91,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       case 'article': return 'bg-green-500';
       case 'magazine': return 'bg-purple-500';
       case 'document': return 'bg-orange-500';
+      case 'link': return 'bg-cyan-500';
     }
   };
 
@@ -244,23 +245,12 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Link de Leitura
+                      Link/URL do Arquivo
                     </label>
                     <input
                       type="url"
-                      value={editForm.read_url}
-                      onChange={(e) => setEditForm({ ...editForm, read_url: e.target.value })}
-                      className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Link de Download
-                    </label>
-                    <input
-                      type="url"
-                      value={editForm.download_url}
-                      onChange={(e) => setEditForm({ ...editForm, download_url: e.target.value })}
+                      value={editForm.file_url}
+                      onChange={(e) => setEditForm({ ...editForm, file_url: e.target.value })}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
                     />
                   </div>
@@ -275,23 +265,32 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {!isEditing ? (
               <>
-                {item.read_url && (
+                {item.file_url && item.type === 'link' && (
                   <button
                     onClick={handleRead}
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                   >
                     <BookOpenIcon />
-                    <span>Ler Online</span>
+                    <span>Abrir Link</span>
                   </button>
                 )}
-                {item.download_url && (
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200"
-                  >
-                    <DownloadIcon />
-                    <span>Download</span>
-                  </button>
+                {item.file_url && item.type !== 'link' && (
+                  <>
+                    <button
+                      onClick={handleRead}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
+                    >
+                      <BookOpenIcon />
+                      <span>Abrir</span>
+                    </button>
+                    <button
+                      onClick={handleDownload}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200"
+                    >
+                      <DownloadIcon />
+                      <span>Download</span>
+                    </button>
+                  </>
                 )}
               </>
             ) : (

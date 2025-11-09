@@ -14,7 +14,7 @@ const PlusIcon = () => <Icon><line x1="12" x2="12" y1="5" y2="19"></line><line x
 
 type ViewMode = 'list' | 'grid-small' | 'grid-large';
 type SortBy = 'date' | 'title' | 'author' | 'views' | 'downloads';
-type CategoryFilter = 'all' | 'ebook' | 'article' | 'magazine' | 'document';
+type CategoryFilter = 'all' | 'ebook' | 'article' | 'magazine' | 'document' | 'link';
 
 interface LibraryProps {
   items: LibraryItem[];
@@ -93,7 +93,8 @@ const Library: React.FC<LibraryProps> = ({
     ebook: 'Ebooks',
     article: 'Artigos',
     magazine: 'Revistas',
-    document: 'Documentos'
+    document: 'Documentos',
+    link: 'Links'
   };
 
   const getCategoryCount = (category: CategoryFilter) => {
@@ -111,8 +112,7 @@ const Library: React.FC<LibraryProps> = ({
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
           >
-            <PlusIcon />
-            <span className="hidden sm:inline">Adicionar Item</span>
+            <span>Adicionar Item</span>
           </button>
         )}
       </div>
@@ -135,7 +135,7 @@ const Library: React.FC<LibraryProps> = ({
 
         {/* Category Tabs */}
         <div className="flex flex-wrap gap-2">
-          {(['all', 'ebook', 'article', 'magazine', 'document'] as CategoryFilter[]).map((category) => (
+          {(['all', 'ebook', 'article', 'magazine', 'document', 'link'] as CategoryFilter[]).map((category) => (
             <button
               key={category}
               onClick={() => setCategoryFilter(category)}

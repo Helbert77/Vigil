@@ -164,17 +164,15 @@ export interface ActiveMember {
 // Tipo para itens da biblioteca
 export interface LibraryItem {
   id: string;
-  type: 'ebook' | 'article' | 'magazine' | 'document';
+  type: 'ebook' | 'article' | 'magazine' | 'document' | 'link';
   title: string;
   author: string;
   description?: string;
   cover_url?: string;
+  file_url?: string;
   date: string;
   published_date?: string;
-  category?: string;
   tags?: string[];
-  read_url?: string;
-  download_url?: string;
   downloads: number;
   views: number;
   created_at: string;

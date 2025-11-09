@@ -17,35 +17,40 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [form, setForm] = useState({
-    type: 'ebook' as 'ebook' | 'article' | 'magazine' | 'document',
+    type: 'ebook' as 'ebook' | 'article' | 'magazine' | 'document' | 'link',
     title: '',
     author: '',
     description: '',
     cover_url: '',
+    file_url: '',
     published_date: '',
-    category: '',
-    tags: '',
-    read_url: '',
-    download_url: ''
+    tags: ''
   });
 
-  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
     const fileExt = file.name.split('.').pop();
-    const filePath = `library-covers/${Date.now()}.${fileExt}`;
+    const filePath = `library-files/${Date.now()}.${fileExt}`;
 
     const { error } = await supabase.storage.from('posts-media').upload(filePath, file);
 
     if (error) {
-      addToast('Falha ao enviar a capa.', 'error');
+      addToast('Falha ao enviar o arquivo.', 'error');
       console.error(error);
     } else {
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
-      setForm({ ...form, cover_url: data.publicUrl });
-      addToast('Capa enviada com sucesso!', 'success');
+      
+      // Se for imagem, definir como capa também
+      if (file.type.startsWith('image/')) {
+        setForm({ ...form, cover_url: data.publicUrl, file_url: data.publicUrl });
+      } else {
+        setForm({ ...form, file_url: data.publicUrl });
+      }
+      
+      addToast('Arquivo enviado com sucesso!', 'success');
     }
     setIsUploading(false);
   };
@@ -67,12 +72,10 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
       author: form.author.trim(),
       description: form.description.trim() || undefined,
       cover_url: form.cover_url || undefined,
+      file_url: form.file_url.trim() || undefined,
       date: new Date().toISOString(),
       published_date: form.published_date || undefined,
-      category: form.category.trim() || undefined,
-      tags: tagsArray.length > 0 ? tagsArray : undefined,
-      read_url: form.read_url.trim() || undefined,
-      download_url: form.download_url.trim() || undefined
+      tags: tagsArray.length > 0 ? tagsArray : undefined
     };
 
     onAdd(item);
@@ -113,6 +116,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
               <option value="article">Artigo</option>
               <option value="magazine">Revista</option>
               <option value="document">Documento</option>
+              <option value="link">Link</option>
             </select>
           </div>
 
@@ -158,17 +162,17 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
             />
           </div>
 
-          {/* Cover Upload */}
+          {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Capa
+              Selecione o arquivo
             </label>
             <div className="flex items-center gap-4">
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                onChange={handleCoverUpload}
+                accept="image/*,video/*,application/pdf,.doc,.docx,.txt,.epub,.mobi"
+                onChange={handleFileUpload}
                 className="hidden"
               />
               <button
@@ -177,7 +181,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
                 className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50"
               >
                 <UploadIcon />
-                <span>{isUploading ? 'Enviando...' : 'Enviar Capa'}</span>
+                <span>{isUploading ? 'Enviando...' : 'Upload'}</span>
               </button>
               {form.cover_url && (
                 <img
@@ -185,6 +189,9 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
                   alt="Preview"
                   className="w-16 h-24 object-cover rounded-lg"
                 />
+              )}
+              {form.file_url && !form.cover_url && (
+                <span className="text-sm text-green-600 dark:text-green-400">✓ Arquivo enviado</span>
               )}
             </div>
           </div>
@@ -202,20 +209,6 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
             />
           </div>
 
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Categoria
-            </label>
-            <input
-              type="text"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-              placeholder="Ex: Ficção, Ciência, Tecnologia"
-            />
-          </div>
-
           {/* Tags */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -230,33 +223,21 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
             />
           </div>
 
-          {/* Read URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Link de Leitura Online
-            </label>
-            <input
-              type="url"
-              value={form.read_url}
-              onChange={(e) => setForm({ ...form, read_url: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-              placeholder="https://..."
-            />
-          </div>
-
-          {/* Download URL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Link de Download
-            </label>
-            <input
-              type="url"
-              value={form.download_url}
-              onChange={(e) => setForm({ ...form, download_url: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-              placeholder="https://..."
-            />
-          </div>
+          {/* Link URL - Only visible when type is 'link' */}
+          {form.type === 'link' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Link de Leitura Online *
+              </label>
+              <input
+                type="url"
+                value={form.file_url}
+                onChange={(e) => setForm({ ...form, file_url: e.target.value })}
+                className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                placeholder="https://..."
+              />
+            </div>
+          )}
         </div>
 
         {/* Actions */}

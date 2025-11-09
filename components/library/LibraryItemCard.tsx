@@ -41,6 +41,8 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
         return 'Revista';
       case 'document':
         return 'Documento';
+      case 'link':
+        return 'Link';
     }
   };
 
@@ -54,6 +56,8 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
         return 'bg-purple-500';
       case 'document':
         return 'bg-orange-500';
+      case 'link':
+        return 'bg-cyan-500';
     }
   };
 
