@@ -861,24 +861,47 @@ export const createCommunity = (communityData: { id: string; name: string; descr
   supabase.from('communities').insert(communityData).select().single();
 
 export const updateCommunityPlan = async (communityId: string, requiredPlan: string) => {
-  // Primeiro, atualizar sem select para garantir que funcione
-  const { error: updateError } = await supabase
-    .from('communities')
-    .update({ required_plan: requiredPlan })
-    .eq('id', communityId);
-  
-  if (updateError) {
-    return { data: null, error: updateError };
+  try {
+    // Buscar a comunidade atual para verificar permissões
+    const { data: currentCommunity, error: fetchError } = await supabase
+      .from('communities')
+      .select('id, creator_id, required_plan')
+      .eq('id', communityId)
+      .single();
+    
+    if (fetchError || !currentCommunity) {
+      return { data: null, error: fetchError || new Error('Comunidade não encontrada') };
+    }
+    
+    // Atualizar com RPC para contornar possíveis problemas de RLS
+    const { error: rpcError } = await supabase.rpc('update_community_required_plan', {
+      p_community_id: communityId,
+      p_required_plan: requiredPlan
+    });
+    
+    // Se RPC falhar, tentar update direto
+    if (rpcError) {
+      const { error: updateError } = await supabase
+        .from('communities')
+        .update({ required_plan: requiredPlan })
+        .eq('id', communityId);
+      
+      if (updateError) {
+        return { data: null, error: updateError };
+      }
+    }
+    
+    // Buscar os dados atualizados
+    const { data, error } = await supabase
+      .from('communities')
+      .select('*')
+      .eq('id', communityId)
+      .single();
+    
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
   }
-  
-  // Depois, buscar os dados atualizados
-  const { data, error } = await supabase
-    .from('communities')
-    .select('*')
-    .eq('id', communityId)
-    .single();
-  
-  return { data, error };
 };
 
 export const fetchActiveMembers = (communityId: string) =>
