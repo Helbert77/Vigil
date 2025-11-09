@@ -160,3 +160,22 @@ export interface ActiveMember {
   post_count: number;
   plan?: 'free' | 'basic' | 'pro' | 'premium';
 }
+
+// Tipo para itens da biblioteca
+export interface LibraryItem {
+  id: string;
+  type: 'ebook' | 'article' | 'magazine' | 'document';
+  title: string;
+  author: string;
+  description?: string;
+  cover_url?: string;
+  date: string;
+  published_date?: string;
+  category?: string;
+  tags?: string[];
+  read_url?: string;
+  download_url?: string;
+  downloads: number;
+  views: number;
+  created_at: string;
+}

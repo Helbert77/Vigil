@@ -39,6 +39,7 @@ import { useModerationData } from '@/src/hooks/useModerationData';
 import * as api from '@/src/services/api';
 import SplashScreen from '@/pages/SplashScreen';
 import Timeline from '@/pages/Timeline';
+import Library from '@/pages/Library';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
 import Moderation from '@/pages/admin/Moderation';
 import Dashboard from '@/components/admin/Dashboard';
@@ -53,7 +54,7 @@ import {
   type NavigationSnapshot,
 } from '@/src/utils/history';
 
-type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
+type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Library' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
 
 const App: React.FC = () => {
   const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
@@ -83,6 +84,9 @@ const App: React.FC = () => {
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
+  
+  // Library hook - import at the top
+  const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = require('@/src/hooks/useLibrary').useLibrary(appUser);
 
   useEffect(() => {
     // User state updated - logs removed for production
@@ -612,6 +616,16 @@ const App: React.FC = () => {
           onViewCommunity={handleViewCommunity}
           user={appUser}
           setCurrentPage={handleNavigation}
+        />;
+      case 'Library':
+        return <Library 
+          items={libraryItems}
+          user={appUser}
+          onAddItem={handleAddLibraryItem}
+          onUpdateItem={handleUpdateLibraryItem}
+          onDeleteItem={handleDeleteLibraryItem}
+          onIncrementView={handleIncrementLibraryView}
+          onIncrementDownload={handleIncrementLibraryDownload}
         />;
       case 'Timeline':
         return <Timeline />;

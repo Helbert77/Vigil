@@ -985,6 +985,25 @@ export const hardDeleteConversation = (conversationId: string) =>
     body: { conversation_id: conversationId },
   });
 
+// --- Library API ---
+export const fetchLibraryItems = () =>
+  supabase.from('library_items').select('*').order('date', { ascending: false });
+
+export const addLibraryItem = (itemData: any) =>
+  supabase.from('library_items').insert(itemData).select().single();
+
+export const updateLibraryItem = (id: string, updates: any) =>
+  supabase.from('library_items').update(updates).eq('id', id);
+
+export const deleteLibraryItem = (id: string) =>
+  supabase.from('library_items').delete().eq('id', id);
+
+export const incrementLibraryItemViews = (id: string) =>
+  supabase.rpc('increment_library_item_views', { item_id: id });
+
+export const incrementLibraryItemDownloads = (id: string) =>
+  supabase.rpc('increment_library_item_downloads', { item_id: id });
+
 // --- Subscriptions API ---
 export const upsertSubscription = (userId: string, plan: 'free' | 'basic' | 'pro' | 'premium') =>
   supabase.from('subscriptions').upsert({ user_id: userId, plan, status: 'active' }, { onConflict: 'user_id' });
