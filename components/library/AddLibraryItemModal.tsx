@@ -23,7 +23,6 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
     description: '',
     cover_url: '',
     file_url: '',
-    published_date: '',
     tags: ''
   });
 
@@ -43,12 +42,8 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
     } else {
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
       
-      // Se for imagem, definir como capa também
-      if (file.type.startsWith('image/')) {
-        setForm({ ...form, cover_url: data.publicUrl, file_url: data.publicUrl });
-      } else {
-        setForm({ ...form, file_url: data.publicUrl });
-      }
+      // A capa é sempre o arquivo enviado (imagem, vídeo, PDF, etc)
+      setForm({ ...form, cover_url: data.publicUrl, file_url: data.publicUrl });
       
       addToast('Arquivo enviado com sucesso!', 'success');
     }
@@ -74,7 +69,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
       cover_url: form.cover_url || undefined,
       file_url: form.file_url.trim() || undefined,
       date: new Date().toISOString(),
-      published_date: form.published_date || undefined,
+      published_date: new Date().toISOString(),
       tags: tagsArray.length > 0 ? tagsArray : undefined
     };
 
@@ -91,7 +86,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
       >
         {/* Header */}
         <div className="p-6 border-b border-light-border dark:border-dark-border flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Adicionar Item à Biblioteca</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Adicionar Item</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
@@ -194,19 +189,6 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
                 <span className="text-sm text-green-600 dark:text-green-400">✓ Arquivo enviado</span>
               )}
             </div>
-          </div>
-
-          {/* Published Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Data de Publicação
-            </label>
-            <input
-              type="date"
-              value={form.published_date}
-              onChange={(e) => setForm({ ...form, published_date: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-            />
           </div>
 
           {/* Tags */}
