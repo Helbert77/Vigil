@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
   // Custom Hooks for data logic
   const { allUsers, followedUserIds, blockedUserIds, blockedUsersList, usersToFollow, handleFollowToggle, handleBlockToggle, handleUpdateUser } = useUserData(appUser, refreshUser);
-  const { communities, setCommunities, joinedCommunityIds, trendingTopics, handleJoinCommunityToggle, handleCreateCommunity, fetchTrendingTopics } = useCommunities(appUser);
+  const { communities, setCommunities, joinedCommunityIds, trendingTopics, handleJoinCommunityToggle, handleCreateCommunity, handleUpdateCommunityPlan, fetchTrendingTopics } = useCommunities(appUser);
   const { posts, isPostsLoading, savedPostIds, handleAddPost, handleDeletePost, handleUpdatePost, handleToggleLike, handleToggleCommentLike, handleToggleSavePost, handleVoteOnPoll, handleAddComment, handleUpdateComment, handleDeleteComment, handleIncrementView } = usePosts(appUser, allUsers, setCommunities, fetchTrendingTopics);
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
@@ -417,7 +417,44 @@ const App: React.FC = () => {
   const filteredContent = useMemo(() => {
     const mutedWords = (appUser?.mutedWords || []).map(w => w.trim().toLowerCase()).filter(Boolean);
     const filterComments = (comments: Comment[]): Comment[] => comments.filter(c => !blockedUserIds.includes(c.user.id) && !mutedWords.some(word => c.text.toLowerCase().includes(word))).map(c => ({ ...c, replies: c.replies ? filterComments(c.replies) : [] }));
-    const filteredPosts = posts.filter((p: Post) => !blockedUserIds.includes(p.user.id) && !mutedWords.some(word => p.text.toLowerCase().includes(word))).map((p: Post) => ({ ...p, comments: filterComments(p.comments) }));
+    
+    // Filtrar posts considerando restrições de comunidade
+    const filteredPosts = posts.filter((p: Post) => {
+      // Filtrar usuários bloqueados e palavras silenciadas
+      if (blockedUserIds.includes(p.user.id)) return false;
+      if (mutedWords.some(word => p.text.toLowerCase().includes(word))) return false;
+      
+      // Se o post pertence a uma comunidade, verificar acesso
+      if (p.communityId) {
+        const community = communities.find(c => c.id === p.communityId);
+        if (community && community.requiredPlan && community.requiredPlan !== 'all') {
+          // Importar a função de verificação de acesso
+          const canAccessCommunity = (userPlan: string, requiredPlan: string): boolean => {
+            const planHierarchy: Record<string, number> = {
+              free: 0,
+              basic: 1,
+              pro: 2,
+              premium: 3
+            };
+            const userPlanLevel = planHierarchy[userPlan] || 0;
+            switch (requiredPlan) {
+              case 'basic+': return userPlanLevel >= planHierarchy.basic;
+              case 'pro+': return userPlanLevel >= planHierarchy.pro;
+              case 'premium': return userPlanLevel >= planHierarchy.premium;
+              default: return true;
+            }
+          };
+          
+          // Verificar se o usuário tem acesso à comunidade
+          if (!canAccessCommunity(appUser?.plan || 'free', community.requiredPlan)) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    }).map((p: Post) => ({ ...p, comments: filterComments(p.comments) }));
+    
     const filteredAllUsers = allUsers.filter((u: User) => !blockedUserIds.includes(u.id));
     const filteredNotifications = notifications.filter((n: Notification) => !blockedUserIds.includes(n.actor.id));
     const filteredConversations = conversations.filter((c: Conversation) => c.participants.every((p: User) => !blockedUserIds.includes(p.id)));
@@ -427,7 +464,7 @@ const App: React.FC = () => {
       u.id !== appUser?.id
     );
     return { filteredPosts, filteredAllUsers, filteredNotifications, filteredConversations, filteredUsersToFollow };
-  }, [posts, allUsers, notifications, conversations, usersToFollow, blockedUserIds, followedUserIds, appUser]);
+  }, [posts, allUsers, notifications, conversations, usersToFollow, blockedUserIds, followedUserIds, appUser, communities]);
 
   if (sessionLoading) return <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div></div>;
   
@@ -581,6 +618,21 @@ const App: React.FC = () => {
       case 'PostDetail':
         const post = posts.find(p => p.id === activePostId);
         if (!post) return null;
+        
+        // Determinar para onde voltar baseado na origem do post
+        const handlePostDetailBack = () => {
+          if (post.communityId && previousPage === 'CommunityDetail') {
+            // Se veio de uma comunidade, voltar para ela
+            handleNavigation('CommunityDetail');
+          } else if (previousPage && previousPage !== 'PostDetail') {
+            // Se veio de outra página (não outro post), voltar para ela
+            handleNavigation(previousPage);
+          } else {
+            // Caso padrão: voltar para Home
+            handleNavigation('Home');
+          }
+        };
+        
         return <PostDetail 
           post={post} 
           onFollowToggle={handleFollowToggle} 
@@ -605,7 +657,7 @@ const App: React.FC = () => {
           savedPostIds={savedPostIds}
           onToggleSaveComment={() => {}}
           savedCommentIds={[]}
-          onNavigateBack={() => handleNavigation('Home')}
+          onNavigateBack={handlePostDetailBack}
           onViewPost={handleViewPost}
           blockedUserIds={blockedUserIds}
           followedUserIds={followedUserIds}
@@ -669,6 +721,7 @@ const App: React.FC = () => {
           communities={communities}
           joinedCommunityIds={joinedCommunityIds}
           setCurrentPage={handleNavigation}
+          onUpdateCommunityPlan={handleUpdateCommunityPlan}
         />;
       case 'TopicDetail':
         return activeTag ? <TopicDetail 

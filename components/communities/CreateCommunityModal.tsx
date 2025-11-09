@@ -12,6 +12,7 @@ export interface NewCommunityData {
   description: string;
   rules: string[];
   bannerUrl?: string;
+  requiredPlan?: 'all' | 'basic+' | 'pro+' | 'premium';
 }
 
 interface CreateCommunityModalProps {
@@ -28,6 +29,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({ isOpen, onC
   const [description, setDescription] = useState('');
   const [rules, setRules] = useState<string[]>(['']);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [requiredPlan, setRequiredPlan] = useState<'all' | 'basic+' | 'pro+' | 'premium'>('all');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,7 +78,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({ isOpen, onC
   const handleSubmit = () => {
     if (name.trim() && description.trim()) {
       const filteredRules = rules.map(r => r.trim()).filter(r => r);
-      onCreate({ name, description, rules: filteredRules, bannerUrl: bannerUrl || undefined });
+      onCreate({ name, description, rules: filteredRules, bannerUrl: bannerUrl || undefined, requiredPlan });
     }
   };
 
@@ -130,6 +132,25 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({ isOpen, onC
               placeholder="Uma breve descrição sobre o que é esta comunidade."
               className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
             />
+          </div>
+          <div>
+            <label htmlFor="required-plan" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Plano Requerido para Acesso
+            </label>
+            <select
+              id="required-plan"
+              value={requiredPlan}
+              onChange={(e) => setRequiredPlan(e.target.value as any)}
+              className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="all">Todos (Free, Basic, Pro, Premium)</option>
+              <option value="basic+">Basic, Pro e Premium</option>
+              <option value="pro+">Pro e Premium</option>
+              <option value="premium">Apenas Premium</option>
+            </select>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              A comunidade será visível para todos, mas apenas usuários com o plano selecionado poderão entrar.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Regras (Opcional)</label>

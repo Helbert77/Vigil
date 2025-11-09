@@ -113,6 +113,8 @@ export interface Community {
   bannerUrl: string;
   tag: string;
   rules?: string[]; // Novo campo para regras
+  requiredPlan?: 'all' | 'basic+' | 'pro+' | 'premium'; // Plano mínimo requerido
+  creatorId?: string; // ID do criador da comunidade
 }
 
 export interface TimelineEvent {

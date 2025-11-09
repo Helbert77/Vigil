@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Community, Post, User, ActiveMember, Poll, EvidenceItem } from '../types';
 import Card from '../components/common/Card';
 import PostCard from '../components/post/PostCard';
@@ -7,6 +7,8 @@ import Avatar from '../components/common/Avatar';
 import CreatePost from '@/src/components/post/CreatePost';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import EditCommunityPlanModal from '@/components/communities/EditCommunityPlanModal';
+import { getRequiredPlanLabel, getRequiredPlanColor } from '@/src/utils/communityAccess';
 
 const ArrowLeftIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
 const UsersIcon = () => <Icon className="h-4 w-4 mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -44,12 +46,42 @@ interface CommunityDetailProps {
   onVoteOnPoll: (postId: string, optionIndex: number) => void;
   allUsers: User[];
   setCurrentPage: (page: any) => void;
+  onUpdateCommunityPlan?: (communityId: string, requiredPlan: 'all' | 'basic+' | 'pro+' | 'premium') => Promise<void>;
 }
 
-const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage }) => {
-  const communityPosts = posts.filter((post: Post) => post.communityId === community.id);
+const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage, onUpdateCommunityPlan }) => {
+  const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
+  
+  // Verificar se o usuário tem acesso à comunidade
+  const hasAccess = React.useMemo(() => {
+    if (!community.requiredPlan || community.requiredPlan === 'all') return true;
+    
+    const planHierarchy: Record<string, number> = {
+      free: 0,
+      basic: 1,
+      pro: 2,
+      premium: 3
+    };
+    
+    const userPlanLevel = planHierarchy[user.plan] || 0;
+    
+    switch (community.requiredPlan) {
+      case 'basic+': return userPlanLevel >= planHierarchy.basic;
+      case 'pro+': return userPlanLevel >= planHierarchy.pro;
+      case 'premium': return userPlanLevel >= planHierarchy.premium;
+      default: return true;
+    }
+  }, [community.requiredPlan, user.plan]);
+  
+  // Filtrar posts apenas se o usuário tiver acesso à comunidade
+  const communityPosts = hasAccess 
+    ? posts.filter((post: Post) => post.communityId === community.id)
+    : [];
   const pinnedPosts = communityPosts.filter(post => post.isPinned);
   const regularPosts = communityPosts.filter(post => !post.isPinned);
+  
+  // Verificar se o usuário é o criador da comunidade ou admin/moderador
+  const canEditCommunity = user.id === community.creatorId || user.role === 'admin' || user.role === 'moderator';
 
   return (
     <div>
@@ -61,10 +93,30 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
       </div>
 
       <Card className="mb-6 overflow-hidden p-0 sm:p-0">
-        <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-32 sm:h-48 w-full object-cover" />
+        <div className="relative">
+          <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-32 sm:h-48 w-full object-cover" />
+          {community.requiredPlan && community.requiredPlan !== 'all' && (
+            <div className={`absolute top-2 right-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg`}>
+              {getRequiredPlanLabel(community.requiredPlan)}
+            </div>
+          )}
+        </div>
         <div className="p-4 sm:p-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{community.name}</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">{community.description}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{community.name}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">{community.description}</p>
+            </div>
+            {canEditCommunity && onUpdateCommunityPlan && (
+              <button
+                onClick={() => setIsEditPlanModalOpen(true)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 whitespace-nowrap"
+                title="Editar acesso da comunidade"
+              >
+                Editar Acesso
+              </button>
+            )}
+          </div>
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
                 <div className="flex items-center">
@@ -173,6 +225,15 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
           </Card>
         </aside>
       </div>
+      
+      {onUpdateCommunityPlan && (
+        <EditCommunityPlanModal
+          isOpen={isEditPlanModalOpen}
+          onClose={() => setIsEditPlanModalOpen(false)}
+          community={community}
+          onUpdate={onUpdateCommunityPlan}
+        />
+      )}
     </div>
   );
 };

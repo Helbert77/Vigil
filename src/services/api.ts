@@ -857,8 +857,11 @@ export const joinCommunity = (userId: string, communityId: string) =>
 export const leaveCommunity = (userId: string, communityId: string) =>
   supabase.from('user_communities').delete().eq('user_id', userId).eq('community_id', communityId);
 
-export const createCommunity = (communityData: { id: string; name: string; description: string; rules: string[]; tag: string; banner_url: string; }) =>
+export const createCommunity = (communityData: { id: string; name: string; description: string; rules: string[]; tag: string; banner_url: string; required_plan?: string; creator_id?: string; }) =>
   supabase.from('communities').insert(communityData).select().single();
+
+export const updateCommunityPlan = (communityId: string, requiredPlan: string) =>
+  supabase.from('communities').update({ required_plan: requiredPlan }).eq('id', communityId).select();
 
 export const fetchActiveMembers = (communityId: string) =>
   supabase.rpc('get_community_active_members', { community_id_in: communityId });
