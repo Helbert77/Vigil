@@ -36,6 +36,7 @@ import { useCommunities } from '@/src/hooks/useCommunities';
 import { useNotifications } from '@/src/hooks/useNotifications';
 import { useConversations } from '@/src/hooks/useConversations';
 import { useModerationData } from '@/src/hooks/useModerationData';
+import { useLibrary } from '@/src/hooks/useLibrary';
 import * as api from '@/src/services/api';
 import SplashScreen from '@/pages/SplashScreen';
 import Timeline from '@/pages/Timeline';
@@ -84,9 +85,7 @@ const App: React.FC = () => {
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
-  
-  // Library hook - import at the top
-  const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = require('@/src/hooks/useLibrary').useLibrary(appUser);
+  const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = useLibrary(appUser);
 
   useEffect(() => {
     // User state updated - logs removed for production
