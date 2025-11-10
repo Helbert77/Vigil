@@ -391,9 +391,9 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
       )}
 
       <div className="flex border-b border-light-border dark:border-dark-border mb-4">
-        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>Posts</button>
-        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}>Mídia</button>
-        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}><ShieldIcon /> Moderação</button>}
+        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Posts</button>
+        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Mídia</button>
+        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}><ShieldIcon /> Moderação</button>}
       </div>
 
       {activeTab === 'posts' && (

@@ -35,7 +35,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="flex justify-center space-x-4">
           <button
             onClick={onClose}
-            className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 font-bold py-2 px-6 rounded-full transition-colors"
+            className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 font-bold py-2 px-6 rounded-full transition-colors text-gray-900 dark:text-gray-300"
           >
             {cancelText}
           </button>

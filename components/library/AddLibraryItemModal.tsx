@@ -105,7 +105,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
             <select
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value as any })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             >
               <option value="ebook">Ebook</option>
               <option value="article">Artigo</option>
@@ -124,7 +124,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               placeholder="Digite o título"
             />
           </div>
@@ -138,7 +138,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
               type="text"
               value={form.author}
               onChange={(e) => setForm({ ...form, author: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               placeholder="Digite o nome do autor"
             />
           </div>
@@ -152,7 +152,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={4}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white resize-none"
+              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white resize-none placeholder-gray-500 dark:placeholder-gray-400"
               placeholder="Digite uma descrição"
             />
           </div>
@@ -200,7 +200,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
               type="text"
               value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               placeholder="Ex: romance, aventura, suspense"
             />
           </div>
@@ -215,7 +215,7 @@ const AddLibraryItemModal: React.FC<AddLibraryItemModalProps> = ({ onClose, onAd
                 type="url"
                 value={form.file_url}
                 onChange={(e) => setForm({ ...form, file_url: e.target.value })}
-                className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="https://..."
               />
             </div>

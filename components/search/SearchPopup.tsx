@@ -3,9 +3,9 @@ import { User, Community, TrendingTopic } from '@/types';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
 
-const SearchIcon = () => <Icon className="h-5 w-5 text-gray-500"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
-const UsersIcon = () => <Icon className="h-5 w-5 text-gray-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
-const HashIcon = () => <Icon className="h-5 w-5 text-gray-500"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></Icon>;
+const SearchIcon = () => <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
+const UsersIcon = () => <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
+const HashIcon = () => <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></Icon>;
 
 interface SearchPopupProps {
   query: string;
@@ -44,13 +44,13 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
         className="p-3 md:p-3 flex items-center space-x-3 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
       >
         <SearchIcon />
-        <p className="text-sm md:text-base">Ir para a busca de <span className="font-bold">"{query}"</span></p>
+        <p className="text-sm md:text-base text-gray-900 dark:text-white">Ir para a busca de <span className="font-bold">"{query}"</span></p>
       </div>
 
       {filteredUsers.length > 0 && (
         <>
           <div className="border-t border-light-border dark:border-dark-border my-1"></div>
-          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase">Usuários</h3>
+          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Usuários</h3>
           {filteredUsers.map(user => (
             <div
               key={user.id}
@@ -59,8 +59,8 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
             >
               <Avatar src={user.avatarUrl} alt={user.name} size="sm" />
               <div>
-                <p className="font-bold text-sm md:text-sm">{user.name}</p>
-                <p className="text-xs text-gray-500">@{user.username}</p>
+                <p className="font-bold text-sm md:text-sm text-gray-900 dark:text-white">{user.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">@{user.username}</p>
               </div>
             </div>
           ))}
@@ -70,7 +70,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
       {filteredCommunities.length > 0 && (
         <>
           <div className="border-t border-light-border dark:border-dark-border my-1"></div>
-          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase">Comunidades</h3>
+          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Comunidades</h3>
           {filteredCommunities.map(community => (
             <div
               key={community.id}
@@ -80,7 +80,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
               <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
                 <img src={community.bannerUrl} alt={community.name} className="w-full h-full object-cover" />
               </div>
-              <p className="font-bold text-sm md:text-sm">{community.name}</p>
+              <p className="font-bold text-sm md:text-sm text-gray-900 dark:text-white">{community.name}</p>
             </div>
           ))}
         </>
@@ -89,7 +89,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
       {filteredTopics.length > 0 && (
         <>
           <div className="border-t border-light-border dark:border-dark-border my-1"></div>
-          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase">Tópicos</h3>
+          <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Tópicos</h3>
           {filteredTopics.map(topic => (
             <div
               key={topic.tag}
@@ -98,8 +98,8 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
             >
               <HashIcon />
               <div>
-                <p className="font-bold text-sm md:text-sm">#{topic.tag}</p>
-                <p className="text-xs text-gray-500">{topic.post_count.toLocaleString()} posts</p>
+                <p className="font-bold text-sm md:text-sm text-gray-900 dark:text-white">#{topic.tag}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{topic.post_count.toLocaleString()} posts</p>
               </div>
             </div>
           ))}

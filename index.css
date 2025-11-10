@@ -470,6 +470,11 @@
     max-width: 100vw;
     box-sizing: border-box;
   }
+  
+  /* Exceção para botões importantes que não devem ser limitados */
+  button.library-add-button {
+    max-width: none !important;
+  }
 }
 
 /* Date/Time element styles */

@@ -150,10 +150,12 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   const handleDeleteConversation = async () => {
     if (!selectedConversationId) return;
     
-    // Logs removidos para produção
-    await onDeleteConversation(selectedConversationId);
+    // Fechar o modal imediatamente para melhor UX
     setIsDeleteModalOpen(false);
     setShowOptionsMenu(false);
+    
+    // Executar a exclusão em background
+    await onDeleteConversation(selectedConversationId);
     setSelectedConversationId(null);
   };
 

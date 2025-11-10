@@ -65,7 +65,7 @@ const Saved: React.FC<SavedProps> = ({ posts, savedPostIds, onUpdatePost, onTogg
         <Card>
           <div className="text-center p-8 flex flex-col items-center">
             <BookmarkIcon />
-            <h2 className="text-xl font-semibold mt-4">No Saved Items</h2>
+            <h2 className="text-xl font-semibold mt-4 text-gray-900 dark:text-white">No Saved Items</h2>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
               Use the bookmark icon on a post to save it for later.
             </p>

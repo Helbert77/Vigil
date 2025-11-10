@@ -196,7 +196,7 @@ const CreateComment: React.FC<CreateCommentProps> = ({ user, postId, onAddCommen
             value={text}
             onChange={handleTextChange}
             onFocus={() => setIsFocused(true)}
-            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-primary resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             rows={isFocused ? 3 : 1}
           />
 
@@ -245,7 +245,7 @@ const CreateComment: React.FC<CreateCommentProps> = ({ user, postId, onAddCommen
                 )}
               </div>
               <div className="flex items-center space-x-2">
-                {onCancelReply && <button type="button" onClick={onCancelReply} className="text-sm font-bold py-2 px-4 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</button>}
+                {onCancelReply && <button type="button" onClick={onCancelReply} className="text-sm font-bold py-2 px-4 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-300">Cancel</button>}
                 <button type="submit" disabled={isSubmitDisabled} className="bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
                   Reply
                 </button>

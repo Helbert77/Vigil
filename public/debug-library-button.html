@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Botão Adicionar Item da Biblioteca</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .test-button:hover {
+            background: #1d4ed8;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug - Botão Adicionar Item da Biblioteca</h1>
+    
+    <div class="test-section">
+        <h2>1. Teste de Renderização do Botão</h2>
+        <button class="test-button" id="test-button-1">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" x2="12" y1="5" y2="19"></line>
+                <line x1="5" x2="19" y1="12" y2="12"></line>
+            </svg>
+            <span>Adicionar Item (Teste 1)</span>
+        </button>
+        <div id="test-1-result" class="status info">Aguardando clique...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Teste com Estilos Inline</h2>
+        <button 
+            class="test-button" 
+            id="test-button-2"
+            style="display: flex !important; visibility: visible !important; opacity: 1 !important; z-index: 10; position: relative;"
+        >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" x2="12" y1="5" y2="19"></line>
+                <line x1="5" x2="19" y1="12" y2="12"></line>
+            </svg>
+            <span>Adicionar Item (Teste 2 - Inline Styles)</span>
+        </button>
+        <div id="test-2-result" class="status info">Aguardando clique...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Teste de Compatibilidade Cross-Browser</h2>
+        <div id="browser-info" class="status info">Detectando navegador...</div>
+        <button class="test-button" id="test-button-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" x2="12" y1="5" y2="19"></line>
+                <line x1="5" x2="19" y1="12" y2="12"></line>
+            </svg>
+            <span>Adicionar Item (Teste 3 - Cross-Browser)</span>
+        </button>
+        <div id="test-3-result" class="status info">Aguardando clique...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Informações do DevTools</h2>
+        <div id="devtools-info" class="status info">Verificando DevTools...</div>
+        <button class="test-button" onclick="checkDevTools()">Verificar DevTools</button>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Log do Console</h2>
+        <pre id="console-log">Aguardando eventos...</pre>
+    </div>
+
+    <script>
+        // Função para adicionar logs
+        const logs = [];
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('pt-BR');
+            const logMessage = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logMessage);
+            document.getElementById('console-log').textContent = logs.join('\n');
+            console.log(logMessage);
+        }
+
+        // Detectar navegador
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            let browserName = 'Desconhecido';
+            
+            if (ua.indexOf('Firefox') > -1) {
+                browserName = 'Firefox';
+            } else if (ua.indexOf('Chrome') > -1) {
+                browserName = 'Chrome';
+            } else if (ua.indexOf('Safari') > -1) {
+                browserName = 'Safari';
+            } else if (ua.indexOf('Edge') > -1) {
+                browserName = 'Edge';
+            } else if (ua.indexOf('MSIE') > -1 || ua.indexOf('Trident/') > -1) {
+                browserName = 'Internet Explorer';
+            }
+            
+            return browserName;
+        }
+
+        // Verificar DevTools
+        function checkDevTools() {
+            const devToolsOpen = window.outerWidth - window.innerWidth > 160 || 
+                                 window.outerHeight - window.innerHeight > 160;
+            
+            const info = {
+                devToolsOpen: devToolsOpen,
+                windowOuterWidth: window.outerWidth,
+                windowInnerWidth: window.innerWidth,
+                windowOuterHeight: window.outerHeight,
+                windowInnerHeight: window.innerHeight,
+                screenWidth: screen.width,
+                screenHeight: screen.height
+            };
+            
+            document.getElementById('devtools-info').innerHTML = `
+                <strong>DevTools Status:</strong><br>
+                DevTools Aberto: ${devToolsOpen ? 'SIM ✓' : 'NÃO ✗'}<br>
+                Largura Externa: ${info.windowOuterWidth}px<br>
+                Largura Interna: ${info.windowInnerWidth}px<br>
+                Altura Externa: ${info.windowOuterHeight}px<br>
+                Altura Interna: ${info.windowInnerHeight}px<br>
+                Tela: ${info.screenWidth}x${info.screenHeight}px
+            `;
+            
+            addLog(`DevTools ${devToolsOpen ? 'aberto' : 'fechado'}`, 'info');
+        }
+
+        // Inicialização
+        window.addEventListener('DOMContentLoaded', () => {
+            addLog('Página carregada', 'success');
+            
+            // Detectar navegador
+            const browser = detectBrowser();
+            document.getElementById('browser-info').innerHTML = `
+                <strong>Navegador Detectado:</strong> ${browser}<br>
+                <strong>User Agent:</strong> ${navigator.userAgent}
+            `;
+            addLog(`Navegador: ${browser}`, 'info');
+            
+            // Verificar DevTools automaticamente
+            checkDevTools();
+            
+            // Teste 1
+            document.getElementById('test-button-1').addEventListener('click', () => {
+                document.getElementById('test-1-result').className = 'status success';
+                document.getElementById('test-1-result').textContent = '✓ Botão clicado com sucesso!';
+                addLog('Teste 1: Botão clicado', 'success');
+            });
+            
+            // Teste 2
+            document.getElementById('test-button-2').addEventListener('click', () => {
+                document.getElementById('test-2-result').className = 'status success';
+                document.getElementById('test-2-result').textContent = '✓ Botão com estilos inline clicado com sucesso!';
+                addLog('Teste 2: Botão com estilos inline clicado', 'success');
+            });
+            
+            // Teste 3
+            document.getElementById('test-button-3').addEventListener('click', () => {
+                document.getElementById('test-3-result').className = 'status success';
+                document.getElementById('test-3-result').textContent = `✓ Botão funcionando no ${browser}!`;
+                addLog(`Teste 3: Botão funcionando no ${browser}`, 'success');
+            });
+            
+            // Monitorar mudanças de tamanho da janela
+            window.addEventListener('resize', () => {
+                addLog('Janela redimensionada', 'info');
+                checkDevTools();
+            });
+        });
+
+        // Capturar erros
+        window.addEventListener('error', (e) => {
+            addLog(`ERRO: ${e.message}`, 'error');
+        });
+    </script>
+</body>
+</html>
+

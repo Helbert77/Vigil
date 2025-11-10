@@ -129,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
                   onChange={handleSearchChange}
                   onFocus={() => setIsPopupOpen(!!query)}
                   onKeyDown={handleKeyDown}
-                  className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-2.5 pl-10 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-2.5 pl-10 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <SearchIcon />
@@ -147,7 +147,7 @@ const Header: React.FC<HeaderProps> = ({
                       <div className="absolute top-full right-0 mt-2 w-56 md:w-48 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-30">
                         <button 
                           onClick={handleAdvancedSearchClick}
-                          className="w-full text-left flex items-center space-x-3 px-4 py-3 md:py-3 text-sm md:text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          className="w-full text-left flex items-center space-x-3 px-4 py-3 md:py-3 text-sm md:text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
                         >
                           <SearchIcon />
                           <span>Busca avançada</span>
@@ -222,7 +222,7 @@ const Header: React.FC<HeaderProps> = ({
                 onChange={handleSearchChange}
                 onFocus={() => setIsPopupOpen(!!query)}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-3 pl-12 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-3 pl-12 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 autoFocus
               />
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

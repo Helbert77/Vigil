@@ -145,18 +145,18 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
                   <textarea
                     value={editedText}
                     onChange={(e) => setEditedText(e.target.value)}
-                    className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
                     rows={3}
                     autoFocus
                   />
                   <div className="flex justify-end space-x-2 mt-2">
-                    <button onClick={(e) => handleActionClick(e, handleCancelEdit)} className="text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">Cancelar</button>
+                    <button onClick={(e) => handleActionClick(e, handleCancelEdit)} className="text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-300">Cancelar</button>
                     <button onClick={(e) => handleActionClick(e, handleSaveEdit)} className="bg-primary text-white text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-600">Salvar</button>
                   </div>
                 </div>
               ) : (
                 <>
-                  {comment.text && <p className="text-sm mt-1 whitespace-pre-wrap">{renderTextWithMentions(comment.text, allUsers, currentUser, followedUserIds, onFollowToggle, onViewProfile, onOpenFollowModal)}</p>}
+                  {comment.text && <p className="text-sm mt-1 whitespace-pre-wrap text-gray-900 dark:text-gray-200">{renderTextWithMentions(comment.text, allUsers, currentUser, followedUserIds, onFollowToggle, onViewProfile, onOpenFollowModal)}</p>}
                   {comment.imageUrl && (
                     <img src={comment.imageUrl} alt="Comment media" className="mt-2 rounded-lg max-h-64 w-full object-cover" />
                   )}

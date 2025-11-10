@@ -540,19 +540,28 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
               <div className="pt-2">
                   <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Poll duration</p>
-                  <div className="flex items-center space-x-2">
-                      <div className="flex-1">
-                          <label htmlFor="poll-days" className="block text-xs text-gray-500">Days</label>
+                  <div className="flex items-center gap-2 mb-2" style={{ maxWidth: '280px' }}>
+                      <div className="w-20 flex-shrink-0">
+                          <label htmlFor="poll-days" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Days</label>
                           <input type="number" id="poll-days" value={pollDays} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollDays(Math.min(7, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="7" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
-                      <div className="flex-1">
-                          <label htmlFor="poll-hours" className="block text-xs text-gray-500">Hours</label>
+                      <div className="w-20 flex-shrink-0">
+                          <label htmlFor="poll-hours" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hours</label>
                           <input type="number" id="poll-hours" value={pollHours} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollHours(Math.min(23, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="23" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
-                      <div className="flex-1">
-                          <label htmlFor="poll-minutes" className="block text-xs text-gray-500">Minutes</label>
+                      <div className="w-20 flex-shrink-0">
+                          <label htmlFor="poll-minutes" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minutes</label>
                           <input type="number" id="poll-minutes" value={pollMinutes} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollMinutes(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="59" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
+                  </div>
+                  <div className="mt-2">
+                      <button 
+                        onClick={handleRemoveMedia}
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-md border border-light-border dark:border-dark-border hover:border-red-500 dark:hover:border-red-400"
+                        style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
+                      >
+                        Cancelar Enquete
+                      </button>
                   </div>
               </div>
             </div>

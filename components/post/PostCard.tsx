@@ -460,12 +460,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                     <textarea
                       value={editedText}
                       onChange={(e) => setEditedText(e.target.value)}
-                      className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 md:p-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm md:text-base"
+                      className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md p-2 md:p-3 focus:outline-none focus:ring-2 focus:ring-primary text-sm md:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       rows={4}
                       autoFocus
                     />
                     <div className="flex justify-end space-x-2 mt-2">
-                      <button onClick={handleCancelEdit} className="text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancelar</button>
+                      <button onClick={handleCancelEdit} className="text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-300">Cancelar</button>
                       <button onClick={handleSaveEdit} className="bg-primary text-white text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-600 transition-colors">Salvar</button>
                     </div>
                   </div>
