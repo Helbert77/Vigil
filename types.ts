@@ -25,6 +25,11 @@ export interface User {
   showActivityStatus?: boolean;
   profileViewMode?: 'list' | 'grid';
   plan: 'free' | 'basic' | 'pro' | 'premium';
+  subscription_status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete';
+  trial_ends_at?: string | null;
+  subscription_started_at?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
 }
 
 export interface Comment {
@@ -176,4 +181,21 @@ export interface LibraryItem {
   downloads: number;
   views: number;
   created_at: string;
+  created_by?: string;
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan: 'free' | 'basic' | 'pro' | 'premium';
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete';
+  billing_cycle: 'monthly' | 'annually';
+  current_period_start: string;
+  current_period_end: string;
+  trial_ends_at?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  promotional_price?: boolean;
+  created_at: string;
+  updated_at: string;
 }

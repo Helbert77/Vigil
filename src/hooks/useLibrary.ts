@@ -3,6 +3,7 @@ import { LibraryItem, User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 import { supabase } from '@/integrations/supabase/client';
+import { canAccessLibrary, canAddLibraryItems } from '@/src/utils/libraryAccess';
 
 export const useLibrary = (appUser: User | null) => {
   const { addToast } = useToast();
@@ -10,6 +11,12 @@ export const useLibrary = (appUser: User | null) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
+    // Verificar se o usuário tem acesso à biblioteca
+    if (!appUser || !canAccessLibrary(appUser.plan, appUser.role)) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await api.fetchLibraryItems();
       if (error) throw error;
@@ -27,7 +34,8 @@ export const useLibrary = (appUser: User | null) => {
         tags: item.tags,
         downloads: item.downloads || 0,
         views: item.views || 0,
-        created_at: item.created_at
+        created_at: item.created_at,
+        created_by: item.created_by
       })) as LibraryItem[];
       
       setItems(mappedItems);
@@ -37,7 +45,7 @@ export const useLibrary = (appUser: User | null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [appUser, addToast]);
 
   useEffect(() => {
     fetchItems();
@@ -57,11 +65,18 @@ export const useLibrary = (appUser: User | null) => {
   const handleAddItem = useCallback(async (itemData: Omit<LibraryItem, 'id' | 'downloads' | 'views' | 'created_at'>) => {
     if (!appUser) return;
     
+    // Verificar se o usuário pode adicionar itens
+    if (!canAddLibraryItems(appUser.plan, appUser.role)) {
+      addToast('Apenas usuários Premium e Administradores podem adicionar itens à biblioteca', 'error');
+      return;
+    }
+    
     try {
       const { data, error } = await api.addLibraryItem(itemData);
       if (error) throw error;
       
       fetchItems();
+      addToast('Item adicionado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao adicionar item:', error);
       addToast('Erro ao adicionar item.', 'error');
@@ -73,11 +88,19 @@ export const useLibrary = (appUser: User | null) => {
     
     try {
       const { error } = await api.updateLibraryItem(id, updates);
-      if (error) throw error;
       
+      // Verificar se houve erro na API
+      if (error) {
+        console.error('Erro ao atualizar item no banco:', error);
+        addToast(error.message || 'Erro ao atualizar item.', 'error');
+        return; // Não continuar se houver erro
+      }
+      
+      // Só atualiza o estado local se a atualização no banco foi bem-sucedida
       setItems(prev => prev.map(item => 
         item.id === id ? { ...item, ...updates } : item
       ));
+      addToast('Item atualizado com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao atualizar item:', error);
       addToast('Erro ao atualizar item.', 'error');
@@ -93,7 +116,13 @@ export const useLibrary = (appUser: User | null) => {
       
       // Excluir o registro do banco de dados
       const { error } = await api.deleteLibraryItem(id);
-      if (error) throw error;
+      
+      // Verificar se houve erro na API
+      if (error) {
+        console.error('Erro ao excluir item do banco:', error);
+        addToast(error.message || 'Erro ao excluir item.', 'error');
+        return; // Não continuar se houver erro
+      }
       
       // Se houver arquivo no storage, tentar excluí-lo
       if (item?.file_url && item.file_url.includes('library-media')) {
@@ -110,7 +139,9 @@ export const useLibrary = (appUser: User | null) => {
         }
       }
       
+      // Só remove do estado local se a exclusão no banco foi bem-sucedida
       setItems(prev => prev.filter(item => item.id !== id));
+      addToast('Item excluído com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao excluir item:', error);
       addToast('Erro ao excluir item.', 'error');

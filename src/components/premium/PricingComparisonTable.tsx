@@ -12,24 +12,32 @@ interface PricingComparisonTableProps {
 
 interface Feature {
   name: string;
-  basic: boolean; // Removido o plano 'free'
-  pro: boolean;
-  premium: boolean;
+  free: string | boolean;
+  basic: string | boolean;
+  pro: string | boolean;
+  premium: string | boolean;
 }
 
-const FEATURES: Feature[] = [
-  { name: "Acesso ilimitado a recursos básicos", basic: true, pro: true, premium: true },
-  { name: "Editar Post", basic: true, pro: true, premium: true },
-  { name: "Posts mais longos", basic: true, pro: true, premium: true },
-  { name: "Selo verificado", basic: false, pro: true, premium: true },
-  { name: "Suporte prioritário por e-mail", basic: false, pro: true, premium: true },
-  { name: "Anúncios Reduzidos", basic: false, pro: true, premium: true },
-  { name: "Sem anúncios", basic: false, pro: false, premium: true },
-  { name: "Criar novas comunidades", basic: false, pro: false, premium: true },
-  { name: "Acesso total a página E-Books", basic: false, pro: false, premium: true },
-  { name: "Atendimento e Suporte via chat", basic: false, pro: false, premium: true },
-  { name: "Acesso antecipado a novos recursos", basic: false, pro: false, premium: true },
+// Features com valores de texto (aparecem primeiro)
+const TEXT_FEATURES: Feature[] = [
+  { name: "Limite de caracteres por post", free: "280", basic: "1.000", pro: "5.000", premium: "25.000" },
+  { name: "Anúncios", free: true, basic: true, pro: true, premium: false },
+  { name: "Suporte por e-mail", free: true, basic: true, pro: true, premium: true },
+  { name: "Suporte via chat", free: false, basic: false, pro: false, premium: true },
 ];
+
+// Features com ícones (aparecem depois)
+const ICON_FEATURES: Feature[] = [
+  { name: "Editar posts", free: false, basic: true, pro: true, premium: true },
+  { name: "Acesso a comunidades", free: false, basic: true, pro: true, premium: true },
+  { name: "Acesso à biblioteca", free: false, basic: false, pro: true, premium: true },
+  { name: "Criar comunidades", free: false, basic: false, pro: false, premium: true },
+  { name: "Selo verificado", free: false, basic: false, pro: true, premium: true },
+  { name: "Acesso antecipado", free: false, basic: false, pro: false, premium: true },
+];
+
+// Combinar features: texto primeiro, ícones depois
+const FEATURES: Feature[] = [...TEXT_FEATURES, ...ICON_FEATURES];
 
 const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ currentPlan }) => {
   const getPlanClass = (plan: string) => {
@@ -52,6 +60,9 @@ const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ current
                 <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                   Recursos
                 </th>
+                <th scope="col" className={`px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider ${getPlanClass('free')}`}>
+                  Free
+                </th>
                 <th scope="col" className={`px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider ${getPlanClass('basic')}`}>
                   Basic
                 </th>
@@ -69,14 +80,41 @@ const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ current
                   <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-gray-200">
                     {feature.name}
                   </td>
+                  <td className={`px-4 py-2 whitespace-nowrap text-center ${getPlanClass('free')}`}>
+                    {typeof feature.free === 'string' ? (
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{feature.free}</span>
+                    ) : feature.free ? (
+                      <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : (
+                      <XIcon />
+                    )}
+                  </td>
                   <td className={`px-4 py-2 whitespace-nowrap text-center ${getPlanClass('basic')}`}>
-                    {feature.basic ? <CheckIcon className="h-5 w-5 text-green-500 mx-auto" /> : <XIcon />}
+                    {typeof feature.basic === 'string' ? (
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{feature.basic}</span>
+                    ) : feature.basic ? (
+                      <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : (
+                      <XIcon />
+                    )}
                   </td>
                   <td className={`px-4 py-2 whitespace-nowrap text-center ${getPlanClass('pro')}`}>
-                    {feature.pro ? <CheckIcon className="h-5 w-5 text-green-500 mx-auto" /> : <XIcon />}
+                    {typeof feature.pro === 'string' ? (
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{feature.pro}</span>
+                    ) : feature.pro ? (
+                      <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : (
+                      <XIcon />
+                    )}
                   </td>
                   <td className={`px-4 py-2 whitespace-nowrap text-center ${getPlanClass('premium')}`}>
-                    {feature.premium ? <CheckIcon className="h-5 w-5 text-green-500 mx-auto" /> : <XIcon />}
+                    {typeof feature.premium === 'string' ? (
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{feature.premium}</span>
+                    ) : feature.premium ? (
+                      <CheckIcon className="h-5 w-5 text-green-500 mx-auto" />
+                    ) : (
+                      <XIcon />
+                    )}
                   </td>
                 </tr>
               ))}

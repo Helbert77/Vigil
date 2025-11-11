@@ -4,6 +4,7 @@ import { Icon } from '../icons/Icon';
 import { useToast } from '../../hooks/useToast';
 import FileViewer from './FileViewer';
 import { supabase } from '../../integrations/supabase/client';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const EyeIcon = () => <Icon className="h-5 w-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
@@ -34,6 +35,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editForm, setEditForm] = useState({
     title: item.title,
@@ -45,6 +47,8 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   });
 
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
+  const isCreator = item.created_by === user.id;
+  const canEdit = isAdmin || isCreator;
 
   // Atualizar o formulário quando o item mudar (atualização em tempo real)
   useEffect(() => {
@@ -151,10 +155,13 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Tem certeza que deseja excluir este item?')) {
-      onDelete(item.id);
-      onClose();
-    }
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    onDelete(item.id);
+    setIsDeleteModalOpen(false);
+    onClose();
   };
 
   const getTypeLabel = () => {
@@ -227,7 +234,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
               </div>
               
               {/* Botão de upload da capa (apenas em modo edição) */}
-              {isEditing && isAdmin && (
+              {isEditing && canEdit && (
                 <>
                   <input
                     ref={fileInputRef}
@@ -436,7 +443,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
             </div>
 
             {/* Botões de administração - sempre na mesma posição */}
-            {isAdmin && (
+            {canEdit && (
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 {!isEditing ? (
                   <>
@@ -483,6 +490,18 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
         </div>
       </div>
     </div>
+
+    {/* Modal de confirmação de exclusão */}
+    <ConfirmationModal
+      isOpen={isDeleteModalOpen}
+      onClose={() => setIsDeleteModalOpen(false)}
+      onConfirm={confirmDelete}
+      title="Excluir Item da Biblioteca?"
+      message={`Tem certeza que deseja excluir permanentemente "${item.title}"? Esta ação não pode ser desfeita.`}
+      confirmText="Sim, excluir"
+      cancelText="Cancelar"
+      isDestructive={true}
+    />
     </>
   );
 };

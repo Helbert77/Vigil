@@ -6,6 +6,7 @@ import LibraryItemCard from '../components/library/LibraryItemCard';
 import LibraryItemModal from '../components/library/LibraryItemModal';
 import AddLibraryItemModal from '../components/library/AddLibraryItemModal';
 import Dropdown from '../components/common/Dropdown';
+import { canAddLibraryItems } from '@/src/utils/libraryAccess';
 
 const SearchIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 const GridIcon = () => <Icon><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></Icon>;
@@ -128,6 +129,9 @@ const Library: React.FC<LibraryProps> = ({
     return <div className="p-4">Carregando...</div>;
   }
 
+  // Verificar se o usuário pode adicionar itens
+  const userCanAddItems = canAddLibraryItems(user.plan, user.role);
+
   return (
     <div className="space-y-6 w-full">
       {/* Header */}
@@ -140,30 +144,32 @@ const Library: React.FC<LibraryProps> = ({
       >
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Biblioteca Virtual</h1>
         
-        {/* Botão Adicionar Item */}
-        <button
-          id="library-add-button"
-          data-testid="add-library-item-button"
-          onClick={() => setIsAddModalOpen(true)}
-          className="library-add-button flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-md"
-          aria-label="Adicionar Item"
-          type="button"
-          style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            visibility: 'visible',
-            opacity: 1,
-            zIndex: 10,
-            position: 'relative',
-            minWidth: '150px',
-            minHeight: '40px',
-            maxWidth: 'none',
-            flexShrink: 0
-          }}
-        >
-          <span>Adicionar Item</span>
-        </button>
+        {/* Botão Adicionar Item - Visível apenas para Premium e Admin */}
+        {userCanAddItems && (
+          <button
+            id="library-add-button"
+            data-testid="add-library-item-button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="library-add-button flex items-center justify-center bg-secondary hover:bg-blue-700 text-white font-bold rounded-full transition-colors md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base shadow-md"
+            aria-label="Adicionar Item"
+            type="button"
+            style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              visibility: 'visible',
+              opacity: 1,
+              zIndex: 10,
+              position: 'relative',
+              minWidth: '150px',
+              minHeight: '40px',
+              maxWidth: 'none',
+              flexShrink: 0
+            }}
+          >
+            <span>Adicionar Item</span>
+          </button>
+        )}
       </div>
 
       {/* Filters and Controls */}

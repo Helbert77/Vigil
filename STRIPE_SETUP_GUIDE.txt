@@ -1,0 +1,499 @@
+================================================================================
+GUIA COMPLETO DE CONFIGURAÇÃO DO STRIPE - VIGIL
+================================================================================
+
+SUMÁRIO:
+1. Estrutura de Preços do App
+2. Criação de Conta Stripe
+3. Configuração de Produtos e Preços no Stripe
+4. Configuração de Webhooks
+5. Variáveis de Ambiente (Supabase)
+6. Atualização dos IDs de Preços no Código
+7. Testes
+8. Checklist Final
+
+================================================================================
+1. ESTRUTURA DE PREÇOS DO APP VIGIL
+================================================================================
+
+PLANOS DISPONÍVEIS:
+┌─────────┬─────────────┬─────────────┬──────────────────────┐
+│ Plano   │ Mensal      │ Anual       │ Período de Teste     │
+├─────────┼─────────────┼─────────────┼──────────────────────┤
+│ Free    │ $ 0.00      │ $ 0.00      │ Não aplicável        │
+│ Basic   │ $ 3.99      │ $ 47.88     │ Não                  │
+│ Pro     │ $ 8.99      │ $ 107.88    │ 7 dias               │
+│ Premium │ $ 19.99     │ $ 239.88    │ 14 dias              │
+└─────────┴─────────────┴─────────────┴──────────────────────┘
+
+PREÇOS PROMOCIONAIS (Promoção de Lançamento - 20% OFF):
+┌─────────┬─────────────┬─────────────┐
+│ Plano   │ Mensal      │ Anual       │
+├─────────┼─────────────┼─────────────┤
+│ Basic   │ $ 3.19      │ $ 38.30     │
+│ Pro     │ $ 7.19      │ $ 86.30     │
+│ Premium │ $ 15.99     │ $ 191.90    │
+└─────────┴─────────────┴─────────────┘
+
+BÔNUS ANUAIS:
+- Pro: +3 meses grátis (15 meses pagando 12)
+- Premium: +6 meses grátis (18 meses pagando 12)
+
+MOEDA: USD (Dólar Americano)
+
+================================================================================
+2. CRIAÇÃO DE CONTA STRIPE
+================================================================================
+
+PASSO 1: Criar conta
+→ Acesse: https://dashboard.stripe.com/register
+→ Preencha os dados da empresa/pessoa física
+→ Ative a conta brasileira (para aceitar BRL)
+
+PASSO 2: Configurar dados fiscais
+→ Dashboard > Configurações > Empresa
+→ Adicione CNPJ/CPF
+→ Configure endereço de cobrança
+
+PASSO 3: Ativar métodos de pagamento
+→ Dashboard > Configurações > Métodos de pagamento
+→ Habilite:
+  ✓ Cartões de crédito (Visa, Mastercard, Amex, etc.)
+  ✓ PIX (recomendado para Brasil)
+  ✓ Boleto bancário (opcional)
+
+================================================================================
+3. CONFIGURAÇÃO DE PRODUTOS E PREÇOS NO STRIPE
+================================================================================
+
+IMPORTANTE: Você criará 3 produtos, cada um com 2 preços (mensal e anual).
+           Para os preços promocionais, você criará preços adicionais com
+           cupons ou preços temporários.
+
+───────────────────────────────────────────────────────────────────────────────
+PRODUTO 1: VIGIL BASIC
+───────────────────────────────────────────────────────────────────────────────
+
+Dashboard > Catálogo de produtos > + Adicionar produto
+
+Nome do produto: Vigil Basic
+Descrição: Plano básico do Vigil - Posts até 1000 caracteres, acesso a comunidades públicas
+
+PREÇO MENSAL (PADRÃO):
+  Nome: Vigil Basic - Mensal
+  Modelo de preço: Preço recorrente
+  Valor: $ 3.99
+  Frequência: Mensal
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_basic_monthly)
+
+PREÇO ANUAL:
+  Clique em "+ Adicionar outro preço" no mesmo produto
+  Nome: Vigil Basic - Anual
+  Modelo de preço: Preço recorrente
+  Valor: $ 47.88
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_basic_annually)
+
+PREÇO PROMOCIONAL MENSAL (20% OFF):
+  Nome: Vigil Basic - Mensal (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 3.19
+  Frequência: Mensal
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_basic_monthly_promo)
+
+PREÇO PROMOCIONAL ANUAL (20% OFF):
+  Nome: Vigil Basic - Anual (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 38.30
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_basic_annually_promo)
+
+───────────────────────────────────────────────────────────────────────────────
+PRODUTO 2: VIGIL PRO
+───────────────────────────────────────────────────────────────────────────────
+
+Nome do produto: Vigil Pro
+Descrição: Plano Pro do Vigil - Posts até 5000 caracteres, acesso a comunidades e biblioteca, selo verificado
+
+PREÇO MENSAL (PADRÃO):
+  Nome: Vigil Pro - Mensal
+  Modelo de preço: Preço recorrente
+  Valor: $ 8.99
+  Frequência: Mensal
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_pro_monthly)
+
+PREÇO ANUAL:
+  Nome: Vigil Pro - Anual (+3 meses grátis)
+  Modelo de preço: Preço recorrente
+  Valor: $ 107.88
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_pro_annually)
+
+PREÇO PROMOCIONAL MENSAL (20% OFF):
+  Nome: Vigil Pro - Mensal (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 7.19
+  Frequência: Mensal
+  Moeda: USD
+  Período de teste: 7 dias
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_pro_monthly_promo)
+
+PREÇO PROMOCIONAL ANUAL (20% OFF):
+  Nome: Vigil Pro - Anual (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 86.30
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_pro_annually_promo)
+
+───────────────────────────────────────────────────────────────────────────────
+PRODUTO 3: VIGIL PREMIUM
+───────────────────────────────────────────────────────────────────────────────
+
+Nome do produto: Vigil Premium
+Descrição: Plano Premium do Vigil - Posts até 25000 caracteres, criar comunidades, acesso antecipado, sem anúncios, suporte via chat
+
+PREÇO MENSAL (PADRÃO):
+  Nome: Vigil Premium - Mensal
+  Modelo de preço: Preço recorrente
+  Valor: $ 19.99
+  Frequência: Mensal
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_premium_monthly)
+
+PREÇO ANUAL:
+  Nome: Vigil Premium - Anual (+6 meses grátis)
+  Modelo de preço: Preço recorrente
+  Valor: $ 239.88
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_premium_annually)
+
+PREÇO PROMOCIONAL MENSAL (20% OFF):
+  Nome: Vigil Premium - Mensal (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 15.99
+  Frequência: Mensal
+  Moeda: USD
+  Período de teste: 14 dias
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_premium_monthly_promo)
+
+PREÇO PROMOCIONAL ANUAL (20% OFF):
+  Nome: Vigil Premium - Anual (Promoção de Lançamento)
+  Modelo de preço: Preço recorrente
+  Valor: $ 191.90
+  Frequência: Anual
+  Moeda: USD
+  ➜ COPIE O ID: price_xxxxxxxxxx (será price_premium_annually_promo)
+
+================================================================================
+4. CONFIGURAÇÃO DE WEBHOOKS
+================================================================================
+
+Webhooks são essenciais para sincronizar o Stripe com seu app automaticamente.
+
+PASSO 1: Obter URL do Webhook do Supabase
+
+Sua URL será no formato:
+https://[SEU_PROJECT_REF].supabase.co/functions/v1/stripe-webhook
+
+Substitua [SEU_PROJECT_REF] pelo ID do seu projeto Supabase
+(encontrado em: Supabase Dashboard > Settings > API > Project URL)
+
+Exemplo:
+https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/stripe-webhook
+
+PASSO 2: Criar endpoint no Stripe
+
+Dashboard > Desenvolvedores > Webhooks > + Adicionar endpoint
+
+URL do endpoint: [Sua URL do Supabase]
+Descrição: Vigil - Webhook de Assinaturas
+Versão: Última disponível
+Eventos a escutar: Selecione os seguintes eventos:
+
+✓ checkout.session.completed
+✓ customer.subscription.created
+✓ customer.subscription.updated
+✓ customer.subscription.deleted
+✓ invoice.payment_succeeded
+✓ invoice.payment_failed
+✓ customer.subscription.trial_will_end
+
+PASSO 3: Copiar o Signing Secret
+
+Após criar o webhook, você verá:
+Signing secret: whsec_xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+➜ COPIE ESTE VALOR (será STRIPE_WEBHOOK_SECRET)
+
+================================================================================
+5. VARIÁVEIS DE AMBIENTE (SUPABASE)
+================================================================================
+
+Você precisará adicionar 3 variáveis de ambiente no Supabase:
+
+Supabase Dashboard > Project Settings > Edge Functions > Secrets
+
+1. STRIPE_SECRET_KEY
+   → Dashboard Stripe > Desenvolvedores > Chaves de API
+   → Copie a "Secret key" (começa com sk_test_ ou sk_live_)
+   → Valor: sk_test_xxxxxxxxxxxxxxxxxxxxxx (modo teste)
+           sk_live_xxxxxxxxxxxxxxxxxxxxxx (modo produção)
+
+2. STRIPE_WEBHOOK_SECRET
+   → Valor copiado no passo 4.3 acima
+   → Valor: whsec_xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+3. STRIPE_PUBLISHABLE_KEY (opcional, para frontend)
+   → Dashboard Stripe > Desenvolvedores > Chaves de API
+   → Copie a "Publishable key" (começa com pk_test_ ou pk_live_)
+   → Valor: pk_test_xxxxxxxxxxxxxxxxxxxxxx
+
+COMO ADICIONAR NO SUPABASE:
+```
+supabase secrets set STRIPE_SECRET_KEY=sk_test_xxxxxx
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxxxxx
+supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxx
+```
+
+OU pela interface web:
+Edge Functions > Manage Secrets > Add Secret
+
+================================================================================
+6. ATUALIZAÇÃO DOS IDs DE PREÇOS NO CÓDIGO
+================================================================================
+
+Você precisa atualizar o arquivo:
+supabase/functions/create-checkout-session/index.ts
+
+Substitua os IDs placeholder pelos IDs reais do Stripe:
+
+const priceIds: Record<string, Record<string, string>> = {
+  basic: {
+    monthly: 'price_xxxxxxxx', // ← Substitua com o ID real
+    annually: 'price_xxxxxxxx', // ← Substitua com o ID real
+  },
+  pro: {
+    monthly: 'price_xxxxxxxx', // ← Substitua com o ID real
+    annually: 'price_xxxxxxxx', // ← Substitua com o ID real
+  },
+  premium: {
+    monthly: 'price_xxxxxxxx', // ← Substitua com o ID real
+    annually: 'price_xxxxxxxx', // ← Substitua com o ID real
+  },
+};
+
+Se você quiser usar preços promocionais, adicione uma lógica para verificar
+a data atual e usar os IDs dos preços promocionais quando aplicável.
+
+Exemplo com promoção:
+
+const promotionActive = new Date() < new Date('2025-02-11');
+
+const priceIds = promotionActive ? {
+  basic: {
+    monthly: 'price_basic_monthly_promo',
+    annually: 'price_basic_annually',
+  },
+  pro: {
+    monthly: 'price_pro_monthly_promo',
+    annually: 'price_pro_annually',
+  },
+  premium: {
+    monthly: 'price_premium_monthly_promo',
+    annually: 'price_premium_annually',
+  },
+} : {
+  basic: {
+    monthly: 'price_basic_monthly',
+    annually: 'price_basic_annually',
+  },
+  pro: {
+    monthly: 'price_pro_monthly',
+    annually: 'price_pro_annually',
+  },
+  premium: {
+    monthly: 'price_premium_monthly',
+    annually: 'price_premium_annually',
+  },
+};
+
+================================================================================
+7. TESTES
+================================================================================
+
+MODO TESTE DO STRIPE:
+Use os cartões de teste do Stripe para simular pagamentos:
+
+Cartão aprovado:
+  Número: 4242 4242 4242 4242
+  Data: Qualquer data futura
+  CVC: Qualquer 3 dígitos
+  CEP: Qualquer
+
+Cartão recusado:
+  Número: 4000 0000 0000 0002
+
+Cartão que requer autenticação 3D:
+  Número: 4000 0025 0000 3155
+
+TESTES ESSENCIAIS:
+
+1. Teste de Checkout Básico
+   → Criar uma sessão de checkout
+   → Completar o pagamento
+   → Verificar se o webhook atualizou o Supabase
+   → Verificar se o plano do usuário foi atualizado
+
+2. Teste de Período de Teste
+   → Assinar o plano Pro (7 dias de teste)
+   → Verificar se trial_ends_at foi preenchido
+   → Verificar se status é 'trialing'
+
+3. Teste de Cancelamento
+   → Cancelar uma assinatura no Stripe Dashboard
+   → Verificar se o webhook atualizou o status para 'canceled'
+   → Verificar se o plano do usuário voltou para 'free'
+
+4. Teste de Falha de Pagamento
+   → Simular falha de pagamento
+   → Verificar se o status foi atualizado para 'past_due'
+
+5. Teste de Renovação
+   → Simular renovação de assinatura
+   → Verificar se current_period_end foi atualizado
+
+LOGS E DEBUGGING:
+
+Stripe Dashboard > Desenvolvedores > Eventos
+→ Veja todos os eventos enviados e suas respostas
+
+Stripe Dashboard > Desenvolvedores > Webhooks > [Seu webhook]
+→ Veja tentativas de entrega e respostas
+
+Supabase Dashboard > Logs > Edge Functions
+→ Veja logs das suas functions
+
+================================================================================
+8. CHECKLIST FINAL
+================================================================================
+
+ANTES DE COLOCAR EM PRODUÇÃO:
+
+□ Todos os produtos criados no Stripe
+□ Todos os preços configurados corretamente
+□ IDs dos preços copiados e atualizados no código
+□ Webhook configurado no Stripe
+□ Signing secret do webhook copiado
+□ Variáveis de ambiente configuradas no Supabase
+  □ STRIPE_SECRET_KEY
+  □ STRIPE_WEBHOOK_SECRET
+  □ STRIPE_PUBLISHABLE_KEY
+□ Edge Functions deployadas no Supabase
+  □ create-checkout-session
+  □ stripe-webhook
+□ Testes realizados em modo teste
+  □ Checkout completo
+  □ Período de teste
+  □ Cancelamento
+  □ Webhooks funcionando
+□ RLS configuradas na tabela subscriptions
+□ Tabela subscriptions com todas as colunas necessárias
+
+PARA PRODUÇÃO (QUANDO ESTIVER PRONTO):
+
+□ Ativar modo produção no Stripe
+□ Criar novos produtos/preços no modo produção
+□ Atualizar IDs dos preços no código para produção
+□ Criar novo webhook para produção
+□ Atualizar variáveis de ambiente com chaves de produção
+  □ STRIPE_SECRET_KEY (sk_live_...)
+  □ STRIPE_WEBHOOK_SECRET (whsec_live_...)
+  □ STRIPE_PUBLISHABLE_KEY (pk_live_...)
+□ Testar fluxo completo em produção
+
+================================================================================
+COMANDOS ÚTEIS
+================================================================================
+
+DEPLOY DAS EDGE FUNCTIONS:
+```bash
+# Fazer deploy de todas as functions
+supabase functions deploy
+
+# Fazer deploy de uma function específica
+supabase functions deploy create-checkout-session
+supabase functions deploy stripe-webhook
+```
+
+TESTAR LOCALMENTE:
+```bash
+# Executar function localmente
+supabase functions serve create-checkout-session --env-file .env.local
+
+# Testar webhook localmente (use Stripe CLI)
+stripe listen --forward-to localhost:54321/functions/v1/stripe-webhook
+```
+
+VER LOGS:
+```bash
+supabase functions logs create-checkout-session
+supabase functions logs stripe-webhook
+```
+
+================================================================================
+SUPORTE E DOCUMENTAÇÃO
+================================================================================
+
+Stripe Brasil:
+→ https://stripe.com/br/guides
+
+Stripe API:
+→ https://stripe.com/docs/api
+
+Stripe Webhooks:
+→ https://stripe.com/docs/webhooks
+
+Stripe Testing:
+→ https://stripe.com/docs/testing
+
+Supabase Edge Functions:
+→ https://supabase.com/docs/guides/functions
+
+================================================================================
+NOTAS IMPORTANTES
+================================================================================
+
+1. SEGURANÇA:
+   - NUNCA exponha suas chaves secretas (Secret Key) no frontend
+   - SEMPRE valide assinaturas de webhooks
+   - Use HTTPS em produção
+
+2. PERÍODOS DE TESTE:
+   - O Stripe gerencia automaticamente o período de teste
+   - Após o teste, o cliente é cobrado automaticamente
+   - Configure trial_period_days ao criar preços no Stripe
+
+3. IMPOSTOS:
+   - Configure impostos brasileiros se necessário
+   - Stripe Tax pode calcular automaticamente
+
+4. CONFORMIDADE:
+   - Certifique-se de estar em conformidade com leis brasileiras
+   - Inclua termos de serviço e política de reembolso
+
+5. CUSTOMER SUPPORT:
+   - Configure emails transacionais no Stripe
+   - Personalize emails de boas-vindas e cobranças
+
+================================================================================
+FIM DO GUIA
+================================================================================
+

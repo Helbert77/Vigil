@@ -23,7 +23,8 @@ import PremiumPage from '@/src/pages/PremiumPage';
 import ToastContainer from '@/components/common/ToastContainer';
 import { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
 import { useSession } from '@/contexts/SessionContext';
-
+import { canAccessLibrary, getLibraryAccessDeniedMessage } from '@/src/utils/libraryAccess';
+import { useToast } from '@/hooks/useToast';
 
 import Login from '@/pages/Login';
 import UpdatePassword from '@/pages/UpdatePassword';
@@ -59,6 +60,7 @@ type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Sa
 
 const App: React.FC = () => {
   const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
+  const { addToast } = useToast();
   
   // State for navigation and UI
   const [currentPage, setCurrentPage] = useState<Page>('Home');
@@ -103,6 +105,29 @@ const App: React.FC = () => {
     if (page === 'Home' && currentPage === 'Home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
+    }
+
+    // Verificar acesso à biblioteca
+    if (page === 'Library' && appUser) {
+      if (!canAccessLibrary(appUser.plan, appUser.role)) {
+        addToast(getLibraryAccessDeniedMessage(), 'error');
+        setCurrentPage('Premium');
+        const snapshot: NavigationSnapshot = {
+          page: 'Premium',
+          viewedUserId,
+          activeCommunityId,
+          activePostId,
+          activeCommentId,
+          activeTag,
+          searchQuery,
+        };
+        const targetPath = buildPathFromSnapshot(snapshot);
+        const currentFullPath = window.location.pathname + window.location.search;
+        if (!samePath(currentFullPath, targetPath)) {
+          pushHistoryState(snapshot);
+        }
+        return;
+      }
     }
     
     // Não faz scroll automático para a página de mensagens para manter o título visível
@@ -617,6 +642,12 @@ const App: React.FC = () => {
           setCurrentPage={handleNavigation}
         />;
       case 'Library':
+        // Verificação de segurança adicional para acesso direto via URL
+        if (!canAccessLibrary(appUser.plan, appUser.role)) {
+          addToast(getLibraryAccessDeniedMessage(), 'error');
+          setTimeout(() => handleNavigation('Premium'), 100);
+          return null;
+        }
         return <Library 
           items={libraryItems}
           user={appUser}

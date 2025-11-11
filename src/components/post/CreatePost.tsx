@@ -7,17 +7,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import Tooltip from '@/components/common/Tooltip';
 import MentionSuggestions from '@/src/components/common/MentionSuggestions';
-import EmojiStickerPicker from '@/src/components/EmojiStickerPicker';
-import { EmojiData } from '@/src/data/emojis';
-import { StickerData } from '@/src/data/stickers';
+import EmojiPicker from '@/src/components/post/EmojiPicker';
 import ResilientVideo from '@/src/components/common/ResilientVideo';
+import { getPlanLimits } from '@/src/utils/pricingUtils';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
 const SmileIcon = () => <Icon><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></Icon>;
 const XIcon = () => <Icon className="h-5 w-5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
-const AiWriteIcon = () => <Icon><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m12 12-1.5 3L9 12l-3 1.5L9 15l1.5 3L12 15l3-1.5-1.5-3z"/></Icon>;
-const AiImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><path d="m18 3 1.5 3L21 7.5l-3 1.5L16.5 12l-1.5-3L12 7.5l3-1.5z"/></Icon>;
 const ClipboardIcon = () => <Icon><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></Icon>;
 const InfoIcon = () => <Icon className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" x2="12.01" y1="8" y2="8"></line></Icon>;
 
@@ -48,31 +45,16 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showAssistant, setShowAssistant] = useState<'text' | 'image' | false>(false);
-  const [showAiOptions, setShowAiOptions] = useState(false);
-  const [assistantPrompt, setAssistantPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
   const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
   const [postToCommunityOnly, setPostToCommunityOnly] = useState(false);
   
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
-  
-  // Emoji and Sticker state
-  const [recentEmojis, setRecentEmojis] = useState<EmojiData[]>([]);
-  const [recentStickers, setRecentStickers] = useState<StickerData[]>([]);
-  const [favoriteEmojis, setFavoriteEmojis] = useState<EmojiData[]>([]);
-  const [favoriteStickers, setFavoriteStickers] = useState<StickerData[]>([]);
-  const [preferences, setPreferences] = useState({
-    skinTone: 'default',
-    enableAnimations: true,
-    autoSave: true
-  });
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const aiOptionsRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const { addToast } = useToast();
 
   const [uploadingEvidenceId, setUploadingEvidenceId] = useState<string | null>(null);
@@ -81,21 +63,9 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   const EMOJIS = ['👍', '🔥', '🤔', '😂', '💡', '🤯', '👽', '🛸', '👁️', '📜', '📡', '💥'];
 
-  const getCharacterLimit = (plan: 'free' | 'basic' | 'pro' | 'premium'): number => {
-    switch (plan) {
-      case 'basic':
-        return 1000;
-      case 'pro':
-        return 5000;
-      case 'premium':
-        return 25000;
-      case 'free':
-      default:
-        return 280;
-    }
-  };
-
-  const characterLimit = getCharacterLimit(user.plan);
+  // Usar getPlanLimits para obter o limite de caracteres
+  const planLimits = getPlanLimits(user.plan);
+  const characterLimit = planLimits.postCharLimit;
   const isOverLimit = text.length > characterLimit;
 
   useEffect(() => {
@@ -103,20 +73,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
       setPostToCommunityOnly(false);
     }
   }, [community]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-        if (aiOptionsRef.current && !aiOptionsRef.current.contains(event.target as Node)) {
-            setShowAiOptions(false);
-        }
-    };
-
-    if (showAiOptions) {
-        document.addEventListener('mousedown', handleClickOutside);
-    } else {
-        document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showAiOptions]);
 
   const resetState = () => {
     setText('');
@@ -131,8 +87,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     setPollMinutes(0);
     setEvidenceItems([]);
     setShowEmojiPicker(false);
-    setShowAssistant(false);
-    setAssistantPrompt('');
     setSelectedCommunityId(undefined);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
@@ -308,58 +262,19 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     evidenceFileInputRef.current?.click();
   };
 
-  const handleEmojiSelect = (emoji: EmojiData) => {
+  const handleEmojiSelect = (emoji: string) => {
     if(textareaRef.current){
         const start = textareaRef.current.selectionStart;
         const end = textareaRef.current.selectionEnd;
-        const newText = text.substring(0, start) + emoji.emoji + text.substring(end);
+        const newText = text.substring(0, start) + emoji + text.substring(end);
         setText(newText);
         textareaRef.current.focus();
         setTimeout(() => {
-          textareaRef.current?.setSelectionRange(start + emoji.emoji.length, start + emoji.emoji.length)
+          textareaRef.current?.setSelectionRange(start + emoji.length, start + emoji.length)
         }, 0);
     }
   };
 
-  const handleStickerSelect = (sticker: StickerData) => {
-    // For stickers, we'll add them as a special format in the text
-    const stickerText = `[sticker:${sticker.name}]`;
-    if(textareaRef.current){
-        const start = textareaRef.current.selectionStart;
-        const end = textareaRef.current.selectionEnd;
-        const newText = text.substring(0, start) + stickerText + text.substring(end);
-        setText(newText);
-        textareaRef.current.focus();
-        setTimeout(() => {
-          textareaRef.current?.setSelectionRange(start + stickerText.length, start + stickerText.length)
-        }, 0);
-    }
-  };
-
-  const handleGenerate = (type: 'text' | 'image') => {
-    if (!assistantPrompt.trim()) return;
-    setIsGenerating(true);
-
-    // --- MOCK API CALL ---
-    setTimeout(() => {
-      if (type === 'text') {
-        const prompts = [
-            `Have you considered the connection between "${assistantPrompt}" and the recent solar flares? The official narrative doesn't add up. They're hiding something big, and it's all connected. #FollowTheClues`,
-            `Sources tell me that "${assistantPrompt}" is just the tip of the iceberg. It's a distraction from the real operation. Look deeper, question everything. The truth is out there, but not where they want you to look. #TheGreatAwakening`,
-            `The declassified documents on "${assistantPrompt}" are heavily redacted for a reason. What are they trying to conceal? It points to a cover-up of massive proportions. We need to demand transparency. #HiddenTruth`
-        ];
-        const generatedText = prompts[Math.floor(Math.random() * prompts.length)];
-        setText((prev: string) => prev ? `${prev}\n\n${generatedText}` : generatedText);
-      } else { // image
-        const seed = assistantPrompt.split(' ').join('-') + `-${Date.now()}`;
-        setImageUrl(`https://picsum.photos/seed/${seed}/600/400`);
-        setMediaType('image');
-      }
-      setIsGenerating(false);
-      setShowAssistant(false);
-      setAssistantPrompt('');
-    }, 1500);
-  };
 
   const filteredMentionSuggestions = React.useMemo(() => {
     if (!mentionQuery) return [];
@@ -418,7 +333,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     setMentionSuggestions([]);
   };
 
-  const isPostDisabled = (!text.trim() && !imageUrl && !videoUrl && !audioUrl && !mediaType) || isGenerating || isUploading || isOverLimit;
+  const isPostDisabled = (!text.trim() && !imageUrl && !videoUrl && !audioUrl && !mediaType) || isUploading || isOverLimit;
 
   const userJoinedCommunities = React.useMemo(() => 
     communities.filter(c => joinedCommunityIds.includes(c.id)),
@@ -444,24 +359,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
               onChange={handleTextChange}
             ></textarea>
           </div>
-
-          {showAssistant && (
-            <div className="mt-2 p-2 bg-light-bg dark:bg-dark-bg rounded-lg">
-              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">{showAssistant === 'text' ? 'Truth Weaver AI Assistant' : 'AI Image Generator'}</label>
-              <div className="flex items-center space-x-2 mt-1">
-                <input
-                  type="text"
-                  placeholder={showAssistant === 'text' ? "e.g., 'structures on Mars'" : "e.g., 'a mysterious monolith in the desert'"}
-                  value={assistantPrompt}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAssistantPrompt(e.target.value)}
-                  className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-md py-1 px-2 focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <button onClick={() => handleGenerate(showAssistant)} disabled={isGenerating} className="bg-primary text-white px-3 py-1 rounded-md font-semibold disabled:bg-gray-400">
-                  {isGenerating ? 'Generating...' : 'Generate'}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -638,52 +535,24 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
                <button onClick={() => handleAttachmentButtonClick('evidence')} disabled={!!mediaType} className="p-2 hover:text-indigo-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add evidence board"><ClipboardIcon /></button>
              </Tooltip>
              <Tooltip text="Adicionar emoji">
-               <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 hover:text-yellow-500 rounded-full" aria-label="Add emoji"><SmileIcon /></button>
-             </Tooltip>
-             <div ref={aiOptionsRef}>
-                 <Tooltip text="Assistente de IA">
+               <div className="relative inline-block">
                  <button 
-                     onClick={() => setShowAiOptions(!showAiOptions)} 
-                     disabled={!!mediaType && mediaType !== 'image'}
-                     className="p-2 hover:text-purple-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" 
-                     aria-label="AI Assistant">
-                     <AiWriteIcon />
+                   ref={emojiButtonRef}
+                   onClick={() => setShowEmojiPicker(!showEmojiPicker)} 
+                   className="p-2 hover:text-yellow-500 rounded-full" 
+                   aria-label="Add emoji"
+                 >
+                   <SmileIcon />
                  </button>
-                 </Tooltip>
-                 {showAiOptions && (
-                 <div className="absolute top-full left-0 mt-2 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-10 w-48">
-                     <button 
-                     onClick={() => { setShowAssistant('text'); setShowAiOptions(false); }} 
-                     disabled={!!mediaType}
-                     className="flex items-center space-x-2 p-3 hover:bg-gray-200 dark:hover:bg-gray-700 w-full text-left text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                     <AiWriteIcon /> <span>Gerar Texto</span>
-                     </button>
-                     <button 
-                     onClick={() => { setShowAssistant('image'); setShowAiOptions(false); }} 
-                     className="flex items-center space-x-2 p-3 hover:bg-gray-200 dark:hover:bg-gray-700 w-full text-left text-sm">
-                     <AiImageIcon /> <span>Gerar Imagem</span>
-                     </button>
-                 </div>
+                 {showEmojiPicker && (
+                   <EmojiPicker
+                     onEmojiSelect={handleEmojiSelect}
+                     onClose={() => setShowEmojiPicker(false)}
+                     buttonRef={emojiButtonRef}
+                   />
                  )}
-             </div>
-             {showEmojiPicker && (
-                 <EmojiStickerPicker
-                   onEmojiSelect={handleEmojiSelect}
-                   onStickerSelect={handleStickerSelect}
-                   onClose={() => setShowEmojiPicker(false)}
-                   recentEmojis={recentEmojis}
-                   recentStickers={recentStickers}
-                   favoriteEmojis={favoriteEmojis}
-                   favoriteStickers={favoriteStickers}
-                   preferences={preferences}
-                   enableVirtualization={true}
-                   enableOptimizations={true}
-                   enableAutoUpdate={true}
-                   showUpdateNotifications={true}
-                   maxHeight={400}
-                   theme="dark"
-                 />
-             )}
+               </div>
+             </Tooltip>
           </div>
          <div className="flex items-center space-x-3">
              {community ? (

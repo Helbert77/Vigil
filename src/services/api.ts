@@ -1,4 +1,5 @@
 import { supabase } from '../../integrations/supabase/client';
+import { canAccessLibrary, canAddLibraryItems } from '@/src/utils/libraryAccess';
 
 // Utility function for standardized error handling and logging
 const handleApiError = (error: any, operation: string, context?: any) => {
@@ -986,17 +987,132 @@ export const hardDeleteConversation = (conversationId: string) =>
   });
 
 // --- Library API ---
-export const fetchLibraryItems = () =>
-  supabase.from('library_items').select('*').order('date', { ascending: false });
+// Função auxiliar para obter usuário atual
+const getCurrentUserProfile = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan, role')
+    .eq('id', user.id)
+    .single();
+  
+  return profile;
+};
 
-export const addLibraryItem = (itemData: any) =>
-  supabase.from('library_items').insert(itemData).select().single();
+export const fetchLibraryItems = async () => {
+  // Validar acesso do usuário
+  const profile = await getCurrentUserProfile();
+  if (!profile || !canAccessLibrary(profile.plan, profile.role)) {
+    return { 
+      data: null, 
+      error: { message: 'Acesso negado. Este recurso requer assinatura Premium.' } 
+    };
+  }
+  
+  return supabase.from('library_items').select('*').order('date', { ascending: false });
+};
 
-export const updateLibraryItem = (id: string, updates: any) =>
-  supabase.from('library_items').update(updates).eq('id', id);
+export const addLibraryItem = async (itemData: any) => {
+  // Validar permissão para adicionar
+  const profile = await getCurrentUserProfile();
+  if (!profile || !canAddLibraryItems(profile.plan, profile.role)) {
+    return { 
+      data: null, 
+      error: { message: 'Apenas usuários Premium e Administradores podem adicionar itens.' } 
+    };
+  }
+  
+  // Adicionar created_by automaticamente
+  const { data: { user } } = await supabase.auth.getUser();
+  const itemWithCreator = { 
+    ...itemData, 
+    created_by: user?.id 
+  };
+  
+  return supabase.from('library_items').insert(itemWithCreator).select().single();
+};
 
-export const deleteLibraryItem = (id: string) =>
-  supabase.from('library_items').delete().eq('id', id);
+export const updateLibraryItem = async (id: string, updates: any) => {
+  const profile = await getCurrentUserProfile();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!profile || !user) {
+    return { data: null, error: { message: 'Usuário não autenticado.' } };
+  }
+  
+  // Buscar item para verificar o criador
+  const { data: item } = await supabase
+    .from('library_items')
+    .select('created_by')
+    .eq('id', id)
+    .single();
+  
+  // Permitir se for admin OU criador do item
+  const isCreator = item?.created_by === user.id;
+  const isAdmin = profile.role === 'admin';
+  
+  if (!isAdmin && !isCreator) {
+    return { 
+      data: null, 
+      error: { message: 'Apenas administradores ou o criador podem modificar este item.' } 
+    };
+  }
+  
+  return supabase.from('library_items').update(updates).eq('id', id);
+};
+
+export const deleteLibraryItem = async (id: string) => {
+  const profile = await getCurrentUserProfile();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  console.log('[deleteLibraryItem] Iniciando exclusão:', { id, userId: user?.id, userRole: profile?.role });
+  
+  if (!profile || !user) {
+    console.error('[deleteLibraryItem] Usuário não autenticado');
+    return { data: null, error: { message: 'Usuário não autenticado.' } };
+  }
+  
+  // Buscar item para verificar o criador
+  const { data: item, error: fetchError } = await supabase
+    .from('library_items')
+    .select('created_by')
+    .eq('id', id)
+    .single();
+  
+  if (fetchError) {
+    console.error('[deleteLibraryItem] Erro ao buscar item:', fetchError);
+    return { data: null, error: { message: 'Item não encontrado.' } };
+  }
+  
+  console.log('[deleteLibraryItem] Item encontrado:', { itemId: id, createdBy: item?.created_by, currentUser: user.id });
+  
+  // Permitir se for admin OU criador do item
+  const isCreator = item?.created_by === user.id;
+  const isAdmin = profile.role === 'admin';
+  
+  console.log('[deleteLibraryItem] Verificação de permissões:', { isAdmin, isCreator });
+  
+  if (!isAdmin && !isCreator) {
+    console.error('[deleteLibraryItem] Permissão negada');
+    return { 
+      data: null, 
+      error: { message: 'Apenas administradores ou o criador podem excluir este item.' } 
+    };
+  }
+  
+  console.log('[deleteLibraryItem] Executando DELETE no banco...');
+  const result = await supabase.from('library_items').delete().eq('id', id);
+  
+  if (result.error) {
+    console.error('[deleteLibraryItem] Erro ao excluir do banco:', result.error);
+  } else {
+    console.log('[deleteLibraryItem] Item excluído com sucesso do banco');
+  }
+  
+  return result;
+};
 
 export const incrementLibraryItemViews = (id: string) =>
   supabase.rpc('increment_library_item_views', { item_id: id });
@@ -1140,4 +1256,106 @@ export const getPendingOperations = async (userId: string) => {
     console.debug('Error checking pending operations:', error);
     return { count: 0, details: { posts: 0, comments: 0, reports: 0 }, error };
   }
+};
+
+// ==================== TRIAL AND SUBSCRIPTION FUNCTIONS ====================
+
+// Iniciar trial
+export const startTrial = async (userId: string, plan: 'pro' | 'premium') => {
+  try {
+    const { getTrialDays } = await import('../utils/pricingUtils');
+    const trialDays = getTrialDays(plan);
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
+    
+    const currentPeriodStart = new Date();
+    
+    const subscriptionData = {
+      user_id: userId,
+      plan,
+      status: 'trialing' as const,
+      trial_ends_at: trialEndsAt.toISOString(),
+      billing_cycle: 'monthly' as const,
+      current_period_start: currentPeriodStart.toISOString(),
+      current_period_end: trialEndsAt.toISOString(),
+    };
+    
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .upsert(subscriptionData, { 
+        onConflict: 'user_id',
+        ignoreDuplicates: false 
+      })
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (err: any) {
+    console.error('[startTrial] Erro inesperado:', err);
+    return { 
+      data: null, 
+      error: { 
+        message: err?.message || 'Erro ao iniciar período de teste.',
+        code: err?.code
+      } 
+    };
+  }
+};
+
+// Verificar se usuário já usou trial
+export const hasUsedTrial = async (userId: string, plan: 'pro' | 'premium') => {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('id, trial_ends_at, plan')
+      .eq('user_id', userId)
+      .not('trial_ends_at', 'is', null);
+    
+    if (error) {
+      // Se tabela não existe ou não tem permissão
+      if (error.code === 'PGRST204' || error.code === '42P01' || error.code === '42501') {
+        return { hasUsed: false, error };
+      }
+      // Se não encontrou registros, não usou trial
+      if (error.code === 'PGRST116') {
+        return { hasUsed: false, error: null };
+      }
+      return { hasUsed: false, error };
+    }
+    
+    // Verificar se algum dos registros é do plano solicitado
+    const hasUsedForPlan = data && data.some(sub => sub.plan === plan && sub.trial_ends_at);
+    
+    return { hasUsed: hasUsedForPlan, error: null };
+  } catch (err: any) {
+    console.error('[hasUsedTrial] Erro inesperado:', err);
+    return { 
+      hasUsed: false, 
+      error: { 
+        message: err?.message || 'Erro ao verificar trial',
+        code: err?.code
+      } 
+    };
+  }
+};
+
+// Criar Stripe Checkout Session (preparação)
+export const createStripeCheckoutSession = async (params: {
+  userId: string;
+  plan: 'basic' | 'pro' | 'premium';
+  billingCycle: 'monthly' | 'annually';
+  successUrl: string;
+  cancelUrl: string;
+}) => {
+  // Placeholder para integração futura com Stripe
+  return supabase.functions.invoke('create-checkout-session', {
+    body: params,
+  });
+};
+
+// Criar Stripe Portal Session (gerenciar assinatura)
+export const createStripePortalSession = async (userId: string, returnUrl: string) => {
+  return supabase.functions.invoke('create-portal-session', {
+    body: { userId, returnUrl },
+  });
 };

@@ -4,7 +4,6 @@ import Card from '../common/Card';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
 import ShareDmModal from './ShareDmModal';
-import TheoryAnalysisModal from './TheoryAnalysisModal';
 import { useToast } from '../../hooks/useToast';
 import { EyeIcon } from '../icons/EyeIcon';
 import PostActionsMenu from './PostActionsMenu';
@@ -29,7 +28,6 @@ const BookmarkIcon = ({ filled }: { filled: boolean }) => (
         <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path>
     </Icon>
 );
-const AnalyzeIcon = () => <Icon><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2ZM4 12a8 8 0 0 1 8-8c1.5 0 2.9.3 4.18.86L4.86 16.18A7.96 7.96 0 0 1 4 12Z"/></Icon>;
 const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => <Icon {...props}><polyline points="20 6 9 17 4 12"></polyline></Icon>;
 const EyeOffIcon = () => <Icon><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" y1="2" x2="22" y2="22"></line></Icon>;
 
@@ -207,7 +205,6 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onToggleSave, user, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, isClickable = true, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onMediaLoad, onVoteOnPoll, allUsers }) => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showDmModal, setShowDmModal] = useState(false);
-  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(post.text);
@@ -595,11 +592,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                   <BookmarkIcon filled={isSaved} />
                 </button>
               </Tooltip>
-              <Tooltip text="Analisar Teoria">
-                <button onClick={(e) => handleActionClick(e, () => setIsAnalysisModalOpen(true))} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-500 transition-colors duration-200 transform active:scale-110">
-                  <AnalyzeIcon />
-                </button>
-              </Tooltip>
               <Tooltip text="Visualizações">
                 <div className="views-mobile flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400">
                   <EyeIcon />
@@ -626,7 +618,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
         )}
       </Card>
       {showDmModal && <ShareDmModal post={post} onClose={() => setShowDmModal(false)} onUpdatePost={onUpdatePost} shareableUsers={shareableUsers} onSendMessage={onSendMessage} />}
-      {isAnalysisModalOpen && <TheoryAnalysisModal postText={post.text} onClose={() => setIsAnalysisModalOpen(false)} />}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

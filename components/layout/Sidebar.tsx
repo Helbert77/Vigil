@@ -5,6 +5,8 @@ import { PostIcon } from '@/src/components/icons/PostIcon';
 import Tooltip from '@/components/common/Tooltip';
 import { User } from '@/types';
 import { DiamondIcon } from '@/src/components/icons/DiamondIcon'; // Caminho corrigido
+import { canAccessLibrary, getLibraryAccessDeniedMessage } from '@/src/utils/libraryAccess';
+import { useToast } from '@/hooks/useToast';
 
 const HomeIcon = () => <Icon><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></Icon>;
 const UserIcon = () => <Icon><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></Icon>;
@@ -33,6 +35,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount }) => {
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
+  const { addToast } = useToast();
 
   const handlePostClick = () => {
     if (currentPage !== 'Home') {
@@ -43,6 +46,22 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
     } else {
       document.getElementById('create-post-textarea')?.focus();
     }
+  };
+
+  const handleLibraryClick = () => {
+    if (!user) return;
+
+    // Verificar se o usuário tem acesso à biblioteca
+    if (!canAccessLibrary(user.plan, user.role)) {
+      // Mostrar mensagem de erro
+      addToast(getLibraryAccessDeniedMessage(), 'error');
+      // Redirecionar para a página Premium
+      setCurrentPage('Premium');
+      return;
+    }
+
+    // Se tem acesso, navegar normalmente
+    setCurrentPage('Library');
   };
 
   useEffect(() => {
@@ -119,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
             icon={<LibraryIcon />} 
             label="Biblioteca" 
             isActive={currentPage === 'Library'} 
-            onClick={() => setCurrentPage('Library')} 
+            onClick={handleLibraryClick} 
             isCollapsed={isCollapsed} 
           />
           <NavLink 
