@@ -40,7 +40,8 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
     author: item.author,
     description: item.description || '',
     cover_url: item.cover_url || '',
-    tags: item.tags?.join(', ') || ''
+    tags: item.tags?.join(', ') || '',
+    type: item.type
   });
 
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
@@ -52,7 +53,8 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       author: item.author,
       description: item.description || '',
       cover_url: item.cover_url || '',
-      tags: item.tags?.join(', ') || ''
+      tags: item.tags?.join(', ') || '',
+      type: item.type
     });
   }, [item]);
 
@@ -142,7 +144,8 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       author: editForm.author.trim(),
       description: editForm.description.trim() || undefined,
       cover_url: editForm.cover_url || undefined,
-      tags: tagsArray.length > 0 ? tagsArray : undefined
+      tags: tagsArray.length > 0 ? tagsArray : undefined,
+      type: editForm.type
     });
     setIsEditing(false);
   };
@@ -268,6 +271,22 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tipo
+                    </label>
+                    <select
+                      value={editForm.type}
+                      onChange={(e) => setEditForm({ ...editForm, type: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    >
+                      <option value="ebook">Ebook</option>
+                      <option value="article">Artigo</option>
+                      <option value="magazine">Revista</option>
+                      <option value="document">Documento</option>
+                      <option value="link">Link</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Título
                     </label>
                     <input
@@ -320,11 +339,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                     </div>
                   )}
 
-                  {/* Category */}
-                  {item.category && (
+                  {/* Type */}
+                  {item.type && (
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Categoria</h3>
-                      <p className="text-gray-700 dark:text-gray-300">{item.category}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tipo</h3>
+                      <p className="text-gray-700 dark:text-gray-300">{item.type}</p>
                     </div>
                   )}
 

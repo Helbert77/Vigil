@@ -76,20 +76,20 @@ const Dropdown: React.FC<DropdownProps> = ({
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside as EventListener);
+      document.addEventListener('touchstart', handleClickOutside as EventListener);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
     };
   }, [isOpen]);
 
@@ -152,9 +152,7 @@ const Dropdown: React.FC<DropdownProps> = ({
           border border-light-border dark:border-dark-border 
           rounded-lg text-left
           flex items-center justify-between gap-2
-          focus:outline-none
-          transition-all duration-200
-          hover:bg-gray-50 dark:hover:bg-gray-800
+          focus:outline-none focus:ring-0
           text-gray-900 dark:text-white
           font-medium
           min-h-[42px]
@@ -182,12 +180,10 @@ const Dropdown: React.FC<DropdownProps> = ({
             border border-light-border dark:border-dark-border
             rounded-lg shadow-lg
             overflow-hidden
-            animate-scale-in
             max-h-64 overflow-y-auto
             min-w-full
           `}
           style={{
-            animation: 'dropdownFadeIn 0.2s ease-out',
             minWidth: minWidth !== 'auto' ? minWidth : undefined
           }}
         >
@@ -204,12 +200,10 @@ const Dropdown: React.FC<DropdownProps> = ({
                 className={`
                   px-4 py-3 cursor-pointer
                   flex items-center justify-between
-                  transition-colors duration-150
                   ${isSelected 
                     ? 'bg-primary text-white' 
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                    : 'text-gray-900 dark:text-white'
                   }
-                  focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700
                   whitespace-nowrap
                 `}
               >
@@ -231,23 +225,6 @@ const Dropdown: React.FC<DropdownProps> = ({
           })}
         </div>
       )}
-
-      <style>{`
-        @keyframes dropdownFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        .animate-scale-in {
-          animation: dropdownFadeIn 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 };
