@@ -128,18 +128,18 @@ export const PricingCard: React.FC<PricingCardProps> = ({
             Iniciar Teste Grátis
           </Button>
         )}
-        <Button
-          onClick={(e) => {
-            e.stopPropagation(); // Impede que o clique no botão acione o onSelect do card
-            onConfirm();
-          }}
-          className={`mt-6 md:mt-8 w-full text-sm md:text-base bg-secondary text-white hover:bg-blue-700
-            ${!isSelected || isCurrentPlan || isUpdatingPlan ? 'opacity-70 cursor-not-allowed' : ''}
-          `}
-          disabled={!isSelected || isCurrentPlan || isUpdatingPlan}
-        >
-          {isUpdatingPlan && isSelected ? 'Atualizando...' : buttonText}
-        </Button>
+      <Button
+        onClick={(e) => {
+          e.stopPropagation(); // Impede que o clique no botão acione o onSelect do card
+          onConfirm();
+        }}
+        className={`mt-6 md:mt-8 w-full text-sm md:text-base bg-secondary text-white hover:bg-blue-700
+          ${!isSelected || isCurrentPlan || isUpdatingPlan ? 'opacity-70 cursor-not-allowed' : ''}
+        `}
+        disabled={!isSelected || isCurrentPlan || isUpdatingPlan}
+      >
+        {isUpdatingPlan && isSelected ? 'Atualizando...' : buttonText}
+      </Button>
       </div>
     </motion.div>
   );

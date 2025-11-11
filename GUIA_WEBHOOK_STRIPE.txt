@@ -1,0 +1,614 @@
+================================================================================
+GUIA COMPLETO: COMO CRIAR WEBHOOK NO STRIPE - VIGIL
+================================================================================
+
+Este guia irá orientá-lo passo a passo na criação e configuração do webhook
+do Stripe para sincronizar automaticamente as assinaturas com o Supabase.
+
+================================================================================
+PARTE 1: PREPARAR A URL DO WEBHOOK (SUPABASE)
+================================================================================
+
+Antes de criar o webhook no Stripe, você precisa da URL do Supabase onde o
+webhook será enviado.
+
+PASSO 1.1: Encontrar o Project URL do Supabase
+----------------------------------------------
+
+1. Acesse: https://supabase.com/dashboard
+2. Selecione seu projeto Vigil
+3. Vá em: Settings (⚙️) > API
+4. Na seção "Project URL", você verá algo como:
+   
+   https://oprqgllsqtfdyjgvgovo.supabase.co
+   
+5. COPIE essa URL
+
+PASSO 1.2: Construir a URL do Webhook
+-------------------------------------
+
+A URL do webhook segue este formato:
+
+[PROJECT_URL]/functions/v1/stripe-webhook
+
+Exemplo com sua URL:
+https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/stripe-webhook
+
+➜ ANOTE ESTA URL - você usará no próximo passo
+
+================================================================================
+PARTE 2: CRIAR O WEBHOOK NO STRIPE DASHBOARD
+================================================================================
+
+PASSO 2.1: Acessar o Stripe Dashboard
+-------------------------------------
+
+1. Acesse: https://dashboard.stripe.com
+2. Faça login na sua conta
+3. IMPORTANTE: Verifique se está em modo TEST (toggle no canto superior direito)
+   
+   [Test mode] ← Deve estar assim
+   
+   ⚠️ Só mude para modo LIVE quando estiver pronto para produção!
+
+PASSO 2.2: Navegar até Webhooks
+-------------------------------
+
+1. No menu lateral esquerdo, clique em "Desenvolvedores" (Developers)
+2. Clique em "Webhooks"
+3. Você verá uma tela com a lista de webhooks (pode estar vazia)
+
+PASSO 2.3: Criar Novo Webhook (Nova Interface)
+----------------------------------------------
+
+1. Clique no botão para adicionar webhook (pode ser "+ Add endpoint" ou 
+   "Crie um destino de evento")
+
+2. PRIMEIRA TELA - Selecionar eventos:
+
+   ┌─────────────────────────────────────────────────┐
+   │ Comece selecionando os eventos que deseja       │
+   │ escutar                                          │
+   │                                                  │
+   │ Eventos a partir de:                            │
+   │                                                  │
+   │ [✓] Sua conta                  ← SELECIONE     │
+   │     Receba eventos de recursos dessa conta      │
+   │                                                  │
+   │ [ ] Contas conectadas e v2                      │
+   │                                                  │
+   │ Versão da API:                                  │
+   │ [2025-10-29.dover ▼]          ← Mantenha      │
+   │                                                  │
+   │ [Cancelar]              [Continuar →]           │
+   └─────────────────────────────────────────────────┘
+
+   - Selecione: "Sua conta" (já deve estar selecionado)
+   - Versão da API: Mantenha a versão mais recente
+   - Clique em "Continuar →"
+
+3. SEGUNDA TELA - Escolher tipo de destino:
+
+   Você verá opções como:
+   - Endpoint hospedado
+   - AWS EventBridge
+   - Google Cloud Pub/Sub
+   
+   ➜ Selecione: "Endpoint hospedado" (Hosted endpoint)
+   ➜ Clique em "Continuar"
+
+4. TERCEIRA TELA - Configurar endpoint:
+
+   ┌─────────────────────────────────────────────────┐
+   │ Configure o destino                              │
+   │                                                  │
+   │ URL do endpoint *                                │
+   │ ┌─────────────────────────────────────────────┐ │
+   │ │ https://oprqgllsqtfdyjgvgovo.supabase.co/  │ │
+   │ │ functions/v1/stripe-webhook                 │ │
+   │ └─────────────────────────────────────────────┘ │
+   │                                                  │
+   │ Descrição (opcional)                             │
+   │ ┌─────────────────────────────────────────────┐ │
+   │ │ Vigil - Webhook de Assinaturas             │ │
+   │ └─────────────────────────────────────────────┘ │
+   │                                                  │
+   │ [Cancelar]              [Continuar →]           │
+   └─────────────────────────────────────────────────┘
+
+   - URL do endpoint: Cole a URL do Supabase (passo 1.2)
+   - Descrição: "Vigil - Webhook de Assinaturas"
+   - Clique em "Continuar"
+
+PASSO 2.4: Selecionar os Eventos
+--------------------------------
+
+5. QUARTA TELA - Selecionar eventos:
+
+   Você verá uma lista de eventos para selecionar.
+
+EVENTOS OBRIGATÓRIOS (marque todos):
+
+Na caixa de busca, procure e selecione estes 7 eventos:
+
+☐ checkout.session.completed
+☐ customer.subscription.created
+☐ customer.subscription.updated
+☐ customer.subscription.deleted
+☐ customer.subscription.trial_will_end
+☐ invoice.payment_succeeded
+☐ invoice.payment_failed
+
+COMO SELECIONAR:
+
+1. Use a caixa de busca no topo
+2. Digite: "checkout.session.completed"
+3. Clique no evento para marcá-lo
+4. Repita para cada um dos 7 eventos acima
+
+DICA: Você pode digitar apenas "checkout.session" ou "invoice.payment"
+      para encontrar os eventos mais rapidamente
+
+TOTAL: 7 eventos selecionados
+
+Após selecionar todos, clique em "Adicionar eventos" ou "Continuar"
+
+PASSO 2.5: Finalizar Criação
+----------------------------
+
+1. Após selecionar todos os eventos, clique em "Add endpoint"
+2. O webhook será criado!
+
+================================================================================
+PARTE 3: COPIAR O SIGNING SECRET
+================================================================================
+
+PASSO 3.1: Acessar Detalhes do Webhook
+--------------------------------------
+
+Após criar o webhook, você será redirecionado para a página de detalhes.
+Se não estiver nela:
+
+1. Vá em: Developers > Webhooks
+2. Clique no webhook que você acabou de criar
+
+PASSO 3.2: Revelar o Signing Secret
+-----------------------------------
+
+Na página de detalhes do webhook, você verá:
+
+┌─────────────────────────────────────────────────┐
+│ Webhook details                                  │
+│                                                  │
+│ Endpoint URL                                     │
+│ https://oprqgllsqtfdyjgvgovo.supabase.co/...   │
+│                                                  │
+│ Signing secret                                   │
+│ whsec_••••••••••••••••••••••••••••••••••••    │
+│                                                  │
+│ [Click to reveal]                                │
+└─────────────────────────────────────────────────┘
+
+1. Clique em "Click to reveal"
+2. O secret será revelado: whsec_xxxxxxxxxxxxxxxxxxxxxx
+3. Clique no ícone de COPIAR (📋) ao lado
+
+➜ GUARDE ESTE VALOR COM SEGURANÇA
+➜ Você precisará dele no próximo passo
+
+Exemplo de signing secret:
+whsec_4kQB3J8XYZ9mN2pL5vW8rT6uK1sH3gF7
+
+================================================================================
+PARTE 4: CONFIGURAR AS VARIÁVEIS DE AMBIENTE NO SUPABASE
+================================================================================
+
+Agora você precisa adicionar as chaves do Stripe no Supabase para que as
+Edge Functions possam se comunicar com a API do Stripe.
+
+VOCÊ PRECISARÁ DE 3 VALORES:
+
+1. STRIPE_SECRET_KEY (chave secreta do Stripe)
+2. STRIPE_WEBHOOK_SECRET (signing secret que você acabou de copiar)
+3. STRIPE_PUBLISHABLE_KEY (chave pública - opcional)
+
+PASSO 4.1: Obter as Chaves do Stripe
+------------------------------------
+
+1. No Stripe Dashboard, vá em: Developers > API keys
+
+2. Você verá duas chaves:
+
+   Publishable key:
+   pk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   [Copiar]
+
+   Secret key:
+   sk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   [Reveal test key] ← Clique aqui primeiro
+
+3. Clique em "Reveal test key" para revelar a Secret key
+4. COPIE ambas as chaves
+
+⚠️ IMPORTANTE: 
+- Use chaves TEST (pk_test_ e sk_test_) enquanto estiver em desenvolvimento
+- Só use chaves LIVE (pk_live_ e sk_live_) quando for para produção
+
+PASSO 4.2: Adicionar Secrets no Supabase
+----------------------------------------
+
+Existem 2 métodos para adicionar os secrets:
+
+MÉTODO 1: Via Dashboard (Mais fácil)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Acesse: https://supabase.com/dashboard
+2. Selecione seu projeto Vigil
+3. Vá em: Settings (⚙️) > Edge Functions
+4. Role até a seção "Secrets"
+5. Clique em "Add new secret"
+
+Para cada secret:
+
+SECRET 1: STRIPE_SECRET_KEY
+---------------------------
+Name: STRIPE_SECRET_KEY
+Value: sk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxx (cole sua secret key)
+[Add secret]
+
+SECRET 2: STRIPE_WEBHOOK_SECRET
+-------------------------------
+Name: STRIPE_WEBHOOK_SECRET
+Value: whsec_xxxxxxxxxxxxxxxxxxxxxxxxxx (cole o signing secret do webhook)
+[Add secret]
+
+SECRET 3: STRIPE_PUBLISHABLE_KEY (Opcional)
+-------------------------------------------
+Name: STRIPE_PUBLISHABLE_KEY
+Value: pk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxx (cole sua publishable key)
+[Add secret]
+
+
+MÉTODO 2: Via CLI (Avançado)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Se você tem o Supabase CLI instalado:
+
+```bash
+# 1. Login no Supabase (se ainda não estiver logado)
+supabase login
+
+# 2. Link ao projeto
+supabase link --project-ref oprqgllsqtfdyjgvgovo
+
+# 3. Adicionar os secrets
+supabase secrets set STRIPE_SECRET_KEY=sk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxx
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxx
+supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_51xxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+PASSO 4.3: Verificar se os Secrets Foram Adicionados
+---------------------------------------------------
+
+1. No Dashboard do Supabase
+2. Settings > Edge Functions > Secrets
+3. Você deve ver 3 secrets listados:
+   
+   ✓ STRIPE_SECRET_KEY
+   ✓ STRIPE_WEBHOOK_SECRET
+   ✓ STRIPE_PUBLISHABLE_KEY
+
+================================================================================
+PARTE 5: FAZER DEPLOY DAS EDGE FUNCTIONS
+================================================================================
+
+As Edge Functions do Supabase precisam estar publicadas para receber os
+webhooks do Stripe.
+
+PASSO 5.1: Verificar se as Functions Existem
+-------------------------------------------
+
+No seu projeto, você deve ter:
+
+vigil-main/
+└── supabase/
+    └── functions/
+        ├── create-checkout-session/
+        │   └── index.ts
+        └── stripe-webhook/
+            └── index.ts
+
+PASSO 5.2: Atualizar os IDs de Preços
+-------------------------------------
+
+Antes de fazer deploy, atualize o arquivo com os IDs reais do Stripe:
+
+Arquivo: supabase/functions/create-checkout-session/index.ts
+
+Procure por:
+
+const priceIds: Record<string, Record<string, string>> = {
+  basic: {
+    monthly: 'price_xxxxxxxxxx',
+    annually: 'price_xxxxxxxxxx',
+  },
+  // ...
+};
+
+Substitua pelos IDs que você copiou anteriormente:
+
+const priceIds: Record<string, Record<string, string>> = {
+  basic: {
+    monthly: 'price_1SSJDMIcSthxxcjgPoQbQfwg',
+    annually: 'price_1SSJDMIcSthxxcjgWjhdNVNN',
+  },
+  pro: {
+    monthly: 'price_1SSJHtIcSthxxcjg9nW91dHw',
+    annually: 'price_1SSJHtIcSthxxcjg7ExDnb6A',
+  },
+  premium: {
+    monthly: 'price_1SSJKeIcSthxxcjgjDtvT99x',
+    annually: 'price_1SSJKeIcSthxxcjg0adwDz3v',
+  },
+};
+
+⚠️ NOTA: Se você quiser usar preços promocionais, adicione lógica para
+         detectar a promoção e usar os IDs promocionais quando necessário.
+
+PASSO 5.3: Fazer Deploy via CLI
+-------------------------------
+
+Se você tem o Supabase CLI instalado:
+
+```bash
+# No diretório raiz do projeto
+cd C:\Users\Herbert Carlos\Downloads\Cursor\Vigil-main
+
+# Deploy de todas as functions
+supabase functions deploy
+
+# OU deploy individual:
+supabase functions deploy create-checkout-session
+supabase functions deploy stripe-webhook
+```
+
+PASSO 5.4: Fazer Deploy via Dashboard
+-------------------------------------
+
+Se não tem CLI ou prefere usar o Dashboard:
+
+1. Acesse: https://supabase.com/dashboard
+2. Selecione seu projeto
+3. Vá em: Edge Functions
+4. Clique em "Create a new function"
+5. Nome: stripe-webhook
+6. Cole o código do arquivo supabase/functions/stripe-webhook/index.ts
+7. Clique em "Deploy function"
+8. Repita para create-checkout-session
+
+PASSO 5.5: Verificar Deploy
+---------------------------
+
+1. No Dashboard do Supabase
+2. Edge Functions
+3. Você deve ver:
+   
+   ✓ create-checkout-session (deployed)
+   ✓ stripe-webhook (deployed)
+
+================================================================================
+PARTE 6: TESTAR O WEBHOOK
+================================================================================
+
+PASSO 6.1: Enviar um Evento de Teste do Stripe
+----------------------------------------------
+
+1. No Stripe Dashboard, vá em: Developers > Webhooks
+2. Clique no webhook que você criou
+3. Role até "Test webhook"
+4. Clique em "Send test webhook"
+5. Selecione um evento: "checkout.session.completed"
+6. Clique em "Send test webhook"
+
+PASSO 6.2: Verificar o Resultado
+--------------------------------
+
+Na mesma página, você verá:
+
+┌─────────────────────────────────────────────────┐
+│ Recent deliveries                                │
+│                                                  │
+│ ✓ checkout.session.completed                   │
+│   200 OK - 145ms                                 │
+│   Just now                                       │
+└─────────────────────────────────────────────────┘
+
+- ✓ 200 OK = Sucesso!
+- ✗ 4xx/5xx = Erro (veja os logs)
+
+PASSO 6.3: Ver Logs no Supabase
+-------------------------------
+
+1. Supabase Dashboard > Edge Functions
+2. Clique em "stripe-webhook"
+3. Vá na aba "Logs"
+4. Você deve ver as requisições do webhook
+
+PASSO 6.4: Testar com um Checkout Real (Modo Test)
+-------------------------------------------------
+
+A melhor forma de testar é fazer um checkout de teste:
+
+1. Na sua aplicação Vigil, vá para a página Premium
+2. Selecione um plano
+3. Use um cartão de teste do Stripe:
+   
+   Número: 4242 4242 4242 4242
+   Data: Qualquer data futura (ex: 12/34)
+   CVC: Qualquer 3 dígitos (ex: 123)
+   CEP: Qualquer (ex: 12345)
+
+4. Complete o checkout
+5. O webhook deve ser acionado automaticamente
+6. Verifique no Supabase:
+   - Tabela `subscriptions` deve ter um novo registro
+   - Tabela `profiles` deve ter o plano atualizado
+
+================================================================================
+PARTE 7: TROUBLESHOOTING (RESOLUÇÃO DE PROBLEMAS)
+================================================================================
+
+PROBLEMA 1: Webhook retorna 404
+-------------------------------
+CAUSA: Edge Function não foi deployada ou URL está incorreta
+SOLUÇÃO:
+- Verifique se a URL está correta: /functions/v1/stripe-webhook
+- Faça deploy da function novamente
+- Verifique nos logs do Supabase se a function existe
+
+PROBLEMA 2: Webhook retorna 401/403
+-----------------------------------
+CAUSA: Secrets não configurados ou incorretos
+SOLUÇÃO:
+- Verifique se os 3 secrets estão no Supabase
+- Verifique se os valores estão corretos (sem espaços extras)
+- Refaça o deploy das functions após adicionar secrets
+
+PROBLEMA 3: Webhook retorna 500
+-------------------------------
+CAUSA: Erro no código da function
+SOLUÇÃO:
+- Veja os logs no Supabase (Edge Functions > stripe-webhook > Logs)
+- Procure por erros de sintaxe ou lógica
+- Verifique se as tabelas no Supabase existem
+
+PROBLEMA 4: Assinatura não atualiza no Supabase
+-----------------------------------------------
+CAUSA: RLS ou tabela não configurada
+SOLUÇÃO:
+- Execute o script: supabase_subscriptions_setup.sql
+- Verifique as políticas RLS da tabela subscriptions
+- Verifique se a tabela profiles existe
+
+PROBLEMA 5: Signing Secret Inválido
+-----------------------------------
+CAUSA: Secret copiado incorretamente ou função usando secret errado
+SOLUÇÃO:
+- Revele o secret novamente no Stripe Dashboard
+- Copie com cuidado (sem espaços extras)
+- Atualize o secret no Supabase
+- Refaça o deploy das functions
+
+================================================================================
+PARTE 8: VERIFICAÇÃO FINAL (CHECKLIST)
+================================================================================
+
+Antes de considerar concluído, verifique:
+
+☐ Webhook criado no Stripe Dashboard
+☐ URL do webhook aponta para o Supabase correto
+☐ 7 eventos selecionados no webhook
+☐ Signing secret copiado e guardado
+☐ STRIPE_SECRET_KEY adicionado no Supabase
+☐ STRIPE_WEBHOOK_SECRET adicionado no Supabase
+☐ STRIPE_PUBLISHABLE_KEY adicionado no Supabase (opcional)
+☐ IDs de preços atualizados no create-checkout-session
+☐ Edge Functions deployadas (stripe-webhook e create-checkout-session)
+☐ Tabela subscriptions criada no Supabase
+☐ RLS configurado na tabela subscriptions
+☐ Teste de webhook enviado com sucesso (200 OK)
+☐ Checkout de teste completado com sucesso
+☐ Dados da assinatura aparecem no Supabase
+
+================================================================================
+PARTE 9: INDO PARA PRODUÇÃO
+================================================================================
+
+Quando estiver pronto para produção:
+
+PASSO 1: Ativar Modo Live no Stripe
+-----------------------------------
+1. Stripe Dashboard > Toggle "View test data" (desative)
+2. Você agora está no modo LIVE
+
+PASSO 2: Criar Produtos e Preços no Modo Live
+---------------------------------------------
+1. Recrie os 3 produtos (Basic, Pro, Premium)
+2. Recrie os 6 preços (ou 12 se incluir promocionais)
+3. COPIE os novos IDs (começam com price_...)
+
+PASSO 3: Criar Novo Webhook no Modo Live
+----------------------------------------
+1. Developers > Webhooks > Add endpoint
+2. Use a MESMA URL do Supabase
+3. Selecione os MESMOS 7 eventos
+4. COPIE o novo signing secret (whsec_...)
+
+PASSO 4: Atualizar Secrets no Supabase para LIVE
+------------------------------------------------
+1. Obtenha as chaves LIVE do Stripe:
+   - sk_live_... (Secret key)
+   - pk_live_... (Publishable key)
+   - whsec_... (novo signing secret do webhook LIVE)
+
+2. Atualize os secrets no Supabase:
+   - STRIPE_SECRET_KEY = sk_live_...
+   - STRIPE_WEBHOOK_SECRET = whsec_... (novo)
+   - STRIPE_PUBLISHABLE_KEY = pk_live_...
+
+3. Refaça deploy das functions
+
+PASSO 5: Atualizar IDs de Preços LIVE
+-------------------------------------
+1. Edite: supabase/functions/create-checkout-session/index.ts
+2. Substitua os IDs de teste pelos IDs de produção
+3. Faça deploy novamente
+
+PASSO 6: Testar em Produção
+---------------------------
+⚠️ ATENÇÃO: Use um cartão REAL (será cobrado)
+⚠️ Ou use um cartão de teste em modo live (não será cobrado)
+
+Cartões de teste que funcionam no modo live:
+- Sucesso: 4242 4242 4242 4242
+- Falha: 4000 0000 0000 0002
+
+PASSO 7: Monitorar
+------------------
+1. Stripe Dashboard > Developers > Webhooks
+2. Monitore os eventos sendo enviados
+3. Verifique os logs regularmente
+4. Configure alertas para falhas
+
+================================================================================
+CONTATOS E DOCUMENTAÇÃO
+================================================================================
+
+Documentação do Stripe:
+- Webhooks: https://stripe.com/docs/webhooks
+- Eventos: https://stripe.com/docs/api/events/types
+- Testes: https://stripe.com/docs/testing
+
+Documentação do Supabase:
+- Edge Functions: https://supabase.com/docs/guides/functions
+- Secrets: https://supabase.com/docs/guides/functions/secrets
+
+Suporte:
+- Stripe: https://support.stripe.com
+- Supabase: https://supabase.com/support
+
+================================================================================
+FIM DO GUIA
+================================================================================
+
+Se você seguiu todos os passos corretamente, seu webhook está configurado e
+funcionando! 🎉
+
+Próximos passos:
+1. Teste com diferentes cenários (sucesso, falha, cancelamento)
+2. Configure monitoramento de falhas
+3. Implemente notificações para eventos importantes
+4. Documente o fluxo para sua equipe
+
+Boa sorte com o Vigil! 🚀
+

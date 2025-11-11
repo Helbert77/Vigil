@@ -31,6 +31,22 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
     setSelectedPlan(currentPlan as any);
   }, [currentPlan]);
 
+  // Verificar se retornou do checkout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const checkoutStatus = urlParams.get('checkout');
+    
+    if (checkoutStatus === 'success') {
+      addToast('Pagamento processado com sucesso! Aguarde a confirmação da assinatura.', 'success');
+      // Limpar parâmetro da URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (checkoutStatus === 'canceled') {
+      addToast('Checkout cancelado. Você pode tentar novamente quando quiser.', 'info');
+      // Limpar parâmetro da URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [addToast]);
+
   // Verificar se promoção está ativa
   const promotionActive = isPromotionActive();
   
@@ -164,20 +180,43 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       return;
     }
 
+    // Não permitir assinar plano Free via botão
+    if (selectedPlan === 'free') {
+      addToast("Para cancelar sua assinatura, use a opção de cancelamento abaixo.", "info");
+      return;
+    }
+
     setIsUpdatingPlan(true);
     try {
-      const { error } = await api.upsertSubscription(session.user.id, selectedPlan);
+      // Criar URLs de sucesso e cancelamento
+      const baseUrl = window.location.origin;
+      const successUrl = `${baseUrl}/?page=Premium&checkout=success`;
+      const cancelUrl = `${baseUrl}/?page=Premium&checkout=canceled`;
+
+      // Criar sessão de checkout no Stripe
+      const { data, error } = await api.createStripeCheckoutSession({
+        userId: session.user.id,
+        plan: selectedPlan as 'basic' | 'pro' | 'premium',
+        billingCycle: billingCycle,
+        successUrl,
+        cancelUrl,
+      });
 
       if (error) {
-        console.error("PremiumPage: Error updating plan:", error);
-        addToast("Erro ao atualizar plano. Tente novamente.", "error");
+        console.error("PremiumPage: Error creating checkout session:", error);
+        console.error("PremiumPage: Error details:", JSON.stringify(error, null, 2));
+        addToast(`Erro ao iniciar checkout: ${error.message || 'Tente novamente'}`, "error");
+      } else if (data?.url) {
+        // Redirecionar para o Stripe Checkout
+        addToast("Redirecionando para o checkout...", "info");
+        window.location.href = data.url;
       } else {
-        addToast(`Plano ${selectedPlan.toUpperCase()} ativado com sucesso!`, "success");
-        await refreshUser();
+        console.error("PremiumPage: No URL returned:", data);
+        addToast("Erro ao obter URL de checkout.", "error");
       }
     } catch (error) {
-      console.error("PremiumPage: Unexpected error during plan update:", error);
-      addToast("Ocorreu um erro inesperado ao atualizar o plano.", "error");
+      console.error("PremiumPage: Unexpected error during checkout:", error);
+      addToast("Ocorreu um erro inesperado ao processar o checkout.", "error");
     } finally {
       setIsUpdatingPlan(false);
     }

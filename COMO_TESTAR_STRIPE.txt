@@ -1,0 +1,338 @@
+================================================================================
+COMO TESTAR A INTEGRAÇÃO DO STRIPE - VIGIL
+================================================================================
+
+Este guia mostra como testar a integração do Stripe no seu app Vigil.
+
+================================================================================
+PARTE 1: PRÉ-REQUISITOS
+================================================================================
+
+Antes de testar, certifique-se de que completou:
+
+☐ Webhook criado no Stripe
+☐ Signing secret copiado
+☐ Secrets configurados no Supabase:
+  ☐ STRIPE_SECRET_KEY
+  ☐ STRIPE_WEBHOOK_SECRET
+  ☐ STRIPE_PUBLISHABLE_KEY
+☐ Edge Functions deployadas no Supabase
+☐ Tabela subscriptions criada no Supabase
+
+================================================================================
+PARTE 2: COMO FUNCIONA AGORA
+================================================================================
+
+FLUXO ATUALIZADO:
+
+1. Usuário acessa a página Premium
+2. Seleciona um plano (Basic, Pro ou Premium)
+3. Escolhe o ciclo de cobrança (Mensal ou Anual)
+4. Clica no botão "Escolher [Plano]"
+5. Sistema cria uma sessão de checkout no Stripe
+6. Usuário é redirecionado para o Stripe Checkout
+7. Usuário preenche os dados de pagamento
+8. Stripe processa o pagamento
+9. Webhook notifica o Supabase
+10. Usuário é redirecionado de volta ao app
+11. Plano é atualizado automaticamente
+
+================================================================================
+PARTE 3: TESTANDO O FLUXO COMPLETO
+================================================================================
+
+TESTE 1: Checkout Básico
+------------------------
+
+1. Acesse a página Premium no seu app
+2. Selecione o plano "Basic"
+3. Escolha "Mensal"
+4. Clique no botão "Escolher Basic"
+
+RESULTADO ESPERADO:
+- Toast: "Redirecionando para o checkout..."
+- Você é redirecionado para o Stripe Checkout
+- URL do Stripe aparece (checkout.stripe.com)
+
+5. Na página do Stripe Checkout, preencha:
+   
+   Email: seu-email@exemplo.com
+   
+   Informações do cartão:
+   Número: 4242 4242 4242 4242
+   Data: 12/34 (qualquer data futura)
+   CVC: 123 (qualquer 3 dígitos)
+   Nome: Teste Usuario
+   
+   CEP: 12345 (qualquer)
+   
+6. Clique em "Assinar" ou "Subscribe"
+
+RESULTADO ESPERADO:
+- Pagamento é processado
+- Você é redirecionado de volta ao app
+- URL: /?page=Premium&checkout=success
+- Toast: "Pagamento processado com sucesso!"
+- Após alguns segundos, seu plano muda para "Basic"
+
+TESTE 2: Checkout Cancelado
+---------------------------
+
+1. Repita os passos 1-4 do Teste 1
+2. Na página do Stripe Checkout
+3. Clique em "← Voltar" ou feche a aba
+
+RESULTADO ESPERADO:
+- Você volta ao app
+- URL: /?page=Premium&checkout=canceled
+- Toast: "Checkout cancelado. Você pode tentar novamente..."
+- Seu plano permanece inalterado
+
+TESTE 3: Plano Anual com Promoção
+---------------------------------
+
+1. Na página Premium, selecione "Anual"
+2. Observe os preços promocionais (20% OFF)
+3. Selecione o plano "Pro"
+4. Clique em "Escolher Pro"
+5. Complete o checkout com cartão de teste
+
+RESULTADO ESPERADO:
+- Preço cobrado: $86.30 (preço promocional anual)
+- Badge mostra: "+3 MESES GRÁTIS"
+- Após pagamento, plano muda para "Pro"
+
+TESTE 4: Período de Teste (Trial)
+---------------------------------
+
+1. Certifique-se de estar no plano "Free"
+2. Selecione o plano "Pro"
+3. Clique no botão verde "Iniciar Teste Grátis"
+
+RESULTADO ESPERADO:
+- Toast: "Teste de 7 dias iniciado com sucesso!"
+- Seu plano muda para "Pro" imediatamente
+- Você tem 7 dias para testar gratuitamente
+- Após 7 dias, será cobrado automaticamente
+
+TESTE 5: Verificar Webhook
+--------------------------
+
+Após completar um checkout:
+
+1. Acesse o Stripe Dashboard
+2. Vá em: Developers > Webhooks
+3. Clique no seu webhook
+4. Vá na aba "Recent deliveries"
+
+RESULTADO ESPERADO:
+- Você verá eventos recentes:
+  ✓ checkout.session.completed (200 OK)
+  ✓ customer.subscription.created (200 OK)
+  ✓ invoice.payment_succeeded (200 OK)
+
+5. Clique em cada evento para ver detalhes
+6. Verifique se o status é "200 OK"
+
+TESTE 6: Verificar Dados no Supabase
+------------------------------------
+
+Após completar um checkout:
+
+1. Acesse o Supabase Dashboard
+2. Vá em: Table Editor
+3. Abra a tabela "subscriptions"
+
+RESULTADO ESPERADO:
+- Você verá um registro com:
+  - user_id: seu ID de usuário
+  - plan: 'basic', 'pro' ou 'premium'
+  - status: 'active'
+  - stripe_customer_id: cus_xxxxxx
+  - stripe_subscription_id: sub_xxxxxx
+  - current_period_start: data/hora
+  - current_period_end: data/hora
+
+4. Abra a tabela "profiles"
+5. Encontre seu usuário
+
+RESULTADO ESPERADO:
+- Campo "plan" foi atualizado para o plano que você comprou
+
+================================================================================
+PARTE 4: CARTÕES DE TESTE DO STRIPE
+================================================================================
+
+Use estes cartões para testar diferentes cenários:
+
+SUCESSO:
+--------
+Número: 4242 4242 4242 4242
+Resultado: Pagamento aprovado
+
+RECUSADO:
+---------
+Número: 4000 0000 0000 0002
+Resultado: Cartão recusado
+
+REQUER AUTENTICAÇÃO 3D:
+-----------------------
+Número: 4000 0025 0000 3155
+Resultado: Abre modal de autenticação
+
+SALDO INSUFICIENTE:
+------------------
+Número: 4000 0000 0000 9995
+Resultado: Saldo insuficiente
+
+TODOS OS CARTÕES:
+- Data: Qualquer data futura (ex: 12/34)
+- CVC: Qualquer 3 dígitos (ex: 123)
+- CEP: Qualquer (ex: 12345)
+
+================================================================================
+PARTE 5: TROUBLESHOOTING
+================================================================================
+
+PROBLEMA 1: Erro ao criar checkout
+----------------------------------
+Mensagem: "Erro ao iniciar checkout"
+
+POSSÍVEIS CAUSAS:
+- Edge Function não deployada
+- Secrets não configurados
+- IDs de preços incorretos
+
+SOLUÇÃO:
+1. Verifique os logs no Supabase:
+   Edge Functions > create-checkout-session > Logs
+2. Verifique se os secrets estão configurados
+3. Verifique se os IDs de preços estão corretos
+
+PROBLEMA 2: Webhook retorna erro
+--------------------------------
+Mensagem: 4xx ou 5xx no Stripe Dashboard
+
+POSSÍVEIS CAUSAS:
+- Edge Function não deployada
+- STRIPE_WEBHOOK_SECRET incorreto
+- Tabela subscriptions não existe
+
+SOLUÇÃO:
+1. Verifique os logs no Supabase:
+   Edge Functions > stripe-webhook > Logs
+2. Verifique o signing secret
+3. Execute o script: supabase_subscriptions_setup.sql
+
+PROBLEMA 3: Plano não atualiza
+------------------------------
+Mensagem: Pagamento ok, mas plano não muda
+
+POSSÍVEIS CAUSAS:
+- Webhook não está funcionando
+- RLS bloqueando updates
+- Tabela profiles sem permissão
+
+SOLUÇÃO:
+1. Verifique se o webhook foi chamado (Stripe Dashboard)
+2. Verifique os logs do webhook no Supabase
+3. Verifique as políticas RLS das tabelas
+
+PROBLEMA 4: Redirecionamento não funciona
+-----------------------------------------
+Mensagem: Fica na página do Stripe após pagamento
+
+POSSÍVEIS CAUSAS:
+- URLs de sucesso/cancelamento incorretas
+- Domínio não autorizado no Stripe
+
+SOLUÇÃO:
+1. Verifique se as URLs estão corretas
+2. No Stripe Dashboard > Settings > Branding
+3. Adicione seu domínio em "Allowed domains"
+
+================================================================================
+PARTE 6: LOGS E DEBUGGING
+================================================================================
+
+ONDE VER LOGS:
+
+1. Console do Navegador (F12)
+   - Erros de JavaScript
+   - Chamadas de API
+   - Mensagens de debug
+
+2. Supabase Dashboard > Edge Functions > Logs
+   - Erros das Edge Functions
+   - Requisições recebidas
+   - Respostas enviadas
+
+3. Stripe Dashboard > Developers > Logs
+   - Requisições de API
+   - Eventos de webhook
+   - Erros do Stripe
+
+4. Stripe Dashboard > Developers > Webhooks > [Seu webhook]
+   - Tentativas de entrega
+   - Respostas do endpoint
+   - Erros de webhook
+
+COMO DEBUGAR:
+
+1. Abra o console do navegador (F12)
+2. Vá para a aba "Network"
+3. Tente fazer um checkout
+4. Procure por:
+   - Chamada para "create-checkout-session"
+   - Status da resposta
+   - Dados enviados e recebidos
+
+5. Se houver erro:
+   - Copie a mensagem de erro
+   - Verifique os logs no Supabase
+   - Verifique os eventos no Stripe
+
+================================================================================
+PARTE 7: CHECKLIST DE TESTE COMPLETO
+================================================================================
+
+☐ Teste 1: Checkout básico com cartão aprovado
+☐ Teste 2: Checkout cancelado pelo usuário
+☐ Teste 3: Plano anual com desconto promocional
+☐ Teste 4: Período de teste (trial) de 7 dias
+☐ Teste 5: Webhook recebe eventos corretamente
+☐ Teste 6: Dados salvos no Supabase
+☐ Teste 7: Cartão recusado (erro tratado)
+☐ Teste 8: Autenticação 3D (se aplicável)
+☐ Teste 9: Cancelamento de assinatura
+☐ Teste 10: Upgrade de plano
+
+TODOS OS TESTES PASSARAM? ✓
+Parabéns! Sua integração com Stripe está funcionando! 🎉
+
+================================================================================
+PARTE 8: PRÓXIMOS PASSOS
+================================================================================
+
+Após os testes em modo TEST:
+
+1. ☐ Ativar conta Stripe (se ainda não ativou)
+2. ☐ Completar informações fiscais
+3. ☐ Criar produtos e preços no modo LIVE
+4. ☐ Criar webhook no modo LIVE
+5. ☐ Atualizar secrets com chaves LIVE
+6. ☐ Atualizar IDs de preços no código
+7. ☐ Fazer deploy final
+8. ☐ Testar em produção com cartão real
+9. ☐ Monitorar primeiros pagamentos
+10. ☐ Configurar alertas de falhas
+
+================================================================================
+FIM DO GUIA DE TESTES
+================================================================================
+
+Boa sorte com os testes! 🚀
+
+Se encontrar problemas, consulte a PARTE 5 (Troubleshooting) ou
+verifique os logs detalhados nas plataformas.
+
