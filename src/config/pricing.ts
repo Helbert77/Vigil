@@ -94,7 +94,7 @@ export const PRICING_CONFIG = {
   
   // Configuração de promoção
   promotion: {
-    active: true,
+    active: false, // Desativado até criar os preços no modo TEST do Stripe
     endDate: '2026-02-11', // Promoção de lançamento
     canExtend: true,
     maxExtensionMonths: 2,

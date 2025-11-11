@@ -1,9 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import Stripe from 'https://esm.sh/stripe@13.11.0';
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-});
 
 // CORS headers
 const corsHeaders = {
@@ -65,65 +60,62 @@ serve(async (req) => {
     // 3. Implementar lógica de customer existente
     // 4. Adicionar metadata para rastreamento
 
-    // Verificar se a promoção está ativa
-    const promotionActive = new Date() < new Date('2026-02-11');
-    
-    // IDs de preços do Stripe
-    const priceIds = promotionActive ? {
-      // Preços promocionais (20% OFF)
+    // IDs de preços do Stripe (MODO TEST)
+    const priceIds = {
       basic: {
-        monthly: 'price_1SSJDMIcSthxxcjg57Ee5FFF',   // $3.19/mês (promo)
-        annually: 'price_1SSJDMIcSthxxcjgBnhP1HNC',  // $38.30/ano (promo)
+        monthly: 'price_1SSNWuEm3YwS3vjoPN2gZz3J',   // $3.99/mês
+        annually: 'price_1SSNWuEm3YwS3vjoBVZ9p08K',  // $47.88/ano
       },
       pro: {
-        monthly: 'price_1SSJHtIcSthxxcjgrLWOhTIH',   // $7.19/mês (promo)
-        annually: 'price_1SSJHtIcSthxxcjgTN8hVZGN',  // $86.30/ano (promo)
+        monthly: 'price_1SSNd3Em3YwS3vjoOHhpgdJD',   // $8.99/mês
+        annually: 'price_1SSNd3Em3YwS3vjo1P8tPy0d',  // $107.88/ano
       },
       premium: {
-        monthly: 'price_1SSJKeIcSthxxcjgzDHV7CbT',   // $15.99/mês (promo)
-        annually: 'price_1SSJKeIcSthxxcjgIS0LaNrs',  // $191.90/ano (promo)
-      },
-    } : {
-      // Preços padrão
-      basic: {
-        monthly: 'price_1SSJDMIcSthxxcjgPoQbQfwg',   // $3.99/mês
-        annually: 'price_1SSJDMIcSthxxcjgWjhdNVNN',  // $47.88/ano
-      },
-      pro: {
-        monthly: 'price_1SSJHtIcSthxxcjg9nW91dHw',   // $8.99/mês
-        annually: 'price_1SSJHtIcSthxxcjg7ExDnb6A',  // $107.88/ano
-      },
-      premium: {
-        monthly: 'price_1SSJKeIcSthxxcjgjDtvT99x',   // $19.99/mês
-        annually: 'price_1SSJKeIcSthxxcjg0adwDz3v',  // $239.88/ano
+        monthly: 'price_1SSNgkEm3YwS3vjo0sKZLrb5',   // $19.99/mês
+        annually: 'price_1SSNgkEm3YwS3vjoux4B6EGa',  // $239.88/ano
       },
     };
 
     const priceId = priceIds[plan][billingCycle];
     console.log('[create-checkout-session] Using priceId:', priceId);
-    console.log('[create-checkout-session] Stripe key configured:', !!Deno.env.get('STRIPE_SECRET_KEY'));
+    
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    console.log('[create-checkout-session] Stripe key configured:', !!stripeKey);
 
-    // Criar sessão de checkout
-    console.log('[create-checkout-session] Creating Stripe session...');
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: userId,
-      metadata: {
-        userId,
-        plan,
-        billingCycle,
+    // Criar sessão de checkout usando API REST diretamente
+    console.log('[create-checkout-session] Creating Stripe session via REST API...');
+    
+    // Construir form data para a API do Stripe
+    const formData = new URLSearchParams();
+    formData.append('mode', 'subscription');
+    formData.append('payment_method_types[0]', 'card');
+    formData.append('line_items[0][price]', priceId);
+    formData.append('line_items[0][quantity]', '1');
+    formData.append('success_url', successUrl);
+    formData.append('cancel_url', cancelUrl);
+    formData.append('client_reference_id', userId);
+    formData.append('metadata[userId]', userId);
+    formData.append('metadata[plan]', plan);
+    formData.append('metadata[billingCycle]', billingCycle);
+    
+    console.log('[create-checkout-session] Form data prepared');
+    
+    const stripeResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
+      body: formData.toString(),
     });
-
+    
+    if (!stripeResponse.ok) {
+      const errorText = await stripeResponse.text();
+      console.error('[create-checkout-session] Stripe API error:', errorText);
+      throw new Error(`Stripe API error: ${errorText}`);
+    }
+    
+    const session = await stripeResponse.json();
     console.log('[create-checkout-session] Session created successfully:', session.id);
 
     return new Response(

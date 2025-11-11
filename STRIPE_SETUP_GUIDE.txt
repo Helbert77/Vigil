@@ -85,7 +85,7 @@ PREÇO MENSAL (PADRÃO):
   Valor: $ 3.99
   Frequência: Mensal
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJDMIcSthxxcjgPoQbQfwg (será price_basic_monthly)
+  ➜ COPIE O ID: price_1SSNWuEm3YwS3vjoPN2gZz3J (será price_basic_monthly)
 
 PREÇO ANUAL:
   Clique em "+ Adicionar outro preço" no mesmo produto
@@ -94,7 +94,7 @@ PREÇO ANUAL:
   Valor: $ 47.88
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJDMIcSthxxcjgWjhdNVNN (será price_basic_annually)
+  ➜ COPIE O ID: price_1SSNWuEm3YwS3vjoBVZ9p08K (será price_basic_annually)
 
 PREÇO PROMOCIONAL MENSAL (20% OFF):
   Nome: Vigil Basic - Mensal (Promoção de Lançamento)
@@ -102,7 +102,7 @@ PREÇO PROMOCIONAL MENSAL (20% OFF):
   Valor: $ 3.19
   Frequência: Mensal
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJDMIcSthxxcjg57Ee5FFF (será price_basic_monthly_promo)
+  ➜ COPIE O ID: price_1SSNWuEm3YwS3vjoIMedzn9M (será price_basic_monthly_promo)
 
 PREÇO PROMOCIONAL ANUAL (20% OFF):
   Nome: Vigil Basic - Anual (Promoção de Lançamento)
@@ -110,7 +110,7 @@ PREÇO PROMOCIONAL ANUAL (20% OFF):
   Valor: $ 38.30
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJDMIcSthxxcjgBnhP1HNC (será price_basic_annually_promo)
+  ➜ COPIE O ID: price_1SSNXpEm3YwS3vjoY8FeTqCg (será price_basic_annually_promo)
 
 ───────────────────────────────────────────────────────────────────────────────
 PRODUTO 2: VIGIL PRO
@@ -125,7 +125,7 @@ PREÇO MENSAL (PADRÃO):
   Valor: $ 8.99
   Frequência: Mensal
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJHtIcSthxxcjg9nW91dHw (será price_pro_monthly)
+  ➜ COPIE O ID: price_1SSNd3Em3YwS3vjoOHhpgdJD (será price_pro_monthly)
 
 PREÇO ANUAL:
   Nome: Vigil Pro - Anual (+3 meses grátis)
@@ -133,7 +133,7 @@ PREÇO ANUAL:
   Valor: $ 107.88
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJHtIcSthxxcjg7ExDnb6A (será price_pro_annually)
+  ➜ COPIE O ID: price_1SSNd3Em3YwS3vjo1P8tPy0d (será price_pro_annually)
 
 PREÇO PROMOCIONAL MENSAL (20% OFF):
   Nome: Vigil Pro - Mensal (Promoção de Lançamento)
@@ -142,7 +142,7 @@ PREÇO PROMOCIONAL MENSAL (20% OFF):
   Frequência: Mensal
   Moeda: USD
   Período de teste: 7 dias
-  ➜ COPIE O ID: price_1SSJHtIcSthxxcjgrLWOhTIH (será price_pro_monthly_promo)
+  ➜ COPIE O ID: price_1SSNd3Em3YwS3vjoyw717Vwc (será price_pro_monthly_promo)
 
 PREÇO PROMOCIONAL ANUAL (20% OFF):
   Nome: Vigil Pro - Anual (Promoção de Lançamento)
@@ -150,7 +150,7 @@ PREÇO PROMOCIONAL ANUAL (20% OFF):
   Valor: $ 86.30
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJHtIcSthxxcjgTN8hVZGN (será price_pro_annually_promo)
+  ➜ COPIE O ID: price_1SSNd3Em3YwS3vjo7FU68e7g (será price_pro_annually_promo)
 
 ───────────────────────────────────────────────────────────────────────────────
 PRODUTO 3: VIGIL PREMIUM
@@ -165,7 +165,7 @@ PREÇO MENSAL (PADRÃO):
   Valor: $ 19.99
   Frequência: Mensal
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJKeIcSthxxcjgjDtvT99x (será price_premium_monthly)
+  ➜ COPIE O ID: price_1SSNgkEm3YwS3vjo0sKZLrb5 (será price_premium_monthly)
 
 PREÇO ANUAL:
   Nome: Vigil Premium - Anual (+6 meses grátis)
@@ -173,7 +173,7 @@ PREÇO ANUAL:
   Valor: $ 239.88
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJKeIcSthxxcjg0adwDz3v (será price_premium_annually)
+  ➜ COPIE O ID: price_1SSNgkEm3YwS3vjoux4B6EGa (será price_premium_annually)
 
 PREÇO PROMOCIONAL MENSAL (20% OFF):
   Nome: Vigil Premium - Mensal (Promoção de Lançamento)
@@ -182,7 +182,7 @@ PREÇO PROMOCIONAL MENSAL (20% OFF):
   Frequência: Mensal
   Moeda: USD
   Período de teste: 14 dias
-  ➜ COPIE O ID: price_1SSJKeIcSthxxcjgzDHV7CbT (será price_premium_monthly_promo)
+  ➜ COPIE O ID: price_1SSNgkEm3YwS3vjocOR8dpvi (será price_premium_monthly_promo)
 
 PREÇO PROMOCIONAL ANUAL (20% OFF):
   Nome: Vigil Premium - Anual (Promoção de Lançamento)
@@ -190,7 +190,7 @@ PREÇO PROMOCIONAL ANUAL (20% OFF):
   Valor: $ 191.90
   Frequência: Anual
   Moeda: USD
-  ➜ COPIE O ID: price_1SSJKeIcSthxxcjgIS0LaNrs (será price_premium_annually_promo)
+  ➜ COPIE O ID: price_1SSNgkEm3YwS3vjo84vm0KHZ (será price_premium_annually_promo)
 
 ================================================================================
 4. CONFIGURAÇÃO DE WEBHOOKS
