@@ -371,7 +371,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         .emoji-search-input:focus {
-          border-color: #3b82f6;
+          border-color: var(--accent-color, #3b82f6);
           background: var(--light-card, white);
         }
 
@@ -382,7 +382,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         :global(.dark) .emoji-search-input:focus {
-          border-color: #3b82f6;
+          border-color: var(--accent-color, #1e3a8a);
           background: var(--dark-card, #1f2937);
         }
 
@@ -466,7 +466,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         .emoji-category-btn.active {
-          background: #dbeafe;
+          background: var(--accent-active, #dbeafe);
         }
 
         :global(.dark) .emoji-category-btn:hover {
@@ -474,7 +474,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         :global(.dark) .emoji-category-btn.active {
-          background: #1e3a8a;
+          background: var(--accent-active, #1e3a8a);
         }
 
         .emoji-grid-container {

@@ -43,32 +43,18 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
-          devOptions: {
-            enabled: false
-          },
-          workbox: {
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-            maximumFileSizeToCacheInBytes: 3000000,
-            runtimeCaching: [
-              {
-                urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-                handler: 'NetworkFirst',
-                options: {
-                  cacheName: 'supabase-cache',
-                  expiration: {
-                    maxEntries: 50,
-                    maxAgeSeconds: 60 * 60 * 24 // 24 horas
-                  }
-                }
-              }
-            ]
-          },
+          devOptions: { enabled: true },
+          strategies: 'injectManifest',
+          srcDir: 'src',
+          filename: 'sw.ts',
           manifest: {
             name: 'Vigil',
             short_name: 'Vigil',
             description: 'A conspiracy-themed social network where users can share and discuss theories.',
             theme_color: '#0a0a0a',
             background_color: '#eff6ff',
+            start_url: '/',
+            display: 'standalone',
             icons: [
               {
                 src: 'logo.png',

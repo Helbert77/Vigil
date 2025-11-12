@@ -1,0 +1,84 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Icon } from '@/components/icons/Icon';
+
+type Page = 'Home' | 'Notifications' | 'Messages' | 'Communities' | 'Library' | 'Timeline';
+
+interface Props {
+  currentPage: Page;
+  onNavigate: (page: Page) => void;
+  unreadNotificationsCount?: number;
+  unreadMessagesCount?: number;
+}
+
+const HomeIcon = () => (
+  <Icon><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>
+);
+const BellIcon = () => (
+  <Icon><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></Icon>
+);
+const MailIcon = () => (
+  <Icon><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></Icon>
+);
+const UsersIcon = () => (
+  <Icon><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Icon>
+);
+const LibraryIcon = () => (
+  <Icon><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></Icon>
+);
+const TimelineIcon = () => (
+  <Icon><path d="M3 3v18h18" /><path d="M7 12h10" /><path d="M7 8h7" /><path d="M7 16h4" /></Icon>
+);
+
+const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadNotificationsCount = 0, unreadMessagesCount = 0 }) => {
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef<number>(0);
+
+  useEffect(() => {
+    lastY.current = window.scrollY || window.pageYOffset || 0;
+    const onScroll = () => {
+      const y = window.scrollY || window.pageYOffset || 0;
+      const diff = y - lastY.current;
+      if (Math.abs(diff) > 4) {
+        if (diff > 0 && y > 48) setHidden(true); else setHidden(false);
+        lastY.current = y;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const Item: React.FC<{label: string; active: boolean; onClick: () => void; badge?: number; children: React.ReactNode}> = ({ label, active, onClick, badge = 0, children }) => (
+    <button
+      aria-label={label}
+      onClick={onClick}
+      className={`flex-1 flex items-center justify-center gap-2 px-1 py-1 rounded-xl transition-colors ${active ? 'text-secondary' : 'text-gray-700 dark:text-gray-200'}`}
+    >
+      <div className={`relative w-6 h-6 ${active ? 'text-secondary' : ''}`}>{children}{badge > 0 && (
+        <span className="absolute -top-1 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] bg-secondary text-white flex items-center justify-center">{badge}</span>
+      )}</div>
+    </button>
+  );
+
+  return (
+    <div
+      role="navigation"
+      className={`md:hidden fixed left-0 right-0 bottom-0 z-50 transition-transform duration-200 ${hidden ? 'translate-y-full' : 'translate-y-0'}`}
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
+    >
+      <div className="mx-auto max-w-screen-sm">
+        <div className="m-3 rounded-2xl border bg-light-card dark:bg-dark-card border-light-border dark:border-dark-border shadow-lg">
+          <div className="flex items-center justify-between px-2 py-2">
+            <Item label="Home" active={currentPage === 'Home'} onClick={() => onNavigate('Home')}><HomeIcon /></Item>
+            <Item label="Notifications" active={currentPage === 'Notifications'} onClick={() => onNavigate('Notifications')} badge={unreadNotificationsCount}><BellIcon /></Item>
+            <Item label="Messages" active={currentPage === 'Messages'} onClick={() => onNavigate('Messages')} badge={unreadMessagesCount}><MailIcon /></Item>
+            <Item label="Communities" active={currentPage === 'Communities'} onClick={() => onNavigate('Communities')}><UsersIcon /></Item>
+            <Item label="Biblioteca" active={currentPage === 'Library'} onClick={() => onNavigate('Library')}><LibraryIcon /></Item>
+            <Item label="Timeline" active={currentPage === 'Timeline'} onClick={() => onNavigate('Timeline')}><TimelineIcon /></Item>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MobileBottomNav;

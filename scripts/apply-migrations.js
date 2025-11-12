@@ -91,6 +91,31 @@ const SQL_ADD_UPDATE_DELETE_POLICIES = `
   end $$;
 `;
 
+// Tabelas para Web Push e tokens nativos
+const SQL_CREATE_PUSH_TABLES = `
+  create extension if not exists pgcrypto;
+
+  create table if not exists public.push_subscriptions (
+    user_id uuid primary key,
+    subscription jsonb not null,
+    created_at timestamptz not null default now()
+  );
+
+  alter table public.push_subscriptions enable row level security;
+
+  -- Edge Functions usam service role; não expomos políticas a anon
+
+  create table if not exists public.device_tokens (
+    user_id uuid not null,
+    platform text not null check (platform in ('android','ios')),
+    token text not null,
+    created_at timestamptz not null default now(),
+    primary key (user_id, platform)
+  );
+
+  alter table public.device_tokens enable row level security;
+`;
+
 async function tryExec(sql, label) {
   console.log(`\n➡️ Executando: ${label}`);
   const { error } = await supabase.rpc('exec_sql', { sql });
@@ -125,6 +150,7 @@ async function run() {
   await tryExec(SQL_CREATE_LIBRARY_ITEMS, 'Criar tabela library_items e políticas básicas');
   await tryExec(SQL_ADD_MEDIA_COLUMN, 'Adicionar coluna media a library_items');
   await tryExec(SQL_ADD_UPDATE_DELETE_POLICIES, 'Criar políticas UPDATE/DELETE em library_items');
+  await tryExec(SQL_CREATE_PUSH_TABLES, 'Criar tabelas push_subscriptions e device_tokens');
 
   console.log('\n🎉 Concluído. Revise no Dashboard as políticas e a estrutura da tabela.');
 }

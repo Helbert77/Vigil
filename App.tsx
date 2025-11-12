@@ -48,6 +48,7 @@ import Dashboard from '@/components/admin/Dashboard';
 import Appeals from '@/pages/admin/Appeals';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
+import MobileBottomNav from '@/src/components/layout/MobileBottomNav';
 import {
   buildPathFromSnapshot,
   parseLocationToSnapshot,
@@ -91,6 +92,61 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // User state updated - logs removed for production
+  }, [appUser]);
+
+  // Web Push subscribe (PWA)
+  useEffect(() => {
+    const subscribePush = async () => {
+      try {
+        if (!appUser) return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        const registration = await navigator.serviceWorker.ready;
+        const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+        if (!key) return;
+        const convertedKey = Uint8Array.from(atob(key.replace(/_/g, '/').replace(/-/g, '+')), c => c.charCodeAt(0));
+        const sub = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
+        await api.savePushSubscription(appUser.id, sub);
+      } catch {}
+    };
+    subscribePush();
+  }, [appUser]);
+
+  useEffect(() => {
+    if (!appUser) return;
+    (window as any).testPush = async (payload?: { title: string; body: string; url?: string; icon?: string; tag?: string }) => {
+      const p = payload || { title: 'Teste', body: 'Push de teste', url: '/' };
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(p.title, { body: p.body, icon: p.icon || '/logo.png', data: { url: p.url || '/' }, tag: p.tag || 'test' });
+      } catch {}
+    };
+    return () => { try { delete (window as any).testPush; } catch {} };
+  }, [appUser]);
+
+  // Capacitor Push registration
+  useEffect(() => {
+    const setupCapacitorPush = async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+        const perm = await PushNotifications.requestPermissions();
+        if (perm.receive === 'granted') {
+          await PushNotifications.register();
+        }
+        PushNotifications.addListener('registration', async (token) => {
+          if (appUser) {
+            const platform = Capacitor.getPlatform() === 'ios' ? 'ios' : 'android';
+            await api.saveDeviceToken(appUser.id, token.value, platform);
+          }
+        });
+        PushNotifications.addListener('pushNotificationReceived', async () => {
+          try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {}
+        });
+      } catch {}
+    };
+    setupCapacitorPush();
   }, [appUser]);
 
   const scrollToTop = () => {
@@ -977,6 +1033,13 @@ const App: React.FC = () => {
         {(appUser.plan === 'basic' || appUser.plan === 'pro' || appUser.plan === 'premium') && (
           <SupportButton user={appUser} variant="floating" />
         )}
+
+        <MobileBottomNav
+          currentPage={currentPage}
+          onNavigate={(p) => handleNavigation(p)}
+          unreadNotificationsCount={unreadNotificationsCount}
+          unreadMessagesCount={unreadMessagesCount}
+        />
       </div>
     </UsersProvider>
   );

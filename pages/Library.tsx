@@ -142,7 +142,7 @@ const Library: React.FC<LibraryProps> = ({
           minHeight: '60px'
         }}
       >
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Biblioteca Virtual</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
         
         {/* Botão Adicionar Item - Visível apenas para Premium e Admin */}
         {userCanAddItems && (

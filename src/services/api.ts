@@ -1359,3 +1359,19 @@ export const createStripePortalSession = async (userId: string, returnUrl: strin
     body: { userId, returnUrl },
   });
 };
+
+// Salvar assinatura de Web Push
+export const savePushSubscription = async (userId: string, subscription: any) => {
+  return supabase.from('push_subscriptions').upsert({ user_id: userId, subscription });
+};
+
+// Enviar push (admin/teste)
+// Enviar push: para produção, utilize um servidor externo com web-push
+export const sendPush = async (_userId: string, _payload: { title: string; body: string; icon?: string; url?: string; tag?: string }) => {
+  return { data: null, error: { message: 'Configure o envio de push via servidor externo (web-push).' } } as any;
+};
+
+// Salvar token de dispositivo (Capacitor/FCM/APNs)
+export const saveDeviceToken = async (userId: string, token: string, platform: 'android' | 'ios') => {
+  return supabase.from('device_tokens').upsert({ user_id: userId, token, platform });
+};

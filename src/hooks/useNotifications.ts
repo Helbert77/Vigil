@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Notification, User } from '@/types';
+import type { Notification as AppNotification, User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 
 export const useNotifications = (appUser: User | null, allUsers: User[]) => {
   const { addToast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
 
   const fetchNotifications = useCallback(async () => {
@@ -14,7 +14,7 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
     try {
       const { data, error } = await api.fetchNotifications(appUser.id);
       if (error) throw error;
-      const formattedNotifications: Notification[] = data.filter((n: any) => n.actor).map((n: any) => ({
+      const formattedNotifications: AppNotification[] = data.filter((n: any) => n.actor).map((n: any) => ({
         id: n.id, type: n.type, post_id: n.post_id, is_read: n.is_read, created_at: n.created_at,
         actor: {
           id: n.actor.id, name: `${n.actor.first_name || ''} ${n.actor.last_name || ''}`.trim() || n.actor.username,
@@ -36,12 +36,32 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
         (payload) => {
           const actor = allUsers.find(u => u.id === payload.new.actor_id);
           if (!actor) return;
-          const newNotification: Notification = {
+          const newNotification: AppNotification = {
             id: payload.new.id, type: payload.new.type, post_id: payload.new.post_id, is_read: payload.new.is_read, created_at: payload.new.created_at,
             actor: { ...actor }
           };
           setNotifications(prev => [newNotification, ...prev]);
           addToast(`Nova notificação de ${newNotification.actor.name}!`, 'info');
+          if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'granted') {
+              try {
+                new Notification('Nova notificação', {
+                  body: `${newNotification.actor.name} enviou uma ${newNotification.type}`,
+                  icon: '/logo.png',
+                  tag: `notif-${newNotification.id}`,
+                });
+                if (navigator?.vibrate) navigator.vibrate([20]);
+              } catch {}
+            } else if (Notification.permission === 'default') {
+              Notification.requestPermission().then((p) => {
+                if (p === 'granted') {
+                  try {
+                    new Notification('Notificações ativadas', { body: 'Você receberá alertas mesmo fora da página.', icon: '/logo.png' });
+                  } catch {}
+                }
+              });
+            }
+          }
         })
         .subscribe();
       return () => { supabase.removeChannel(notificationsChannel); };
