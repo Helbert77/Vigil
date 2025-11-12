@@ -44,9 +44,24 @@ export default defineConfig(({ mode }) => {
           registerType: 'autoUpdate',
           includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png'],
           devOptions: { enabled: true },
-          strategies: 'injectManifest',
-          srcDir: 'src',
-          filename: 'sw.ts',
+          strategies: 'generateSW',
+          workbox: {
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+            maximumFileSizeToCacheInBytes: 3000000,
+            runtimeCaching: [
+              {
+                urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+                handler: 'NetworkFirst',
+                options: {
+                  cacheName: 'supabase-cache',
+                  expiration: {
+                    maxEntries: 50,
+                    maxAgeSeconds: 60 * 60 * 24
+                  }
+                }
+              }
+            ]
+          },
           manifest: {
             name: 'Vigil',
             short_name: 'Vigil',
