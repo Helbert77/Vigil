@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from '../components/common/Card';
 import Avatar from '../components/common/Avatar';
-import { Notification, User } from '../types';
+import type { Notification, User } from '../types';
 import { Icon } from '../components/icons/Icon';
 import UserLink from '@/components/common/UserLink';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';

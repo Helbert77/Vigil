@@ -21,7 +21,7 @@ import Disclaimer from '@/pages/Disclaimer';
 import Accessibility from '@/pages/Accessibility';
 import PremiumPage from '@/src/pages/PremiumPage';
 import ToastContainer from '@/components/common/ToastContainer';
-import { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
+import type { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
 import { useSession } from '@/contexts/SessionContext';
 import { canAccessLibrary, getLibraryAccessDeniedMessage } from '@/src/utils/libraryAccess';
 import { useToast } from '@/hooks/useToast';
@@ -94,17 +94,34 @@ const App: React.FC = () => {
     // User state updated - logs removed for production
   }, [appUser]);
 
+  useEffect(() => {
+    const ensureNotificationPermission = async () => {
+      try {
+        if (!appUser) return;
+        if (typeof window === 'undefined' || !('Notification' in window)) return;
+        if (Notification.permission !== 'default') return;
+        const p = await Notification.requestPermission();
+        if (p === 'granted') {
+          addToast('Notificações do navegador ativadas.', 'success');
+        }
+      } catch {}
+    };
+    ensureNotificationPermission();
+  }, [appUser]);
+
   // Web Push subscribe (PWA)
   useEffect(() => {
     const subscribePush = async () => {
       try {
         if (!appUser) return;
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') return;
         const registration = await navigator.serviceWorker.ready;
         const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         if (!key) return;
         const convertedKey = Uint8Array.from(atob(key.replace(/_/g, '/').replace(/-/g, '+')), c => c.charCodeAt(0));
-        const sub = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
+        const existing = await registration.pushManager.getSubscription();
+        const sub = existing || await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
         await api.savePushSubscription(appUser.id, sub);
       } catch {}
     };

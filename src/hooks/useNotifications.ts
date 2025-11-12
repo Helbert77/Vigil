@@ -4,6 +4,9 @@ import type { Notification as AppNotification, User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 
+const _notifiedIds = new Set<string>();
+let _lastShownTs = 0;
+
 export const useNotifications = (appUser: User | null, allUsers: User[]) => {
   const { addToast } = useToast();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -42,8 +45,11 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
           };
           setNotifications(prev => [newNotification, ...prev]);
           addToast(`Nova notificação de ${newNotification.actor.name}!`, 'info');
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            if (Notification.permission === 'granted') {
+          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+            const hidden = document.visibilityState === 'hidden' || !document.hasFocus();
+            const now = Date.now();
+            const canShow = hidden && (now - _lastShownTs > 15000) && !_notifiedIds.has(newNotification.id);
+            if (canShow) {
               try {
                 new Notification('Nova notificação', {
                   body: `${newNotification.actor.name} enviou uma ${newNotification.type}`,
@@ -52,14 +58,8 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
                 });
                 if (navigator?.vibrate) navigator.vibrate([20]);
               } catch {}
-            } else if (Notification.permission === 'default') {
-              Notification.requestPermission().then((p) => {
-                if (p === 'granted') {
-                  try {
-                    new Notification('Notificações ativadas', { body: 'Você receberá alertas mesmo fora da página.', icon: '/logo.png' });
-                  } catch {}
-                }
-              });
+              _lastShownTs = now;
+              _notifiedIds.add(newNotification.id);
             }
           }
         })

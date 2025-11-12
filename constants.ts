@@ -1,4 +1,4 @@
-import { User, Notification, Community } from './types';
+import type { User, Notification, Community } from './types';
 
 export const MOCK_USER: User = {
   id: 'u1',
