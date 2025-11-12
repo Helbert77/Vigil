@@ -7,6 +7,8 @@ self.addEventListener('activate', (event: any) => {
   self.clients.claim();
 });
 
+precacheAndRoute(self.__WB_MANIFEST);
+
 self.addEventListener('push', (event: any) => {
   if (!event?.data) return;
   let payload: any = {};
@@ -30,3 +32,4 @@ self.addEventListener('notificationclick', (event: any) => {
     })
   );
 });
+import { precacheAndRoute } from 'workbox-precaching';
