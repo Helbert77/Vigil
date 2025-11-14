@@ -47,39 +47,45 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     setSession(currentSession);
 
     if (currentSession?.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', currentSession.user.id)
-        .single();
-      
-      if (profile) {
-        // Usar múltiplas fontes em ordem de prioridade
-        const dateSource = profile.created_at || profile.updated_at || currentSession.user.created_at;
-        const createdAtDate = dateSource ? new Date(dateSource) : new Date();
-        
-        const appUser: User = {
-          id: profile.id,
-          name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username,
-          username: profile.username,
-          avatarUrl: profile.avatar_url || '',
-          bannerUrl: profile.banner_url || '',
-          bio: profile.bio || '',
-          joinDate: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
-          createdAt: dateSource,
-          followingCount: profile.following_count || 0,
-          followersCount: profile.followers_count || 0,
-          theme: profile.theme || 'light',
-          notifications: profile.notifications_settings || { likes: true, comments: true, newFollowers: false, messages: true },
-          mutedWords: profile.muted_words || [],
-          showSensitiveContent: profile.show_sensitive_content ?? false,
-          showActivityStatus: profile.show_activity_status ?? true,
-          profileViewMode: profile.profile_view_mode || 'list',
-          role: profile.role || 'user',
-          plan: profile.plan || 'free',
-        };
-        
-        setUser(appUser);
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentSession.user.id)
+          .single();
+
+        if (!profile) {
+          setUser(null);
+        } else {
+          const dateSource = profile.created_at || profile.updated_at || currentSession.user.created_at;
+          const createdAtDate = dateSource ? new Date(dateSource) : new Date();
+
+          const appUser: User = {
+            id: profile.id,
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username,
+            username: profile.username,
+            avatarUrl: profile.avatar_url || '',
+            bannerUrl: profile.banner_url || '',
+            bio: profile.bio || '',
+            joinDate: `Joined ${createdAtDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+            createdAt: dateSource,
+            followingCount: profile.following_count || 0,
+            followersCount: profile.followers_count || 0,
+            theme: profile.theme || 'light',
+            notifications: profile.notifications_settings || { likes: true, comments: true, newFollowers: false, messages: true },
+            mutedWords: profile.muted_words || [],
+            showSensitiveContent: profile.show_sensitive_content ?? false,
+            showActivityStatus: profile.show_activity_status ?? true,
+            profileViewMode: profile.profile_view_mode || 'list',
+            role: profile.role || 'user',
+            plan: profile.plan || 'free',
+          };
+
+          setUser(appUser);
+        }
+      } catch {
+        // Silenciar erros de rede (ERR_ABORTED / Failed to fetch) sem quebrar fluxo
+        setUser(null);
       }
     } else {
       setUser(null);

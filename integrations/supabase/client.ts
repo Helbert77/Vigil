@@ -11,7 +11,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wcnFnbGxzcXRmZHlqZ3Znb3ZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTI2MjMwNCwiZXhwIjoyMDc0ODM4MzA0fQ.rwrHPtvHym918IMJQTgVt5ajp5eGyIBeKcDQI95wxkk";
 
 // Cliente público (anon) para uso no navegador
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // Opcional: cliente de serviço para ambientes seguros (Node/SSR/Workers)
 // Evite chamar isto no navegador.

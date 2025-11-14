@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/icons/Icon';
-
-type Page = 'Home' | 'Notifications' | 'Messages' | 'Communities' | 'Library' | 'Timeline';
+import type { Page } from '@/src/utils/history';
 
 interface Props {
   currentPage: Page;

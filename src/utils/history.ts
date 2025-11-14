@@ -9,6 +9,7 @@ export type Page =
   | 'Messages'
   | 'Saved'
   | 'Communities'
+  | 'Library'
   | 'Timeline'
   | 'PostDetail'
   | 'Search'
@@ -55,6 +56,8 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return '/saved';
     case 'Communities':
       return '/communities';
+    case 'Library':
+      return '/library';
     case 'CommunityDetail':
       return state.activeCommunityId ? `/community/${encodeURIComponent(state.activeCommunityId)}` : '/community';
     case 'Timeline':
@@ -110,6 +113,7 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/messages': 'Messages',
     '/saved': 'Saved',
     '/communities': 'Communities',
+    '/library': 'Library',
     '/timeline': 'Timeline',
     '/about': 'About',
     '/terms': 'TermsOfService',

@@ -55,9 +55,9 @@ import {
   pushHistoryState,
   samePath,
   type NavigationSnapshot,
+  type Page,
 } from '@/src/utils/history';
 
-type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Library' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers';
 
 const App: React.FC = () => {
   const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
@@ -94,77 +94,9 @@ const App: React.FC = () => {
     // User state updated - logs removed for production
   }, [appUser]);
 
-  useEffect(() => {
-    const ensureNotificationPermission = async () => {
-      try {
-        if (!appUser) return;
-        if (typeof window === 'undefined' || !('Notification' in window)) return;
-        if (Notification.permission !== 'default') return;
-        const p = await Notification.requestPermission();
-        if (p === 'granted') {
-          addToast('Notificações do navegador ativadas.', 'success');
-        }
-      } catch {}
-    };
-    ensureNotificationPermission();
-  }, [appUser]);
+  
 
-  // Web Push subscribe (PWA)
-  useEffect(() => {
-    const subscribePush = async () => {
-      try {
-        if (!appUser) return;
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') return;
-        const registration = await navigator.serviceWorker.ready;
-        const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-        if (!key) return;
-        const convertedKey = Uint8Array.from(atob(key.replace(/_/g, '/').replace(/-/g, '+')), c => c.charCodeAt(0));
-        const existing = await registration.pushManager.getSubscription();
-        const sub = existing || await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
-        await api.savePushSubscription(appUser.id, sub);
-      } catch {}
-    };
-    subscribePush();
-  }, [appUser]);
-
-  useEffect(() => {
-    if (!appUser) return;
-    (window as any).testPush = async (payload?: { title: string; body: string; url?: string; icon?: string; tag?: string }) => {
-      const p = payload || { title: 'Teste', body: 'Push de teste', url: '/' };
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification(p.title, { body: p.body, icon: p.icon || '/logo.png', data: { url: p.url || '/' }, tag: p.tag || 'test' });
-      } catch {}
-    };
-    return () => { try { delete (window as any).testPush; } catch {} };
-  }, [appUser]);
-
-  // Capacitor Push registration
-  useEffect(() => {
-    const setupCapacitorPush = async () => {
-      try {
-        const { Capacitor } = await import('@capacitor/core');
-        if (!Capacitor.isNativePlatform()) return;
-        const { PushNotifications } = await import('@capacitor/push-notifications');
-        const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
-        const perm = await PushNotifications.requestPermissions();
-        if (perm.receive === 'granted') {
-          await PushNotifications.register();
-        }
-        PushNotifications.addListener('registration', async (token) => {
-          if (appUser) {
-            const platform = Capacitor.getPlatform() === 'ios' ? 'ios' : 'android';
-            await api.saveDeviceToken(appUser.id, token.value, platform);
-          }
-        });
-        PushNotifications.addListener('pushNotificationReceived', async () => {
-          try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch {}
-        });
-      } catch {}
-    };
-    setupCapacitorPush();
-  }, [appUser]);
+  
 
   const scrollToTop = () => {
     window.scrollTo(0, 0);

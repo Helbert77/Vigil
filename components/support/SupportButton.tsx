@@ -63,7 +63,7 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
         {/* Botão Flutuante */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-6 right-6 bg-primary hover:bg-gray-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 z-40 group"
+          className="fixed bottom-6 right-6 bg-primary hover:bg-gray-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 z-40 group support-floating-btn"
           aria-label="Abrir suporte"
           title="Precisa de ajuda?"
         >
@@ -109,4 +109,3 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
 };
 
 export default SupportButton;
-

@@ -21,7 +21,9 @@ root.render(
         <ToastProvider>
           <ThemeProvider>
             <App />
-            <SpeedInsights />
+            {import.meta.env.PROD && !['localhost', '127.0.0.1'].includes(window.location.hostname) && (
+              <SpeedInsights />
+            )}
           </ThemeProvider>
         </ToastProvider>
       </PresenceProvider>

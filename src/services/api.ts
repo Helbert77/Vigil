@@ -989,28 +989,29 @@ export const hardDeleteConversation = (conversationId: string) =>
 // --- Library API ---
 // Função auxiliar para obter usuário atual
 const getCurrentUserProfile = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan, role')
-    .eq('id', user.id)
-    .single();
-  
-  return profile;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan, role')
+      .eq('id', user.id)
+      .single();
+
+    return profile || null;
+  } catch {
+    // Silenciar erros de rede (ERR_ABORTED / Failed to fetch)
+    return null;
+  }
 };
 
 export const fetchLibraryItems = async () => {
-  // Validar acesso do usuário
   const profile = await getCurrentUserProfile();
   if (!profile || !canAccessLibrary(profile.plan, profile.role)) {
-    return { 
-      data: null, 
-      error: { message: 'Acesso negado. Este recurso requer assinatura Premium.' } 
-    };
+    // Retorna lista vazia em vez de erro para evitar logs de erro esperados
+    return { data: [], error: null } as any;
   }
-  
   return supabase.from('library_items').select('*').order('date', { ascending: false });
 };
 
