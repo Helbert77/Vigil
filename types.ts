@@ -144,13 +144,6 @@ export interface TimelineEvent {
   image_url?: string;
 }
 
-export interface TheoryAnalysis {
-  keyPoints: string[];
-  possibleFallacies: string[];
-  counterArguments: string[];
-  relatedTopics: string[];
-}
-
 export interface TrendingTopic {
   tag: string;
   post_count: number;

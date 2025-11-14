@@ -413,8 +413,18 @@ export const fetchPosts = (userId: string) =>
 export const addPost = (postData: { user_id: string; content: string; image_url?: string; video_url?: string; audio_url?: string; poll_data?: Poll; community_id?: string | null; evidence_board_data?: EvidenceItem[]; media_is_sensitive?: boolean; }) =>
   supabase.from('posts').insert(postData).select().single();
 
-export const deletePost = (postId: string) =>
-  supabase.from('posts').delete().eq('id', postId);
+export const deletePost = async (postId: string) => {
+  try {
+    const result = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId);
+    
+    return result;
+  } catch (error) {
+    return { data: null, error };
+  }
+};
 
 export const updatePost = (postId: string, updates: { [key: string]: any }) =>
   supabase.from('posts').update(updates).eq('id', postId);

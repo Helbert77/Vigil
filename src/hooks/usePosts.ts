@@ -5,6 +5,7 @@ import * as api from '@/src/services/api';
 import { supabase } from '@/integrations/supabase/client';
 import { extractHashtags } from '../utils/hashtags';
 import { logger } from '../utils/Logger';
+import { extractMentionedUsers } from '@/src/utils/mentionUtils';
 
 interface DbPost {
   id: string; content: string; image_url?: string; video_url?: string; audio_url?: string; poll_data?: Poll; evidence_board_data?: EvidenceItem[]; created_at: string; likes_count: number; comments_count: number; shares_count: number; views_count: number; community_id?: string; user_id: string; is_pinned?: boolean; media_is_sensitive?: boolean;
@@ -122,20 +123,22 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
 
   const sendMentionNotifications = useCallback(async (text: string, postId: string) => {
     if (!appUser) return;
-    const mentionRegex = /@(\w+)/g;
-    const matches = text.match(mentionRegex);
-    if (!matches) return;
+    
+    // Extrair usuários mencionados usando o utilitário compartilhado
+    const mentionedUsers = extractMentionedUsers(text, allUsers, appUser.id);
 
-    const mentionedUsernames = [...new Set(matches.map(m => m.substring(1).toLowerCase()))];
-    const mentionedUsers = allUsers.filter(u => mentionedUsernames.includes(u.username.toLowerCase()) && u.id !== appUser.id);
-
+    // Enviar notificações para todos os usuários mencionados
     for (const user of mentionedUsers) {
-      await api.createNotification({
-        recipient_id: user.id,
-        actor_id: appUser.id,
-        type: 'mention',
-        post_id: postId,
-      });
+      try {
+        await api.createNotification({
+          recipient_id: user.id,
+          actor_id: appUser.id,
+          type: 'mention',
+          post_id: postId,
+        });
+      } catch (error) {
+        // Silenciar erro, não bloquear o fluxo
+      }
     }
   }, [appUser, allUsers]);
 

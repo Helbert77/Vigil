@@ -1,0 +1,333 @@
+{
+  "meta": {
+    "project": "Vigil - Rede Social de Teorias da Conspiração",
+    "date": "2025-11-14",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "Vigil is a thematic social network dedicated to conspiracy theories, enabling users to share, discuss, and critically analyze theories in a structured and secure environment with modern UI supporting light and dark modes.",
+  "core_goals": [
+    "Build an engaged user community focused on conspiracy theories",
+    "Provide a safe, moderated platform for structured discussions",
+    "Monetize via tiered subscription plans (Free, Basic, Pro, Premium)",
+    "Establish an ecosystem of thematic communities with access managed by subscription plans",
+    "Enable rich media and interactive posts including polls, evidence boards, and AI theory analysis",
+    "Deliver real-time features such as live messaging, notifications, and collaboration",
+    "Support cross-platform access via web and mobile (Android/iOS)"
+  ],
+  "key_features": [
+    "Comprehensive authentication and session management with Supabase Auth supporting JWT and session persistence",
+    "User profiles with personalization, privacy settings, and statistics",
+    "Rich post creation with multi-format media, tags, polls, evidence boards, and community association",
+    "Interactive post engagement including likes, nested comments, saves, shares, and moderation",
+    "Thematic community creation and management with plan-based access controls",
+    "Real-time direct messaging system with conversation management",
+    "Robust notification system covering social interactions and message alerts",
+    "Advanced global search across posts, users, communities, and tags with filters and trending topics",
+    "Document library with upload, management and access restrictions by subscription level",
+    "Comprehensive moderation system with reports, priority queue, appeals, and admin dashboard",
+    "Subscription plan management powered by Stripe including trials, discounts, and billing cycles",
+    "Mobile integration using Capacitor for Android and iOS builds",
+    "Responsive design with adaptive UI components and accessibility features"
+  ],
+  "user_flow_summary": [
+    "User registers or logs in via splash screen and Supabase authentication flow",
+    "User creates a post by composing text, uploading media, adding tags, polls, evidence, and optionally associating it with a community, then publishes to feed",
+    "Users interact with posts by liking, commenting with nested threads, saving, and sharing via direct messages",
+    "Users join thematic communities respecting subscription plan restrictions and participate in community feeds",
+    "Users send and receive real-time direct messages, receive notifications for social interactions, and manage notification preferences",
+    "Users upgrade subscription plans via Stripe checkout, unlocking additional features and community access",
+    "Moderators review reported content through a prioritized queue, take moderation actions, and handle user appeals",
+    "Users navigate and search the platform globally to discover content, users, and communities"
+  ],
+  "validation_criteria": [
+    "Authentication and session management operate securely with persistent login and token refresh",
+    "Post creation supports all media types and advanced features as specified per subscription plan",
+    "Community access respects subscription plan restrictions and visibility rules",
+    "Real-time features (messaging, notifications, live feed updates) function with low latency",
+    "Moderation queue correctly prioritizes reports and enables administrative actions",
+    "Subscription payments process successfully with Stripe integration for all plan types and billing cycles",
+    "UI adapts responsively across devices with accessibility compliance",
+    "Search returns accurate and filtered results across all content types",
+    "Document library access controls enforce plan restrictions reliably",
+    "All APIs validate and sanitize inputs to prevent security vulnerabilities"
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React 18.2.0",
+      "Vite 6.2.0",
+      "Tailwind CSS",
+      "Supabase (PostgreSQL + Auth + Storage + Real-time)",
+      "Stripe (Payments)",
+      "Capacitor 7.4.3 (Android/iOS)",
+      "Framer Motion 12.23.24",
+      "React Router DOM 7.9.5",
+      "Jest (Testing)",
+      "Vercel (Deploy)"
+    ],
+    "features": [
+      {
+        "name": "Autenticação e Sessão",
+        "description": "Sistema completo de autenticação via Supabase Auth com login/registro, recuperação de senha, sessão persistente configurável (30 minutos de timeout ou indefinida), JWT tokens com refresh automático, e tela de splash no primeiro acesso.",
+        "files": [
+          "pages/Login.tsx",
+          "pages/UpdatePassword.tsx",
+          "pages/SplashScreen.tsx",
+          "contexts/SessionContext.tsx",
+          "src/services/api.ts"
+        ]
+      },
+      {
+        "name": "Sistema de Posts",
+        "description": "Criação e visualização de posts com suporte a texto (limites por plano: Free 280, Basic 1000, Pro 5000, Premium 25000 caracteres), imagens, vídeos, áudios, menções @username, tags, conteúdo sensível, edição (planos pagos), curtidas, comentários aninhados, salvamento, compartilhamento via DM, visualizações, e moderação automática.",
+        "files": [
+          "src/components/post/CreatePost.tsx",
+          "components/post/PostCard.tsx",
+          "components/post/PostActionsMenu.tsx",
+          "pages/PostDetail.tsx",
+          "src/hooks/usePosts.ts"
+        ]
+      },
+      {
+        "name": "Enquetes (Polls)",
+        "description": "Sistema de enquetes em posts com múltiplas opções, duração configurável (dias, horas, minutos), votação em tempo real, visualização de resultados, e prevenção de voto duplicado.",
+        "files": [
+          "components/post/PollDisplay.tsx",
+          "src/components/post/CreatePost.tsx",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Quadro de Evidências",
+        "description": "Sistema de evidence board em posts com 4 tipos de evidências: texto (notas), imagem (evidências visuais), vídeo (evidências em vídeo), e link (referências externas). Cada evidência tem título e conteúdo.",
+        "files": [
+          "components/post/PostCard.tsx",
+          "src/components/post/CreatePost.tsx",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Análise de Teoria com IA",
+        "description": "Funcionalidade de análise crítica de teorias usando IA, gerando pontos-chave, possíveis falácias lógicas, contra-argumentos, e tópicos relacionados. Atualmente usa dados mock com simulação de delay de rede.",
+        "files": [
+          "components/post/TheoryAnalysisModal.tsx",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Sistema de Comentários",
+        "description": "Comentários aninhados em posts com curtidas, edição, exclusão, menções, e threads de discussão. Suporta navegação para comentários específicos via URL.",
+        "files": [
+          "components/post/PostCard.tsx",
+          "pages/PostDetail.tsx",
+          "src/hooks/usePosts.ts"
+        ]
+      },
+      {
+        "name": "Sistema de Comunidades",
+        "description": "Criação e gestão de comunidades temáticas com restrições por plano (all, basic+, pro+, premium), entrada/saída, membros ativos em tempo real, feed específico, e edição de planos de acesso pelo proprietário.",
+        "files": [
+          "pages/Communities.tsx",
+          "pages/CommunityDetail.tsx",
+          "src/hooks/useCommunities.ts",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Mensagens Diretas",
+        "description": "Sistema de chat em tempo real entre usuários com lista de conversas, janela de chat, envio de mensagens, marcação como lida, exclusão de conversas, e contador de não lidas.",
+        "files": [
+          "pages/Messages.tsx",
+          "src/services/api.ts"
+        ]
+      },
+      {
+        "name": "Notificações",
+        "description": "Sistema de notificações em tempo real para curtidas, comentários, novos seguidores, mensagens, e menções. Inclui preferências configuráveis, marcação como lida, limpeza, e contador de não lidas.",
+        "files": [
+          "pages/Notifications.tsx",
+          "src/hooks/useNotifications.ts",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Perfis de Usuário",
+        "description": "Perfis completos com avatar, banner, biografia, estatísticas (seguidores, seguindo, posts), modo de visualização (lista/grid), seguir/deixar de seguir, bloquear usuário, e edição de perfil próprio.",
+        "files": [
+          "pages/Profile.tsx",
+          "components/profile/FollowListModal.tsx",
+          "src/hooks/useUserData.ts"
+        ]
+      },
+      {
+        "name": "Configurações de Usuário",
+        "description": "Página de configurações com edição de perfil, preferências de notificações, palavras silenciadas, conteúdo sensível, status de atividade, modo de visualização, tema claro/escuro, usuários bloqueados, e logout.",
+        "files": [
+          "pages/Settings.tsx",
+          "contexts/ThemeContext.tsx"
+        ]
+      },
+      {
+        "name": "Sistema de Busca",
+        "description": "Busca avançada global em posts, usuários, comunidades e tags. Inclui filtros por tipo de conteúdo, busca por tags, e visualização de trending topics.",
+        "files": [
+          "pages/Search.tsx",
+          "pages/TopicDetail.tsx",
+          "pages/TrendingTopics.tsx"
+        ]
+      },
+      {
+        "name": "Biblioteca de Documentos",
+        "description": "Sistema de armazenamento e visualização de documentos (PDF, DOCX, imagens) com upload, gerenciamento, estatísticas de visualizações/downloads. Acesso restrito a planos Pro e Premium.",
+        "files": [
+          "pages/Library.tsx",
+          "src/components/library/LibraryItemCard.tsx",
+          "src/hooks/useLibrary.ts",
+          "src/utils/libraryAccess.ts"
+        ]
+      },
+      {
+        "name": "Timeline de Eventos",
+        "description": "Linha do tempo cronológica de eventos históricos com adição de eventos, navegação temporal, e visualização estruturada.",
+        "files": [
+          "pages/Timeline.tsx",
+          "types.ts"
+        ]
+      },
+      {
+        "name": "Planos de Assinatura",
+        "description": "Sistema completo de assinatura com 4 planos (Free, Basic, Pro, Premium), integração com Stripe, checkout seguro, ciclos mensal/anual, promoções, teste grátis, cancelamento, e comparação de planos.",
+        "files": [
+          "src/pages/PremiumPage.tsx",
+          "src/components/premium/PricingCard.tsx",
+          "src/components/premium/PricingComparisonTable.tsx",
+          "src/services/api.ts"
+        ]
+      },
+      {
+        "name": "Sistema de Moderação",
+        "description": "Sistema robusto de moderação com denúncias (7 tipos com scores de severidade), fila priorizada, ações de moderação (aprovar, remover, banir), sistema de recursos (appeals), e moderação automática preventiva.",
+        "files": [
+          "pages/admin/Moderation.tsx",
+          "pages/admin/Appeals.tsx",
+          "components/post/ReportModal.tsx",
+          "components/post/PostActionsMenu.tsx",
+          "src/hooks/useModerationData.ts"
+        ]
+      },
+      {
+        "name": "Dashboard Administrativo",
+        "description": "Dashboard para administradores com métricas da plataforma, estatísticas, gerenciamento de usuários, e relatórios agregados.",
+        "files": [
+          "components/admin/Dashboard.tsx"
+        ]
+      },
+      {
+        "name": "Sistema de Suporte",
+        "description": "Suporte via botão flutuante (Basic, Pro, Premium) com modal de envio de solicitações, integração com email, e suporte via chat exclusivo para Premium.",
+        "files": [
+          "components/support/SupportButton.tsx"
+        ]
+      },
+      {
+        "name": "Navegação e Roteamento",
+        "description": "Sistema de navegação com React Router DOM, 27 rotas disponíveis, navegação por histórico, lazy loading de páginas, e navegação inferior mobile.",
+        "files": [
+          "src/components/routing/AppRouter.tsx",
+          "src/components/routing/LazyPages.tsx",
+          "src/utils/history.ts",
+          "src/components/layout/MobileBottomNav.tsx"
+        ]
+      },
+      {
+        "name": "Layout e UI",
+        "description": "Layout responsivo com sidebar, rightbar, header, temas claro/escuro, modo mobile com bottom navigation, e componentes reutilizáveis (Card, Button, Modal, Toast, Tooltip).",
+        "files": [
+          "components/layout/Sidebar.tsx",
+          "components/layout/Rightbar.tsx",
+          "components/layout/Header.tsx",
+          "src/components/layout/MobileBottomNav.tsx",
+          "components/common/Card.tsx",
+          "components/common/Button.tsx",
+          "components/common/Modal.tsx",
+          "components/common/ToastContainer.tsx",
+          "components/common/Tooltip.tsx"
+        ]
+      },
+      {
+        "name": "Contextos React",
+        "description": "Gerenciamento de estado global via Context API para sessão, tema, toast, usuários, e UI state.",
+        "files": [
+          "contexts/SessionContext.tsx",
+          "contexts/ThemeContext.tsx",
+          "contexts/ToastContext.tsx",
+          "contexts/UsersContext.tsx",
+          "src/contexts/UIStateContext.tsx"
+        ]
+      },
+      {
+        "name": "Hooks Customizados",
+        "description": "Hooks reutilizáveis para gerenciamento de posts, comunidades, notificações, biblioteca, moderação, dados de usuário, e toast.",
+        "files": [
+          "src/hooks/usePosts.ts",
+          "src/hooks/useCommunities.ts",
+          "src/hooks/useNotifications.ts",
+          "src/hooks/useLibrary.ts",
+          "src/hooks/useModerationData.ts",
+          "src/hooks/useUserData.ts",
+          "hooks/useToast.ts"
+        ]
+      },
+      {
+        "name": "Serviços de API",
+        "description": "Camada de serviços centralizada para todas as chamadas ao Supabase (auth, posts, comentários, comunidades, mensagens, notificações, biblioteca, moderação, pagamentos Stripe).",
+        "files": [
+          "src/services/api.ts"
+        ]
+      },
+      {
+        "name": "Utilitários",
+        "description": "Funções utilitárias para acesso à biblioteca, histórico de navegação, limites de planos, e helpers diversos.",
+        "files": [
+          "src/utils/libraryAccess.ts",
+          "src/utils/history.ts",
+          "src/utils/planLimits.ts"
+        ]
+      },
+      {
+        "name": "Capacitor Mobile",
+        "description": "Integração com Capacitor 7.4.3 para build Android e iOS, com configurações específicas para cada plataforma.",
+        "files": [
+          "capacitor.config.ts",
+          "package.json"
+        ]
+      },
+      {
+        "name": "Páginas Institucionais",
+        "description": "Páginas de conteúdo estático: Sobre, Termos de Serviço, Política de Privacidade, Política de Cookies, Aviso Legal, e Acessibilidade.",
+        "files": [
+          "pages/About.tsx",
+          "pages/TermsOfService.tsx",
+          "pages/PrivacyPolicy.tsx",
+          "pages/CookiePolicy.tsx",
+          "pages/Disclaimer.tsx",
+          "pages/Accessibility.tsx"
+        ]
+      },
+      {
+        "name": "Explorar Usuários",
+        "description": "Página para descobrir novos usuários para seguir, com sugestões personalizadas e ações de seguir/visualizar perfil.",
+        "files": [
+          "components/ExploreUsers.tsx"
+        ]
+      },
+      {
+        "name": "Posts Salvos",
+        "description": "Página dedicada para visualizar todos os posts salvos pelo usuário, com todas as interações disponíveis.",
+        "files": [
+          "pages/Saved.tsx"
+        ]
+      }
+    ]
+  }
+}

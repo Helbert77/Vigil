@@ -4,6 +4,7 @@ import UserLink from '@/components/common/UserLink';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatTimeAgo } from './timeUtils';
+import { MENTION_REGEX } from './mentionUtils';
 
 export const renderTextWithMentions = (
   text: string,
@@ -16,31 +17,70 @@ export const renderTextWithMentions = (
 ) => {
   if (!text) return null;
 
-  const mentionRegex = /@(\w+)/g;
-  const parts = text.split(mentionRegex);
+  // Usar o regex compartilhado de mentionUtils para consistência
+  const mentionRegex = new RegExp(MENTION_REGEX.source, MENTION_REGEX.flags);
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
 
-  return parts.map((part, index) => {
-    if (index % 2 === 1) { // It's a username
-      const user = allUsers.find(u => u.username.toLowerCase() === part.toLowerCase());
-      if (user) {
-        return (
-          <UserLink
-            key={`${user.id}-${index}`}
-            user={user}
-            isFollowing={followedUserIds.includes(user.id)}
-            onFollowToggle={onFollowToggle}
-            onViewProfile={onViewProfile}
-            isCurrentUser={user.id === currentUser.id}
-            onOpenFollowModal={onOpenFollowModal}
-            className="text-secondary hover:underline"
-          >
-            @{part}
-          </UserLink>
-        );
-      }
+  while ((match = mentionRegex.exec(text)) !== null) {
+    const fullMatch = match[0]; // @username
+    const capturedName = match[1].trim(); // username sem @
+    const matchStart = match.index;
+
+    // Adiciona o texto antes da menção
+    if (matchStart > lastIndex) {
+      parts.push(
+        <React.Fragment key={`text-${lastIndex}`}>
+          {text.substring(lastIndex, matchStart)}
+        </React.Fragment>
+      );
     }
-    return <React.Fragment key={index}>{part}</React.Fragment>;
-  });
+
+    // Tenta encontrar o usuário por username ou name
+    const user = allUsers.find(
+      u => 
+        u.username.toLowerCase() === capturedName.toLowerCase() ||
+        u.name.toLowerCase() === capturedName.toLowerCase()
+    );
+
+    if (user) {
+      parts.push(
+        <UserLink
+          key={`mention-${user.id}-${matchStart}`}
+          user={user}
+          isFollowing={followedUserIds.includes(user.id)}
+          onFollowToggle={onFollowToggle}
+          onViewProfile={onViewProfile}
+          isCurrentUser={user.id === currentUser.id}
+          onOpenFollowModal={onOpenFollowModal}
+          className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 font-medium hover:underline"
+        >
+          @{capturedName}
+        </UserLink>
+      );
+    } else {
+      // Se o usuário não foi encontrado, ainda renderiza como menção mas sem link
+      parts.push(
+        <span key={`mention-unknown-${matchStart}`} className="text-blue-500 dark:text-blue-400 font-medium">
+          @{capturedName}
+        </span>
+      );
+    }
+
+    lastIndex = matchStart + fullMatch.length;
+  }
+
+  // Adiciona o texto restante após a última menção
+  if (lastIndex < text.length) {
+    parts.push(
+      <React.Fragment key={`text-${lastIndex}`}>
+        {text.substring(lastIndex)}
+      </React.Fragment>
+    );
+  }
+
+  return <>{parts}</>;
 };
 
 /**

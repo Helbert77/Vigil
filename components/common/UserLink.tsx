@@ -97,7 +97,7 @@ const UserLink: React.FC<UserLinkProps> = ({ children, user, className, ...props
       onMouseLeave={handleMouseLeave}
     >
       <span
-        className={`hover:underline cursor-pointer ${className || ''}`}
+        className={`cursor-pointer transition-colors ${className || ''}`}
         onClick={(e) => { e.stopPropagation(); props.onViewProfile(user.id); }}
       >
         {children}
