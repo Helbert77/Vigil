@@ -165,7 +165,7 @@ Arquivos de documentação geral localizados na raiz de `docs/`:
 
 ### Para Desenvolvedores Novos:
 1. Comece lendo o [README.md principal](../README.md)
-2. Leia [AI_RULES.md](../AI_RULES.md) para entender convenções
+2. Leia [AI_RULES.md](AI_RULES.md) para entender convenções
 3. Consulte `features/` para entender funcionalidades
 4. Use `reports/` para ver correções recentes
 
@@ -230,10 +230,20 @@ Arquivos de documentação geral localizados na raiz de `docs/`:
 
 ## 📚 Arquivos na Raiz do Projeto
 
-Dois arquivos importantes permanecem na raiz:
+Um arquivo importante permanece na raiz:
 
 - [../README.md](../README.md) - README principal do projeto
-- [../AI_RULES.md](../AI_RULES.md) - Regras de desenvolvimento para IA
+
+## 📋 Documentação Adicional
+
+- [AI_RULES.md](AI_RULES.md) - Regras de desenvolvimento para IA
+- [STRIPE_SETUP_GUIDE.txt](STRIPE_SETUP_GUIDE.txt) - Guia de configuração do Stripe
+- [COMO_TESTAR_STRIPE.txt](COMO_TESTAR_STRIPE.txt) - Como testar integração Stripe
+- [GUIA_WEBHOOK_STRIPE.txt](GUIA_WEBHOOK_STRIPE.txt) - Guia de webhooks do Stripe
+- [TESTSprite_SETUP.md](TESTSprite_SETUP.md) - Configuração do TestSprite
+- [GUIA_RESTRICAO_COMUNIDADES.md](GUIA_RESTRICAO_COMUNIDADES.md) - Guia de restrições de comunidades
+- [DEBUG_SUPORTE.md](DEBUG_SUPORTE.md) - Debug de suporte
+- [GUIA_IMPLEMENTACAO_SUPORTE.md](GUIA_IMPLEMENTACAO_SUPORTE.md) - Guia de implementação de suporte
 
 ---
 

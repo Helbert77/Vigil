@@ -247,7 +247,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
       if (data.publicUrl) {
         setEvidenceItems(prev => prev.map(item => item.id === currentItemIdForUpload ? { ...item, type: fileType, content: data.publicUrl } : item));
-        addToast(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} enviado com sucesso!`, 'success');
+        // Toast removido - arquivo aparece no preview
       } else {
         addToast('Não foi possível obter o URL da mídia.', 'error');
       }

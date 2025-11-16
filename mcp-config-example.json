@@ -6,6 +6,17 @@
       "env": {
         "API_KEY": "SUA_CHAVE_DE_API_AQUI"
       }
+    },
+    "Stripe": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@stripe/mcp",
+        "--tools=all"
+      ],
+      "env": {
+        "STRIPE_SECRET_KEY": "<SUBSTITUA_PELA_SUA_STRIPE_SECRET_KEY>"
+      }
     }
   }
 }

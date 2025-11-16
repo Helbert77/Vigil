@@ -192,3 +192,48 @@ export interface Subscription {
   created_at: string;
   updated_at: string;
 }
+
+// Tipo para anúncios
+export interface Ad {
+  id: string;
+  title: string;
+  description: string;
+  image_url?: string;
+  video_url?: string;
+  link_url: string;
+  advertiser_name: string;
+  advertiser_avatar?: string;
+  type: 'native' | 'adsense';
+  status: 'active' | 'paused' | 'ended';
+  start_date: string;
+  end_date?: string;
+  // Contadores reais do banco de dados
+  likes_count?: number;
+  shares_count?: number;
+  // Campos para compatibilidade com PostCard
+  likes?: number; // Alias para likes_count
+  comments?: number;
+  shares?: number; // Alias para shares_count
+  views?: number;
+  timestamp?: string;
+}
+
+export interface AdComment {
+  id: string;
+  ad_id: string;
+  user_id: string;
+  user?: {
+    id: string;
+    username: string;
+    name?: string;
+    avatar_url?: string;
+  };
+  content: string;
+  image_url?: string;
+  likes_count?: number;
+  views_count?: number;
+  created_at: string;
+  updated_at: string;
+  replies?: AdComment[];
+  parent_comment_id?: string;
+}

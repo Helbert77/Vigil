@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LibraryItem, User } from '../../types';
 import { Icon } from '../icons/Icon';
 import { useToast } from '../../hooks/useToast';
 import FileViewer from './FileViewer';
 import { supabase } from '../../integrations/supabase/client';
 import ConfirmationModal from '../common/ConfirmationModal';
+import { getDocumentCoverUrl, getFileTypeFromUrl } from '../../src/utils/documentThumbnail';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const EyeIcon = () => <Icon className="h-5 w-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
@@ -36,6 +37,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   const [showViewer, setShowViewer] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editForm, setEditForm] = useState({
     title: item.title,
@@ -49,6 +51,25 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
   const isCreator = item.created_by === user.id;
   const canEdit = isAdmin || isCreator;
+
+  // Gera thumbnail para documentos se necessário
+  const coverImageUrl = useMemo(() => {
+    const currentCoverUrl = isEditing ? editForm.cover_url : item.cover_url;
+    const fileType = currentCoverUrl ? getFileTypeFromUrl(currentCoverUrl) : 'unknown';
+    
+    // Se é um documento e não tem imagem válida, gera thumbnail
+    if (fileType === 'document' || item.type === 'document') {
+      return getDocumentCoverUrl(currentCoverUrl, item.file_url, item.title);
+    }
+    
+    // Para imagens e vídeos, usa a cover_url normalmente
+    return currentCoverUrl;
+  }, [item.cover_url, item.file_url, item.title, item.type, isEditing, editForm.cover_url]);
+
+  // Reset error state when cover URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [coverImageUrl]);
 
   // Atualizar o formulário quando o item mudar (atualização em tempo real)
   useEffect(() => {
@@ -220,11 +241,12 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 className="flex-1 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-3"
                 style={{ minHeight: '400px' }}
               >
-                {(isEditing ? editForm.cover_url : item.cover_url) ? (
+                {coverImageUrl && !imageError ? (
                   <img
-                    src={isEditing ? editForm.cover_url : item.cover_url}
+                    src={coverImageUrl}
                     alt={item.title}
                     className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">

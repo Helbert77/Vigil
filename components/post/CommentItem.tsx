@@ -55,7 +55,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
   const handleShare = () => {
     const postUrl = `${window.location.origin}/#post/${postId}`;
     navigator.clipboard.writeText(postUrl).then(() => {
-      addToast('Link para o post copiado!', 'success');
+      // Toast removido - ação de copiar é instantânea
     }).catch(() => {
       addToast('Falha ao copiar o link.', 'error');
     });

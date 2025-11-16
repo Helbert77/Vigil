@@ -296,7 +296,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
       case 'instagram':
         copyToClipboard(postUrl)
           .then(() => {
-            addToast('Post link copied! Best for sharing in Instagram Stories or bio.', 'success');
+            // Toast removido - ação de copiar é instantânea
           })
           .catch(err => {
             addToast('Could not copy link. Please try again.', 'error');
@@ -305,7 +305,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
       case 'copy':
         copyToClipboard(postUrl)
           .then(() => {
-            addToast('Post link copied to clipboard!', 'success');
+            // Toast removido - ação de copiar é instantânea
           })
           .catch(err => {
             addToast('Could not copy link. Please try again.', 'error');

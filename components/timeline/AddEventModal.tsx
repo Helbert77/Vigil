@@ -56,7 +56,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded }) 
 
       if (error) throw error;
 
-      addToast('Evento adicionado com sucesso!', 'success');
+      // Toast removido - evento aparece na timeline
       onEventAdded();
       onClose();
     } catch (err) {

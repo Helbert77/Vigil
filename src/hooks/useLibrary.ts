@@ -76,7 +76,7 @@ export const useLibrary = (appUser: User | null) => {
       if (error) throw error;
       
       fetchItems();
-      addToast('Item adicionado com sucesso!', 'success');
+      // Toast removido - item aparece na lista
     } catch (error) {
       console.error('Erro ao adicionar item:', error);
       addToast('Erro ao adicionar item.', 'error');
@@ -100,7 +100,7 @@ export const useLibrary = (appUser: User | null) => {
       setItems(prev => prev.map(item => 
         item.id === id ? { ...item, ...updates } : item
       ));
-      addToast('Item atualizado com sucesso!', 'success');
+      // Toast removido - mudança visual já indica sucesso
     } catch (error) {
       console.error('Erro ao atualizar item:', error);
       addToast('Erro ao atualizar item.', 'error');
@@ -141,7 +141,7 @@ export const useLibrary = (appUser: User | null) => {
       
       // Só remove do estado local se a exclusão no banco foi bem-sucedida
       setItems(prev => prev.filter(item => item.id !== id));
-      addToast('Item excluído com sucesso!', 'success');
+      // Toast removido - item desaparece da lista
     } catch (error) {
       console.error('Erro ao excluir item:', error);
       addToast('Erro ao excluir item.', 'error');

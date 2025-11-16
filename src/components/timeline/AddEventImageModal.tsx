@@ -45,7 +45,7 @@ const AddEventImageModal: React.FC<AddEventImageModalProps> = ({ event, onClose,
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
       if (data.publicUrl) {
         setImageUrl(data.publicUrl);
-        addToast('Upload concluído!', 'success');
+        // Toast removido - imagem aparece no evento
       }
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -63,7 +63,7 @@ const AddEventImageModal: React.FC<AddEventImageModalProps> = ({ event, onClose,
     try {
       const { error } = await updateTimelineEvent(event.id, { image_url: imageUrl });
       if (error) throw error;
-      addToast('Imagem do evento atualizada!', 'success');
+      // Toast removido - imagem atualiza visualmente
       onImageAdded();
     } catch (error) {
       console.error('Error updating event image:', error);

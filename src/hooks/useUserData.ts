@@ -215,7 +215,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
         if (isCurrentlyBlocked) {
             const { error } = await api.unblockUser(appUser.id, userId);
             if (error) throw error;
-            addToast(`Você desbloqueou um usuário.`, 'success');
+            // Toast removido - mudança visual já indica sucesso
         } else {
             const { error } = await api.blockUser(appUser.id, userId);
             if (error) throw error;
@@ -247,7 +247,7 @@ export const useUserData = (appUser: User | null, refreshUser: () => Promise<voi
       const { error } = await api.updateUser(appUser.id, dbUpdates);
       if (error) throw error;
       await refreshUser();
-      addToast('Perfil atualizado com sucesso!', 'success');
+      // Toast removido - mudança visual já indica sucesso
     } catch (error) {
       // Error log removed for production
       addToast('Erro ao atualizar perfil.', 'error');

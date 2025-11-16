@@ -12,6 +12,9 @@ export type Page =
   | 'Library'
   | 'Timeline'
   | 'PostDetail'
+  | 'AdDetail'
+  | 'AdsDashboard'
+  | 'MyAds'
   | 'Search'
   | 'CommunityDetail'
   | 'TopicDetail'
@@ -36,6 +39,7 @@ export interface NavigationSnapshot {
   activePostId?: string | null;
   activeCommentId?: string | null;
   activeTag?: string | null;
+  activeAdId?: string | null;
   searchQuery?: string;
 }
 
@@ -64,6 +68,12 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return '/timeline';
     case 'PostDetail':
       return state.activePostId ? `/post/${encodeURIComponent(state.activePostId)}` : '/post';
+    case 'AdDetail':
+      return state.activeAdId ? `/ad/${encodeURIComponent(state.activeAdId)}` : '/ad';
+    case 'AdsDashboard':
+      return '/ads-dashboard';
+    case 'MyAds':
+      return '/my-ads';
     case 'Search': {
       const q = state.searchQuery ? `?q=${encodeURIComponent(state.searchQuery)}` : '';
       return `/search${q}`;
@@ -115,6 +125,8 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/communities': 'Communities',
     '/library': 'Library',
     '/timeline': 'Timeline',
+    '/ads-dashboard': 'AdsDashboard',
+    '/my-ads': 'MyAds',
     '/about': 'About',
     '/terms': 'TermsOfService',
     '/privacy': 'PrivacyPolicy',
@@ -149,6 +161,13 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     });
   }
 
+  const adMatch = pathname.match(/^\/ad\/(.+)$/);
+  if (adMatch) {
+    return withDefault('AdDetail', {
+      activeAdId: decodeURIComponent(adMatch[1]),
+    });
+  }
+
   const topicMatch = pathname.match(/^\/topic\/(.+)$/);
   if (topicMatch) return withDefault('TopicDetail', { activeTag: decodeURIComponent(topicMatch[1]) });
 
@@ -172,6 +191,7 @@ export function pushHistoryState(state: NavigationSnapshot, replace = false) {
     activePostId: state.activePostId || null,
     activeCommentId: state.activeCommentId || null,
     activeTag: state.activeTag || null,
+    activeAdId: state.activeAdId || null,
     searchQuery: state.searchQuery || '',
   } as NavigationSnapshot;
   try {

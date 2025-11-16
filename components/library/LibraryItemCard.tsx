@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { LibraryItem } from '../../types';
 import Card from '../common/Card';
 import { Icon } from '../icons/Icon';
+import { getDocumentCoverUrl, getFileTypeFromUrl } from '../../src/utils/documentThumbnail';
 
 const EyeIcon = () => <Icon className="h-4 w-4"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
 const DownloadIcon = () => <Icon className="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></Icon>;
@@ -18,6 +19,26 @@ interface LibraryItemCardProps {
 }
 
 const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onClick }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  // Gera thumbnail para documentos se necessário
+  const coverImageUrl = useMemo(() => {
+    const fileType = item.cover_url ? getFileTypeFromUrl(item.cover_url) : 'unknown';
+    
+    // Se é um documento e não tem imagem válida, gera thumbnail
+    if (fileType === 'document' || item.type === 'document') {
+      return getDocumentCoverUrl(item.cover_url, item.file_url, item.title);
+    }
+    
+    // Para imagens e vídeos, usa a cover_url normalmente
+    return item.cover_url;
+  }, [item.cover_url, item.file_url, item.title, item.type]);
+
+  // Reset error state when cover URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [coverImageUrl]);
+
   const getTypeIcon = () => {
     switch (item.type) {
       case 'ebook':
@@ -79,11 +100,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
         <div className="flex items-start gap-4">
           {/* Cover */}
           <div className="flex-shrink-0 w-20 h-28 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden">
-            {item.cover_url ? (
+            {coverImageUrl && !imageError ? (
               <img
-                src={item.cover_url}
+                src={coverImageUrl}
                 alt={item.title}
                 className="w-full h-full object-cover"
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
@@ -148,11 +170,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
       >
         {/* Cover */}
         <div className="w-full aspect-[2/3] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-2">
-          {item.cover_url ? (
+          {coverImageUrl && !imageError ? (
             <img
-              src={item.cover_url}
+              src={coverImageUrl}
               alt={item.title}
               className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">
@@ -196,11 +219,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
     >
       {/* Cover */}
       <div className="w-full aspect-[2/3] bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-4">
-        {item.cover_url ? (
+        {coverImageUrl && !imageError ? (
           <img
-            src={item.cover_url}
+            src={coverImageUrl}
             alt={item.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-500">

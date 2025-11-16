@@ -48,7 +48,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ userId, filePath, onUploa
 
     if (data.publicUrl) {
       onUpload(data.publicUrl);
-      addToast('Imagem atualizada com sucesso!', 'success');
+      // Toast removido - imagem atualiza visualmente
     } else {
       addToast('Não foi possível obter o URL da imagem.', 'error');
     }

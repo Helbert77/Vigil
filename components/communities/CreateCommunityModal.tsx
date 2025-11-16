@@ -70,7 +70,7 @@ const CreateCommunityModal: React.FC<CreateCommunityModalProps> = ({ isOpen, onC
     } else {
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
       setBannerUrl(data.publicUrl);
-      addToast('Banner enviado com sucesso!', 'success');
+      // Toast removido - banner aparece visualmente
     }
     setIsUploading(false);
   };

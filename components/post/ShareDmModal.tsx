@@ -50,7 +50,7 @@ const ShareDmModal: React.FC<ShareDmModalProps> = ({ post, onClose, onUpdatePost
     }
 
     onUpdatePost(post.id, { shares: post.shares + selectedUsers.length });
-    addToast(`Post shared with ${selectedUsers.length} user(s)!`, 'success');
+    // Toast removido - modal fecha indicando sucesso
     
     setIsSending(false);
     onClose();

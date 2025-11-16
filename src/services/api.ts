@@ -274,7 +274,9 @@ export const clearViolationHistory = (userId: string) =>
 export const deleteModeratorNote = (noteId: string) =>
   supabase.from('moderator_notes').delete().eq('id', noteId);
 
-export const createReport = async (reportData: { reporter_id: string; content_id: string; content_type: 'post' | 'comment'; reason: string; notes?: string; }) => {
+type ReportContentType = 'post' | 'comment' | 'ad';
+
+export const createReport = async (reportData: { reporter_id: string; content_id: string; content_type: ReportContentType; reason: string; notes?: string; }) => {
   try {
     // 0. Verificar se já existe uma denúncia deste usuário para este conteúdo
     const { data: existingReport, error: checkError } = await supabase
@@ -323,17 +325,35 @@ export const createReport = async (reportData: { reporter_id: string; content_id
     }
 
     // 2. Buscar o conteúdo denunciado
-    let contentData: any = null;
-    const contentTable = reportData.content_type === 'post' ? 'posts' : 'comments';
-    
-    const { data: content, error: contentError } = await supabase
-      .from(contentTable)
-      .select('*, profiles(*)')
-      .eq('id', reportData.content_id)
-      .single();
+    let contentText = 'Conteúdo não disponível';
+    let authorId: string | null = null;
 
-    if (!contentError) {
-      contentData = content;
+    if (reportData.content_type === 'post' || reportData.content_type === 'comment') {
+      const contentTable = reportData.content_type === 'post' ? 'posts' : 'comments';
+      
+      const { data: content, error: contentError } = await supabase
+        .from(contentTable)
+        .select('*, profiles(*)')
+        .eq('id', reportData.content_id)
+        .single();
+
+      if (!contentError && content) {
+        contentText = content?.content || 'Conteúdo não disponível';
+        authorId = content?.user_id || content?.profiles?.id || null;
+      }
+    } else if (reportData.content_type === 'ad') {
+      const { data: adContent, error: adError } = await supabase
+        .from('ads')
+        .select('id, title, description, advertiser_name, advertiser_avatar, created_by')
+        .eq('id', reportData.content_id)
+        .single();
+
+      if (!adError && adContent) {
+        const title = adContent.title ?? 'Anúncio';
+        const description = adContent.description ?? '';
+        contentText = `${title}\n${description}`.trim() || 'Anúncio sem descrição';
+        authorId = adContent.created_by ?? null;
+      }
     }
 
     // 3. Calcular severity score
@@ -364,8 +384,8 @@ export const createReport = async (reportData: { reporter_id: string; content_id
     const moderationQueueData = {
       content_id: reportData.content_id,
       content_type: reportData.content_type,
-      content_text: contentData?.content || 'Conteúdo não disponível',
-      author_id: contentData?.user_id || null,
+      content_text: contentText,
+      author_id: authorId,
       severity_score: severityScore,
       violation_types: violationTypes,
       status: 'pending'
@@ -1385,4 +1405,540 @@ export const sendPush = async (_userId: string, _payload: { title: string; body:
 // Salvar token de dispositivo (Capacitor/FCM/APNs)
 export const saveDeviceToken = async (userId: string, token: string, platform: 'android' | 'ios') => {
   return supabase.from('device_tokens').upsert({ user_id: userId, token, platform });
+};
+
+// --- Ads API ---
+
+/**
+ * Busca anúncios ativos
+ * Retorna apenas anúncios com status 'active' e dentro do período de validade
+ */
+export const fetchActiveAds = () => {
+  const now = new Date().toISOString();
+  
+  return supabase
+    .from('ads')
+    .select('*')
+    .eq('status', 'active')
+    .lte('start_date', now)
+    .or(`end_date.is.null,end_date.gte.${now}`)
+    .order('created_at', { ascending: false });
+};
+
+/**
+ * Busca um anúncio específico por ID
+ */
+export const fetchAdById = (adId: string) => {
+  return supabase
+    .from('ads')
+    .select('*')
+    .eq('id', adId)
+    .single();
+};
+
+/**
+ * Rastreia métrica de anúncio (impressão, clique, like, share, save)
+ */
+export const trackAdMetric = async (params: {
+  adId: string;
+  userId: string;
+  eventType: 'impression' | 'click' | 'like' | 'share' | 'save';
+  userPlan: string;
+  feedType: 'main' | 'community';
+  communityId?: string;
+}) => {
+  return await supabase.from('ad_metrics').insert({
+    ad_id: params.adId,
+    user_id: params.userId,
+    event_type: params.eventType,
+    user_plan: params.userPlan,
+    feed_type: params.feedType,
+    community_id: params.communityId || null,
+  });
+};
+
+/**
+ * Busca métricas de um anúncio específico
+ */
+export const fetchAdMetrics = (adId: string) => {
+  return supabase
+    .from('ad_metrics')
+    .select('*')
+    .eq('ad_id', adId)
+    .order('created_at', { ascending: false });
+};
+
+// --- Ad Interactions API ---
+
+/**
+ * Toggle like em anúncio (igual a post_likes)
+ */
+export const toggleAdLike = async (adId: string, userId: string, isCurrentlyLiked: boolean) => {
+  if (isCurrentlyLiked) {
+    return await supabase.from('ad_likes').delete().match({ ad_id: adId, user_id: userId });
+  } else {
+    return await supabase.from('ad_likes').insert({ ad_id: adId, user_id: userId });
+  }
+};
+
+/**
+ * Busca IDs de anúncios curtidos pelo usuário
+ */
+export const fetchLikedAdIds = async (userId: string) => {
+  return await supabase.from('ad_likes').select('ad_id').eq('user_id', userId);
+};
+
+/**
+ * Toggle save em anúncio (igual a saved_posts)
+ */
+export const toggleSaveAd = async (adId: string, userId: string, isCurrentlySaved: boolean) => {
+  if (isCurrentlySaved) {
+    return await supabase.from('saved_ads').delete().match({ ad_id: adId, user_id: userId });
+  } else {
+    return await supabase.from('saved_ads').insert({ ad_id: adId, user_id: userId });
+  }
+};
+
+/**
+ * Busca IDs de anúncios salvos pelo usuário
+ */
+export const fetchSavedAdIds = async (userId: string) => {
+  return await supabase.from('saved_ads').select('ad_id').eq('user_id', userId);
+};
+
+/**
+ * Ocultar anúncio (persiste no banco)
+ */
+export const hideAd = async (adId: string, userId: string) => {
+  return await supabase.from('hidden_ads').insert({ ad_id: adId, user_id: userId });
+};
+
+/**
+ * Busca IDs de anúncios ocultos pelo usuário
+ */
+export const fetchHiddenAdIds = async (userId: string) => {
+  return await supabase.from('hidden_ads').select('ad_id').eq('user_id', userId);
+};
+
+/**
+ * Incrementar contador de shares (atualiza diretamente na tabela ads)
+ */
+export const incrementAdShares = async (adId: string) => {
+  return await supabase.rpc('increment_ad_shares', { ad_uuid: adId });
+};
+
+/**
+ * Incrementar contador de visualizações (atualiza diretamente na tabela ads)
+ */
+export const incrementAdViews = async (adId: string) => {
+  return await supabase.rpc('increment_ad_views', { ad_uuid: adId });
+};
+
+/**
+ * Criar comentário em anúncio
+ */
+export const createAdComment = async (params: { ad_id: string; user_id: string; content: string; image_url?: string; parent_comment_id?: string }) => {
+  return await supabase.from('ad_comments').insert(params).select().single();
+};
+
+/**
+ * Buscar comentários de um anúncio
+ */
+export const fetchAdComments = async (adId: string) => {
+  // Buscar comentários
+  const { data: comments, error: commentsError } = await supabase
+    .from('ad_comments')
+    .select('*')
+    .eq('ad_id', adId)
+    .order('created_at', { ascending: false });
+
+  if (commentsError) {
+    return { data: null, error: commentsError };
+  }
+
+  if (!comments || comments.length === 0) {
+    return { data: [], error: null };
+  }
+
+  // Buscar dados dos usuários separadamente
+  const userIds = [...new Set(comments.map(c => c.user_id))];
+  
+  // Buscar perfis usando a estrutura correta da tabela profiles
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, username, first_name, last_name, avatar_url')
+    .in('id', userIds);
+
+  if (profilesError) {
+    return { data: null, error: profilesError };
+  }
+
+  // Combinar comentários com dados dos usuários
+  const allComments = comments.map(comment => {
+    const profile = profiles?.find(p => p.id === comment.user_id);
+    return {
+      ...comment,
+      user: profile ? {
+        id: profile.id,
+        username: profile.username,
+        name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username,
+        avatar_url: profile.avatar_url
+      } : null,
+      replies: [] as any[]
+    };
+  });
+
+  // Organizar comentários em estrutura de árvore
+  const commentMap = new Map(allComments.map(c => [c.id, c]));
+  const rootComments: any[] = [];
+
+  allComments.forEach(comment => {
+    if (comment.parent_comment_id) {
+      const parent = commentMap.get(comment.parent_comment_id);
+      if (parent) {
+        parent.replies.push(comment);
+      }
+    } else {
+      rootComments.push(comment);
+    }
+  });
+
+  return { data: rootComments, error: null };
+};
+
+/**
+ * Busca estatísticas agregadas de um anúncio
+ */
+export const fetchAdStats = async (adId: string) => {
+  const { data, error } = await supabase
+    .from('ad_metrics')
+    .select('event_type')
+    .eq('ad_id', adId);
+
+  if (error) return { data: null, error };
+
+  // Agregar estatísticas
+  const stats = {
+    impressions: 0,
+    clicks: 0,
+    likes: 0,
+    shares: 0,
+    saves: 0,
+    ctr: 0, // Click-through rate
+  };
+
+  data?.forEach((metric: { event_type: string }) => {
+    switch (metric.event_type) {
+      case 'impression':
+        stats.impressions++;
+        break;
+      case 'click':
+        stats.clicks++;
+        break;
+      case 'like':
+        stats.likes++;
+        break;
+      case 'share':
+        stats.shares++;
+        break;
+      case 'save':
+        stats.saves++;
+        break;
+    }
+  });
+
+  // Calcular CTR (Click-Through Rate)
+  if (stats.impressions > 0) {
+    stats.ctr = (stats.clicks / stats.impressions) * 100;
+  }
+
+  return { data: stats, error: null };
+};
+
+/**
+ * Curtir/descurtir comentário de anúncio
+ */
+export const toggleAdCommentLike = async (commentId: string, userId: string): Promise<{ success: boolean; isLiked: boolean }> => {
+  const { data: existingLike, error: fetchError } = await supabase
+    .from('ad_comment_likes')
+    .select('id')
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { success: false, isLiked: false };
+  }
+
+  if (existingLike) {
+    const { error: deleteError } = await supabase
+      .from('ad_comment_likes')
+      .delete()
+      .eq('id', existingLike.id);
+
+    if (deleteError) {
+      return { success: false, isLiked: true };
+    }
+
+    return { success: true, isLiked: false };
+  } else {
+    const { error: insertError } = await supabase
+      .from('ad_comment_likes')
+      .insert({ comment_id: commentId, user_id: userId });
+
+    if (insertError) {
+      return { success: false, isLiked: false };
+    }
+
+    return { success: true, isLiked: true };
+  }
+};
+
+/**
+ * Buscar IDs de comentários de anúncios curtidos pelo usuário
+ */
+export const fetchLikedAdCommentIds = async (userId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('ad_comment_likes')
+    .select('comment_id')
+    .eq('user_id', userId);
+
+  if (error || !data) return [];
+  return data.map((like: { comment_id: string }) => like.comment_id);
+};
+
+/**
+ * Salvar/dessalvar comentário de anúncio
+ */
+export const toggleSaveAdComment = async (commentId: string, userId: string): Promise<{ success: boolean; isSaved: boolean }> => {
+  const { data: existingSave, error: fetchError } = await supabase
+    .from('saved_ad_comments')
+    .select('id')
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { success: false, isSaved: false };
+  }
+
+  if (existingSave) {
+    const { error: deleteError } = await supabase
+      .from('saved_ad_comments')
+      .delete()
+      .eq('id', existingSave.id);
+
+    if (deleteError) {
+      return { success: false, isSaved: true };
+    }
+
+    return { success: true, isSaved: false };
+  } else {
+    const { error: insertError } = await supabase
+      .from('saved_ad_comments')
+      .insert({ comment_id: commentId, user_id: userId });
+
+    if (insertError) {
+      return { success: false, isSaved: false };
+    }
+
+    return { success: true, isSaved: true };
+  }
+};
+
+/**
+ * Buscar IDs de comentários de anúncios salvos pelo usuário
+ */
+export const fetchSavedAdCommentIds = async (userId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('saved_ad_comments')
+    .select('comment_id')
+    .eq('user_id', userId);
+
+  if (error || !data) return [];
+  return data.map((save: { comment_id: string }) => save.comment_id);
+};
+
+/**
+ * Incrementar visualizações de comentário de anúncio
+ */
+export const incrementAdCommentViews = async (commentId: string): Promise<boolean> => {
+  const { error } = await supabase.rpc('increment_ad_comment_views', {
+    comment_id_param: commentId
+  });
+
+  return !error;
+};
+
+/**
+ * Atualizar texto de comentário de anúncio
+ */
+export const updateAdComment = async (commentId: string, newText: string): Promise<boolean> => {
+  const { error } = await supabase.rpc('update_ad_comment_text', {
+    comment_id_param: commentId,
+    new_text: newText
+  });
+
+  return !error;
+};
+
+/**
+ * Deletar comentário de anúncio
+ */
+export const deleteAdComment = async (commentId: string): Promise<boolean> => {
+  const { error } = await supabase.rpc('delete_ad_comment', {
+    comment_id_param: commentId
+  });
+
+  return !error;
+};
+
+/**
+ * Atualizar preferência de exibição do botão de suporte
+ */
+export const updateShowSupportButton = async (userId: string, showButton: boolean): Promise<{ success: boolean; error?: any }> => {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ show_support_button: showButton })
+    .eq('id', userId);
+
+  if (error) {
+    handleApiError(error, 'updateShowSupportButton', { userId, showButton });
+    return { success: false, error };
+  }
+
+  return { success: true };
+};
+
+/**
+ * Buscar preferência de exibição do botão de suporte
+ */
+export const fetchShowSupportButton = async (userId: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('show_support_button')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    // Se houver erro ou não encontrar, retornar true (mostrar por padrão)
+    return true;
+  }
+
+  // Se o campo for null (novo usuário), mostrar por padrão
+  return data.show_support_button !== false;
+};
+
+/**
+ * =====================================================
+ * FUNÇÕES DE MÉTRICAS DE ANÚNCIOS
+ * =====================================================
+ */
+
+/**
+ * Buscar métricas agregadas de anúncios do usuário
+ */
+export const fetchUserAdMetrics = async (userId: string, daysInterval: number = 7): Promise<{
+  total_impressions: number;
+  total_clicks: number;
+  total_likes: number;
+  total_shares: number;
+  total_saves: number;
+  total_engagement: number;
+  ctr: number;
+  engagement_rate: number;
+}> => {
+  const { data, error } = await supabase.rpc('get_user_ad_metrics', {
+    p_user_id: userId,
+    p_days_interval: daysInterval
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchUserAdMetrics', { userId, daysInterval });
+    // Retornar valores zerados em caso de erro
+    return {
+      total_impressions: 0,
+      total_clicks: 0,
+      total_likes: 0,
+      total_shares: 0,
+      total_saves: 0,
+      total_engagement: 0,
+      ctr: 0,
+      engagement_rate: 0
+    };
+  }
+
+  return data || {
+    total_impressions: 0,
+    total_clicks: 0,
+    total_likes: 0,
+    total_shares: 0,
+    total_saves: 0,
+    total_engagement: 0,
+    ctr: 0,
+    engagement_rate: 0
+  };
+};
+
+/**
+ * Buscar métricas diárias para gráficos
+ */
+export const fetchDailyAdMetrics = async (userId: string, daysInterval: number = 7): Promise<Array<{
+  date: string;
+  impressions: number;
+  clicks: number;
+  engagement: number;
+}>> => {
+  const { data, error } = await supabase.rpc('get_daily_ad_metrics', {
+    p_user_id: userId,
+    p_days_interval: daysInterval
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchDailyAdMetrics', { userId, daysInterval });
+    return [];
+  }
+
+  // Formatar datas para exibição
+  return (data || []).map((item: any) => ({
+    date: new Date(item.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    impressions: Number(item.impressions) || 0,
+    clicks: Number(item.clicks) || 0,
+    engagement: Number(item.engagement) || 0
+  }));
+};
+
+/**
+ * Buscar performance individual de cada anúncio
+ */
+export const fetchAdsPerformance = async (userId: string, daysInterval: number = 7): Promise<Array<{
+  id: string;
+  title: string;
+  impressions: number;
+  clicks: number;
+  engagement: number;
+  ctr: number;
+  cost: number;
+  cpc: number;
+}>> => {
+  const { data, error } = await supabase.rpc('get_ads_performance', {
+    p_user_id: userId,
+    p_days_interval: daysInterval
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchAdsPerformance', { userId, daysInterval });
+    return [];
+  }
+
+  return (data || []).map((item: any) => ({
+    id: item.ad_id,
+    title: item.ad_title || 'Sem título',
+    impressions: Number(item.impressions) || 0,
+    clicks: Number(item.clicks) || 0,
+    engagement: Number(item.engagement) || 0,
+    ctr: Number(item.ctr) || 0,
+    cost: Number(item.cost) || 0,
+    cpc: Number(item.cpc) || 0
+  }));
 };

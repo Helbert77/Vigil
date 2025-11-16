@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTheme } from '@/hooks/useTheme';
 
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
@@ -61,10 +62,13 @@ const EMOJI_CATEGORIES = {
 };
 
 const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, buttonRef }) => {
+  const { theme } = useTheme();
   const [activeCategory, setActiveCategory] = useState<keyof typeof EMOJI_CATEGORIES>('frequent');
   const [searchTerm, setSearchTerm] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  const isDark = theme === 'dark';
 
   // Fechar ao clicar fora
   useEffect(() => {
@@ -239,7 +243,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
   const displayedEmojis = getDisplayedEmojis();
 
   return (
-    <div ref={pickerRef} className="emoji-picker-container">
+    <div ref={pickerRef} className={`emoji-picker-container ${isDark ? 'dark' : ''}`}>
       <div className="emoji-picker">
         {/* Header com busca */}
         <div className="emoji-picker-header">
@@ -331,8 +335,8 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
 
         .emoji-picker {
           width: 352px;
-          background: var(--light-card, white);
-          border: 1px solid var(--light-border, #e5e7eb);
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
           border-radius: 12px;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
           overflow: hidden;
@@ -340,10 +344,10 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           flex-direction: column;
         }
 
-        :global(.dark) .emoji-picker {
-          background: var(--dark-card, #1f2937);
-          border-color: var(--dark-border, #374151);
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        .dark .emoji-picker {
+          background: #181818;
+          border-color: #272727;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
         }
 
         .emoji-picker-header {
@@ -351,39 +355,39 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           align-items: center;
           gap: 8px;
           padding: 12px;
-          border-bottom: 1px solid var(--light-border, #e5e7eb);
+          border-bottom: 1px solid #e5e7eb;
         }
 
-        :global(.dark) .emoji-picker-header {
-          border-bottom-color: var(--dark-border, #374151);
+        .dark .emoji-picker-header {
+          border-bottom-color: #272727;
         }
 
         .emoji-search-input {
           flex: 1;
           padding: 8px 12px;
-          border: 1px solid var(--light-border, #e5e7eb);
+          border: 1px solid #e5e7eb;
           border-radius: 8px;
           font-size: 14px;
           outline: none;
           transition: all 0.2s;
-          background: var(--light-bg, #f9fafb);
-          color: var(--light-text, #111827);
+          background: #eff6ff;
+          color: #111827;
         }
 
         .emoji-search-input:focus {
-          border-color: var(--accent-color, #3b82f6);
-          background: var(--light-card, white);
+          border-color: #6B7280;
+          background: #ffffff;
         }
 
-        :global(.dark) .emoji-search-input {
-          background: var(--dark-bg, #111827);
-          border-color: var(--dark-border, #374151);
-          color: var(--dark-text, #f3f4f6);
+        .dark .emoji-search-input {
+          background: #0a0a0a;
+          border-color: #272727;
+          color: #f3f4f6;
         }
 
-        :global(.dark) .emoji-search-input:focus {
-          border-color: var(--accent-color, #1e3a8a);
-          background: var(--dark-card, #1f2937);
+        .dark .emoji-search-input:focus {
+          border-color: #6B7280;
+          background: #181818;
         }
 
         .emoji-close-button {
@@ -403,30 +407,30 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         .emoji-close-button:hover {
-          background: var(--light-bg, #f3f4f6);
-          color: var(--light-text, #111827);
+          background: #eff6ff;
+          color: #111827;
         }
 
-        :global(.dark) .emoji-close-button {
+        .dark .emoji-close-button {
           color: #9ca3af;
         }
 
-        :global(.dark) .emoji-close-button:hover {
-          background: var(--dark-border, #374151);
-          color: var(--dark-text, #f3f4f6);
+        .dark .emoji-close-button:hover {
+          background: #272727;
+          color: #f3f4f6;
         }
 
         .emoji-categories {
           display: flex;
           gap: 4px;
           padding: 8px 12px;
-          border-bottom: 1px solid var(--light-border, #e5e7eb);
+          border-bottom: 1px solid #e5e7eb;
           overflow-x: auto;
           scrollbar-width: thin;
         }
 
-        :global(.dark) .emoji-categories {
-          border-bottom-color: var(--dark-border, #374151);
+        .dark .emoji-categories {
+          border-bottom-color: #272727;
         }
 
         .emoji-categories::-webkit-scrollbar {
@@ -442,8 +446,8 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           border-radius: 2px;
         }
 
-        :global(.dark) .emoji-categories::-webkit-scrollbar-thumb {
-          background: #4b5563;
+        .dark .emoji-categories::-webkit-scrollbar-thumb {
+          background: #272727;
         }
 
         .emoji-category-btn {
@@ -462,19 +466,19 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         .emoji-category-btn:hover {
-          background: var(--light-bg, #f3f4f6);
+          background: #eff6ff;
         }
 
         .emoji-category-btn.active {
-          background: var(--accent-active, #dbeafe);
+          background: #6B7280;
         }
 
-        :global(.dark) .emoji-category-btn:hover {
-          background: var(--dark-border, #374151);
+        .dark .emoji-category-btn:hover {
+          background: #272727;
         }
 
-        :global(.dark) .emoji-category-btn.active {
-          background: var(--accent-active, #1e3a8a);
+        .dark .emoji-category-btn.active {
+          background: #6B7280;
         }
 
         .emoji-grid-container {
@@ -500,12 +504,12 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           background: #9ca3af;
         }
 
-        :global(.dark) .emoji-grid-container::-webkit-scrollbar-thumb {
-          background: #4b5563;
+        .dark .emoji-grid-container::-webkit-scrollbar-thumb {
+          background: #272727;
         }
 
-        :global(.dark) .emoji-grid-container::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
+        .dark .emoji-grid-container::-webkit-scrollbar-thumb:hover {
+          background: #6B7280;
         }
 
         .emoji-grid {
@@ -530,7 +534,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         }
 
         .emoji-button:hover {
-          background: var(--light-bg, #f3f4f6);
+          background: #eff6ff;
           transform: scale(1.15);
         }
 
@@ -538,8 +542,8 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           transform: scale(1.05);
         }
 
-        :global(.dark) .emoji-button:hover {
-          background: var(--dark-border, #374151);
+        .dark .emoji-button:hover {
+          background: #272727;
         }
 
         .emoji-empty-state {
@@ -547,25 +551,25 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           align-items: center;
           justify-content: center;
           height: 100%;
-          color: #6b7280;
+          color: #6B7280;
           font-size: 14px;
         }
 
-        :global(.dark) .emoji-empty-state {
+        .dark .emoji-empty-state {
           color: #9ca3af;
         }
 
         .emoji-picker-footer {
           padding: 8px 12px;
-          border-top: 1px solid var(--light-border, #e5e7eb);
+          border-top: 1px solid #e5e7eb;
           font-size: 12px;
-          color: #6b7280;
+          color: #6B7280;
           text-align: center;
           font-weight: 500;
         }
 
-        :global(.dark) .emoji-picker-footer {
-          border-top-color: var(--dark-border, #374151);
+        .dark .emoji-picker-footer {
+          border-top-color: #272727;
           color: #9ca3af;
         }
 

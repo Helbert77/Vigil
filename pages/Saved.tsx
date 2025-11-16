@@ -1,8 +1,12 @@
-import React from 'react';
-import { Post, User } from '../types';
+import React, { useMemo } from 'react';
+import { Post, User, Ad } from '../types';
 import PostCard from '../components/post/PostCard';
+import AdCard from '../components/ads/AdCard';
 import Card from '../components/common/Card';
 import { Icon } from '../components/icons/Icon';
+import { useAds, useAdTracking } from '../src/hooks/useAds';
+import { useAdInteractions } from '../src/hooks/useAdInteractions';
+import { isAd } from '../src/utils/typeGuards';
 
 const BookmarkIcon = () => <Icon className="h-16 w-16 text-gray-400 dark:text-gray-500"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></Icon>;
 
@@ -29,37 +33,81 @@ interface SavedProps {
 }
 
 const Saved: React.FC<SavedProps> = ({ posts, savedPostIds, onUpdatePost, onToggleSave, user, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll, allUsers }) => {
+  const { ads } = useAds('main');
+  const trackAdMetric = useAdTracking(user.id, user.plan, 'main');
+  
+  const {
+    likedAdIds,
+    savedAdIds,
+    hiddenAdIds,
+    toggleAdLike,
+    toggleAdSave,
+    hideAd,
+    incrementAdShares,
+    incrementAdViews,
+  } = useAdInteractions(user.id);
+
   const savedPosts = posts.filter((post: Post) => savedPostIds.includes(post.id));
+  
+  const savedAds = useMemo(() => {
+    return ads.filter(ad => savedAdIds.includes(ad.id));
+  }, [ads, savedAdIds]);
+
+  const allSavedItems = useMemo(() => {
+    return [...savedPosts, ...savedAds];
+  }, [savedPosts, savedAds]);
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Saved Items</h1>
-      {savedPosts.length > 0 ? (
+      {allSavedItems.length > 0 ? (
         <div className="space-y-4">
-          {savedPosts.map((post: Post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onUpdatePost={onUpdatePost}
-              isSaved={true}
-              onToggleSave={onToggleSave}
-              user={user}
-              onToggleLike={onToggleLike}
-              onIncrementView={onIncrementView}
-              onViewPost={onViewPost}
-              onDeletePost={onDeletePost}
-              onBlockToggle={onBlockToggle}
-              blockedUserIds={blockedUserIds}
-              shareableUsers={shareableUsers}
-              onSendMessage={onSendMessage}
-              followedUserIds={followedUserIds}
-              onViewProfile={onViewProfile}
-              onFollowToggle={onFollowToggle}
-              onOpenFollowModal={onOpenFollowModal}
-              onVoteOnPoll={onVoteOnPoll}
-              allUsers={allUsers}
-            />
-          ))}
+          {allSavedItems.map((item, index) => {
+            if (isAd(item)) {
+              return (
+                <AdCard
+                  key={`ad-${item.id}-${index}`}
+                  ad={item}
+                  user={user}
+                  onTrackMetric={trackAdMetric}
+                  shareableUsers={shareableUsers}
+                  onSendMessage={onSendMessage}
+                  isLiked={likedAdIds.includes(item.id)}
+                  isSaved={true}
+                  onToggleLike={toggleAdLike}
+                  onToggleSave={toggleAdSave}
+                  onHideAd={hideAd}
+                  onIncrementShares={incrementAdShares}
+                  onIncrementViews={incrementAdViews}
+                />
+              );
+            } else {
+              return (
+                <PostCard
+                  key={`post-${item.id}-${index}`}
+                  post={item}
+                  onUpdatePost={onUpdatePost}
+                  isSaved={true}
+                  onToggleSave={onToggleSave}
+                  user={user}
+                  onToggleLike={onToggleLike}
+                  onIncrementView={onIncrementView}
+                  onViewPost={onViewPost}
+                  onDeletePost={onDeletePost}
+                  onBlockToggle={onBlockToggle}
+                  blockedUserIds={blockedUserIds}
+                  shareableUsers={shareableUsers}
+                  onSendMessage={onSendMessage}
+                  followedUserIds={followedUserIds}
+                  onViewProfile={onViewProfile}
+                  onFollowToggle={onFollowToggle}
+                  onOpenFollowModal={onOpenFollowModal}
+                  onVoteOnPoll={onVoteOnPoll}
+                  allUsers={allUsers}
+                />
+              );
+            }
+          })}
         </div>
       ) : (
         <Card>
@@ -67,7 +115,7 @@ const Saved: React.FC<SavedProps> = ({ posts, savedPostIds, onUpdatePost, onTogg
             <BookmarkIcon />
             <h2 className="text-xl font-semibold mt-4 text-gray-900 dark:text-white">No Saved Items</h2>
             <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Use the bookmark icon on a post to save it for later.
+              Use the bookmark icon on a post or ad to save it for later.
             </p>
           </div>
         </Card>

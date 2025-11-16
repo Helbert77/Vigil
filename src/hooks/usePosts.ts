@@ -375,7 +375,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
     try {
       const { error } = await api.addComment({ post_id: postId, user_id: appUser.id, content: commentText, image_url: imageUrl, parent_comment_id: parentCommentId });
       if (error) throw error;
-      addToast('Comentário adicionado!', 'success');
+      // Toast removido - comentário aparece na lista
       fetchPosts();
       
       let recipientId: string | null = null;
@@ -408,7 +408,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
     try {
       const { error } = await api.updateComment(commentId, newText);
       if (error) throw error;
-      addToast('Comentário atualizado!', 'success');
+      // Toast removido - mudança visual já indica sucesso
       fetchPosts();
       const post = posts.find(p => p.comments.some(c => c.id === commentId));
       if (post) {
@@ -424,7 +424,7 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
     try {
       const { error } = await api.deleteComment(commentId);
       if (error) throw error;
-      addToast('Comentário apagado.', 'success');
+      // Toast removido - comentário desaparece visualmente
       fetchPosts();
     } catch (error) {
       // Error log removed for production

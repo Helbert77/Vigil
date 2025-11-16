@@ -10,6 +10,7 @@ import Messages from '@/pages/Messages';
 import Saved from '@/pages/Saved';
 import Communities from '@/pages/Communities';
 import PostDetail from '@/pages/PostDetail';
+import AdDetail from '@/pages/AdDetail';
 import Search from '@/pages/Search';
 import CommunityDetail from '@/pages/CommunityDetail';
 import TopicDetail from '@/pages/TopicDetail';
@@ -37,6 +38,8 @@ import { useCommunities } from '@/src/hooks/useCommunities';
 import { useNotifications } from '@/src/hooks/useNotifications';
 import { useConversations } from '@/src/hooks/useConversations';
 import { useModerationData } from '@/src/hooks/useModerationData';
+import { useAds, useAdTracking } from '@/src/hooks/useAds';
+import { useAdInteractions } from '@/src/hooks/useAdInteractions';
 import { useLibrary } from '@/src/hooks/useLibrary';
 import * as api from '@/src/services/api';
 import SplashScreen from '@/pages/SplashScreen';
@@ -45,6 +48,8 @@ import Library from '@/pages/Library';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
 import Moderation from '@/pages/admin/Moderation';
 import Dashboard from '@/components/admin/Dashboard';
+import AdsDashboard from '@/pages/advertising/AdsDashboard';
+import MyAds from '@/pages/advertising/MyAds';
 import Appeals from '@/pages/admin/Appeals';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
@@ -69,6 +74,7 @@ const App: React.FC = () => {
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeAdId, setActiveAdId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewedUserId, setViewedUserId] = useState<string | null>(null);
   const [activeCommunityId, setActiveCommunityId] = useState<string | null>(null);
@@ -79,6 +85,7 @@ const App: React.FC = () => {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showSupportButton, setShowSupportButton] = useState(true);
   const previousUserRef = useRef<User | null>(null);
 
   // Custom Hooks for data logic
@@ -90,9 +97,33 @@ const App: React.FC = () => {
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
   const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = useLibrary(appUser);
 
+  // Hooks para anúncios (devem estar no nível superior do componente)
+  const { ads: mainAds } = useAds('main');
+  const { 
+    likedAdIds, 
+    savedAdIds, 
+    toggleAdLike, 
+    toggleAdSave, 
+    hideAd, 
+    incrementAdShares, 
+    incrementAdViews 
+  } = useAdInteractions(appUser?.id || '');
+  const trackAdMetric = useAdTracking(appUser?.id || '', appUser?.plan || 'free', 'main');
+
   useEffect(() => {
     // User state updated - logs removed for production
   }, [appUser]);
+
+  // Carregar preferência do botão de suporte
+  useEffect(() => {
+    const loadSupportButtonPreference = async () => {
+      if (appUser?.id) {
+        const shouldShow = await api.fetchShowSupportButton(appUser.id);
+        setShowSupportButton(shouldShow);
+      }
+    };
+    loadSupportButtonPreference();
+  }, [appUser?.id]);
 
   
 
@@ -255,6 +286,24 @@ const App: React.FC = () => {
       activeCommentId: null,
       viewedUserId,
       activeCommunityId,
+      activeTag,
+      searchQuery,
+    };
+    pushHistoryState(snapshot);
+  };
+
+  const handleViewAd = (adId: string) => {
+    scrollToTop();
+    setPreviousPage(currentPage);
+    setActiveAdId(adId);
+    setCurrentPage('AdDetail' as Page);
+    const snapshot: NavigationSnapshot = {
+      page: 'AdDetail' as Page,
+      activeAdId: adId,
+      viewedUserId,
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
       activeTag,
       searchQuery,
     };
@@ -552,6 +601,7 @@ const App: React.FC = () => {
           onViewTag={handleViewTag}
           onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
           savedPostIds={savedPostIds}
+          onViewAd={handleViewAd}
         />;
       case 'Profile':
         // Sempre buscar de allUsers primeiro para garantir dados atualizados em tempo real
@@ -593,7 +643,8 @@ const App: React.FC = () => {
           user={appUser} 
           onUpdateUser={() => handleUpdateUser({})} 
           blockedUsers={blockedUsersList} 
-          onBlockToggle={handleBlockToggle} 
+          onBlockToggle={handleBlockToggle}
+          onSupportButtonToggle={(show: boolean) => setShowSupportButton(show)}
         />;
       case 'Notifications':
         return <Notifications 
@@ -712,6 +763,39 @@ const App: React.FC = () => {
           followedUserIds={followedUserIds}
           allUsers={allUsers}
         />;
+      case 'AdDetail': {
+        // Usar os hooks que já estão no topo do componente
+        const ad = mainAds.find(a => a.id === activeAdId);
+        if (!ad) return null;
+        
+        const handleAdDetailBack = () => {
+          if (previousPage && previousPage !== 'AdDetail') {
+            handleNavigation(previousPage);
+          } else {
+            handleNavigation('Home');
+          }
+        };
+        
+        return (
+          <AdDetail
+            ad={ad}
+            activeCommentId={activeCommentId}
+            onNavigateBack={handleAdDetailBack}
+            user={appUser}
+            isLiked={likedAdIds.includes(ad.id)}
+            isSaved={savedAdIds.includes(ad.id)}
+            onToggleLike={toggleAdLike}
+            onToggleSave={toggleAdSave}
+            onHideAd={hideAd}
+            onIncrementShares={incrementAdShares}
+            onIncrementViews={incrementAdViews}
+            onTrackMetric={trackAdMetric}
+            shareableUsers={allUsers}
+            onSendMessage={handleSendMessage}
+            allUsers={allUsers}
+          />
+        );
+      }
       case 'Search':
         return <Search 
           onViewPost={handleViewPost} 
@@ -812,6 +896,10 @@ const App: React.FC = () => {
         return <Moderation queue={moderationQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
       case 'Dashboard':
         return <Dashboard />;
+      case 'AdsDashboard':
+        return <AdsDashboard user={appUser} />;
+      case 'MyAds':
+        return <MyAds user={appUser} />;
       case 'Appeals':
         return <Appeals appeals={appealsQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
       case 'Premium':
@@ -979,8 +1067,12 @@ const App: React.FC = () => {
         )}
         
         {/* Botão de Suporte Flutuante - Apenas para usuários Basic, Pro e Premium */}
-        {(appUser.plan === 'basic' || appUser.plan === 'pro' || appUser.plan === 'premium') && (
-          <SupportButton user={appUser} variant="floating" />
+        {showSupportButton && (appUser.plan === 'basic' || appUser.plan === 'pro' || appUser.plan === 'premium') && (
+          <SupportButton 
+            user={appUser} 
+            variant="floating" 
+            onVisibilityChange={(visible) => setShowSupportButton(visible)}
+          />
         )}
 
         <MobileBottomNav

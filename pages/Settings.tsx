@@ -48,9 +48,10 @@ interface SettingsProps {
     blockedUsers: User[];
     onBlockToggle: (userId: string) => void;
     onLogout: () => void;
+    onSupportButtonToggle: (show: boolean) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, onBlockToggle, onLogout }) => {
+const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, onBlockToggle, onLogout, onSupportButtonToggle }) => {
   const { session } = useSession();
   const { addToast } = useToast();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -61,6 +62,16 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showSupportButton, setShowSupportButton] = useState(true);
+
+  // Carregar preferência do botão de suporte
+  useEffect(() => {
+    const loadSupportButtonPreference = async () => {
+      const shouldShow = await api.fetchShowSupportButton(user.id);
+      setShowSupportButton(shouldShow);
+    };
+    loadSupportButtonPreference();
+  }, [user.id]);
 
   const handleOpenDeleteModal = async () => {
     setIsCheckingForDeletion(true);
@@ -95,9 +106,25 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
       const { error } = await api.updateUser(user.id, { notifications_settings: newNotifications });
       if (error) throw error;
       await onUpdateUser();
-      addToast('Configuração de notificação salva!', 'success');
     } catch (error) {
       console.error('Error updating notification settings:', error);
+      addToast('Falha ao salvar a configuração.', 'error');
+    }
+  };
+
+  const handleSupportButtonToggle = async () => {
+    const newValue = !showSupportButton;
+    
+    try {
+      const { success } = await api.updateShowSupportButton(user.id, newValue);
+      if (success) {
+        setShowSupportButton(newValue);
+        onSupportButtonToggle(newValue); // Atualizar estado no App
+      } else {
+        throw new Error('Falha ao atualizar preferência');
+      }
+    } catch (error) {
+      console.error('Error updating support button preference:', error);
       addToast('Falha ao salvar a configuração.', 'error');
     }
   };
@@ -110,7 +137,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
         const { error } = await api.updateUser(user.id, { muted_words: newMutedWords });
         if (error) throw error;
         await onUpdateUser();
-        addToast('Palavra silenciada adicionada.', 'success');
+        // Toast removido - palavra aparece na lista
       } catch (error) {
         addToast('Falha ao adicionar palavra.', 'error');
       }
@@ -123,7 +150,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
         const { error } = await api.updateUser(user.id, { muted_words: newMutedWords });
         if (error) throw error;
         await onUpdateUser();
-        addToast('Palavra removida.', 'success');
+        // Toast removido - palavra desaparece da lista
     } catch (error) {
         addToast('Falha ao remover palavra.', 'error');
     }
@@ -135,7 +162,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
         const { error } = await api.updateUser(user.id, { show_sensitive_content: newValue });
         if (error) throw error;
         await onUpdateUser();
-        addToast('Configuração salva.', 'success');
     } catch (error) {
         addToast('Falha ao salvar configuração.', 'error');
     }
@@ -147,7 +173,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
         const { error } = await api.updateUser(user.id, { show_activity_status: newValue });
         if (error) throw error;
         await onUpdateUser();
-        addToast('Configuração salva.', 'success');
     } catch (error) {
         addToast('Falha ao salvar configuração.', 'error');
     }
@@ -214,7 +239,17 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
         <div className="space-y-8">
           <Card>
             <h2 className="text-xl font-bold mb-2 text-gray-800 dark:text-gray-200">Aparência</h2>
-            <ThemeToggle />
+            <div className="divide-y divide-light-border dark:divide-dark-border">
+              <div className="pb-4">
+                <ThemeToggle />
+              </div>
+              <SettingsToggle
+                label="Botão de suporte"
+                description="Mostrar o botão flutuante de suporte na tela."
+                isEnabled={showSupportButton}
+                onToggle={handleSupportButtonToggle}
+              />
+            </div>
           </Card>
 
           <Card>

@@ -85,7 +85,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
         throw result.error;
       }
       
-      addToast('Denúncia enviada com sucesso e adicionada à fila de moderação.', 'success');
+      // Toast removido - modal fecha indicando sucesso
       setIsReportModalOpen(false);
       logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {

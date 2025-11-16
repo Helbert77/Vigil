@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Community, Post, User, ActiveMember, Poll, EvidenceItem } from '../types';
 import Card from '../components/common/Card';
 import PostCard from '../components/post/PostCard';
+import AdCard from '../components/ads/AdCard';
 import { Icon } from '../components/icons/Icon';
 import Avatar from '../components/common/Avatar';
 import CreatePost from '@/src/components/post/CreatePost';
@@ -9,6 +10,10 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import EditCommunityPlanModal from '@/components/communities/EditCommunityPlanModal';
 import { getRequiredPlanLabel, getRequiredPlanColor } from '@/src/utils/communityAccess';
+import { useAds, useAdTracking } from '../src/hooks/useAds';
+import { useAdInteractions } from '../src/hooks/useAdInteractions';
+import { injectAdsIntoPosts } from '../src/utils/adFrequency';
+import { isAd } from '../src/utils/typeGuards';
 
 const ArrowLeftIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
 const UsersIcon = () => <Icon className="h-4 w-4 mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -52,6 +57,24 @@ interface CommunityDetailProps {
 const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage, onUpdateCommunityPlan }) => {
   const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
   
+  // Buscar anúncios ativos para esta comunidade
+  const { ads } = useAds('community', community.id);
+  
+  // Hook para rastrear métricas de anúncios
+  const trackAdMetric = useAdTracking(user.id, user.plan, 'community', community.id);
+
+  // Hook para gerenciar interações com anúncios
+  const {
+    likedAdIds,
+    savedAdIds,
+    hiddenAdIds,
+    toggleAdLike,
+    toggleAdSave,
+    hideAd,
+    incrementAdShares,
+    incrementAdViews,
+  } = useAdInteractions(user.id);
+  
   // Verificar se o usuário tem acesso à comunidade
   const hasAccess = React.useMemo(() => {
     if (!community.requiredPlan || community.requiredPlan === 'all') return true;
@@ -79,6 +102,12 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
     : [];
   const pinnedPosts = communityPosts.filter(post => post.isPinned);
   const regularPosts = communityPosts.filter(post => !post.isPinned);
+  
+  // Mesclar posts regulares com anúncios
+  const regularPostsWithAds = useMemo(() => {
+    const allAds = ads.filter(ad => !hiddenAdIds.includes(ad.id));
+    return injectAdsIntoPosts(regularPosts, allAds, user.plan, user.role);
+  }, [regularPosts, ads, user.plan, user.role, hiddenAdIds]);
   
   // Verificar se o usuário é o criador da comunidade ou admin/moderador
   const canEditCommunity = user.id === community.creatorId || user.role === 'admin' || user.role === 'moderator';
@@ -171,10 +200,54 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
 
           <h3 className="text-xl font-bold mb-4">Latest Posts</h3>
           <div>
-            {regularPosts.length > 0 ? (
-              regularPosts.map((post: Post) => (
-                <PostCard key={post.id} post={post} isSaved={savedPostIds.includes(post.id)} onUpdatePost={onUpdatePost} onToggleSave={onToggleSave} user={user} onToggleLike={onToggleLike} onIncrementView={onIncrementView} onViewPost={onViewPost} onDeletePost={onDeletePost} onBlockToggle={onBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={shareableUsers} onSendMessage={onSendMessage} followedUserIds={followedUserIds} onViewProfile={onViewProfile} onFollowToggle={onFollowToggle} onOpenFollowModal={onOpenFollowModal} onVoteOnPoll={onVoteOnPoll} allUsers={allUsers} />
-              ))
+            {regularPostsWithAds.length > 0 ? (
+              regularPostsWithAds.map((item, index) => {
+                // Verificar se é um anúncio ou post
+                if (isAd(item)) {
+                  return (
+                    <AdCard
+                      key={`ad-${item.id}-${index}`}
+                      ad={item}
+                      user={user}
+                      onTrackMetric={trackAdMetric}
+                      shareableUsers={shareableUsers}
+                      onSendMessage={onSendMessage}
+                      isLiked={likedAdIds.includes(item.id)}
+                      isSaved={savedAdIds.includes(item.id)}
+                      onToggleLike={toggleAdLike}
+                      onToggleSave={toggleAdSave}
+                      onHideAd={hideAd}
+                      onIncrementShares={incrementAdShares}
+                      onIncrementViews={incrementAdViews}
+                    />
+                  );
+                } else {
+                  return (
+                    <PostCard 
+                      key={`post-${item.id}-${index}`} 
+                      post={item} 
+                      isSaved={savedPostIds.includes(item.id)} 
+                      onUpdatePost={onUpdatePost} 
+                      onToggleSave={onToggleSave} 
+                      user={user} 
+                      onToggleLike={onToggleLike} 
+                      onIncrementView={onIncrementView} 
+                      onViewPost={onViewPost} 
+                      onDeletePost={onDeletePost} 
+                      onBlockToggle={onBlockToggle} 
+                      blockedUserIds={blockedUserIds} 
+                      shareableUsers={shareableUsers} 
+                      onSendMessage={onSendMessage} 
+                      followedUserIds={followedUserIds} 
+                      onViewProfile={onViewProfile} 
+                      onFollowToggle={onFollowToggle} 
+                      onOpenFollowModal={onOpenFollowModal} 
+                      onVoteOnPoll={onVoteOnPoll} 
+                      allUsers={allUsers} 
+                    />
+                  );
+                }
+              })
             ) : (
               <Card>
                 <p className="text-center text-gray-500 dark:text-gray-400 p-4">

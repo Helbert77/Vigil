@@ -21,6 +21,8 @@ const LibraryIcon = () => <Icon><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2
 const ShieldIcon = () => <Icon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></Icon>;
 const DashboardIcon = () => <Icon><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></Icon>;
 const GavelIcon = () => <Icon><path d="m14 13-7.5 7.5"/><path d="m18 17-5.5 5.5"/><path d="m15 6-3.5 3.5"/><path d="m2 21 6-6"/><path d="m3 3 7.5 7.5"/><path d="m13 1 6 6"/><path d="M12 6 9 3 3 9l3 3"/><path d="M18 12 21 9l-6-6-3 3"/></Icon>;
+const AnalyticsIcon = () => <Icon><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path><circle cx="21" cy="21" r="2"></circle></Icon>;
+const MegaphoneIcon = () => <Icon><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></Icon>;
 
 interface SidebarProps {
   user: User | null;
@@ -160,6 +162,20 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
             label="Settings" 
             isActive={currentPage === 'Settings'} 
             onClick={() => setCurrentPage('Settings')} 
+            isCollapsed={isCollapsed} 
+          />
+          <NavLink 
+            icon={<MegaphoneIcon />} 
+            label="Meus Anúncios" 
+            isActive={currentPage === 'MyAds'} 
+            onClick={() => setCurrentPage('MyAds')} 
+            isCollapsed={isCollapsed} 
+          />
+          <NavLink 
+            icon={<AnalyticsIcon />} 
+            label="Analytics" 
+            isActive={currentPage === 'AdsDashboard'} 
+            onClick={() => setCurrentPage('AdsDashboard')} 
             isCollapsed={isCollapsed} 
           />
           <NavLink 
