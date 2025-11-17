@@ -10,7 +10,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import EditCommunityPlanModal from '@/components/communities/EditCommunityPlanModal';
 import { getRequiredPlanLabel, getRequiredPlanColor } from '@/src/utils/communityAccess';
-import { useAds, useAdTracking } from '../src/hooks/useAds';
+import { useAdsWithState, useAdTracking } from '../src/hooks/useAdsWithState';
 import { useAdInteractions } from '../src/hooks/useAdInteractions';
 import { injectAdsIntoPosts } from '../src/utils/adFrequency';
 import { isAd } from '../src/utils/typeGuards';
@@ -57,13 +57,18 @@ interface CommunityDetailProps {
 const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage, onUpdateCommunityPlan }) => {
   const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
   
-  // Buscar anúncios ativos para esta comunidade
-  const { ads } = useAds('community', community.id);
+  // Buscar anúncios ativos para esta comunidade com estado local
+  const { 
+    ads, 
+    updateAdLikes, 
+    updateAdShares, 
+    updateAdViews 
+  } = useAdsWithState('community', community.id, user.id);
   
   // Hook para rastrear métricas de anúncios
   const trackAdMetric = useAdTracking(user.id, user.plan, 'community', community.id);
 
-  // Hook para gerenciar interações com anúncios
+  // Hook para gerenciar interações com anúncios (com callbacks de atualização otimista)
   const {
     likedAdIds,
     savedAdIds,
@@ -73,7 +78,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
     hideAd,
     incrementAdShares,
     incrementAdViews,
-  } = useAdInteractions(user.id);
+  } = useAdInteractions(user.id, updateAdLikes, updateAdShares);
   
   // Verificar se o usuário tem acesso à comunidade
   const hasAccess = React.useMemo(() => {
@@ -104,10 +109,11 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
   const regularPosts = communityPosts.filter(post => !post.isPinned);
   
   // Mesclar posts regulares com anúncios
+  // IMPORTANTE: Passa user.id para incluir anúncios próprios
   const regularPostsWithAds = useMemo(() => {
     const allAds = ads.filter(ad => !hiddenAdIds.includes(ad.id));
-    return injectAdsIntoPosts(regularPosts, allAds, user.plan, user.role);
-  }, [regularPosts, ads, user.plan, user.role, hiddenAdIds]);
+    return injectAdsIntoPosts(regularPosts, allAds, user.plan, user.role, user.id);
+  }, [regularPosts, ads, user.plan, user.role, user.id, hiddenAdIds]);
   
   // Verificar se o usuário é o criador da comunidade ou admin/moderador
   const canEditCommunity = user.id === community.creatorId || user.role === 'admin' || user.role === 'moderator';

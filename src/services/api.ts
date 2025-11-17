@@ -343,7 +343,7 @@ export const createReport = async (reportData: { reporter_id: string; content_id
       }
     } else if (reportData.content_type === 'ad') {
       const { data: adContent, error: adError } = await supabase
-        .from('ads')
+        .from('anuncios')
         .select('id, title, description, advertiser_name, advertiser_avatar, created_by')
         .eq('id', reportData.content_id)
         .single();
@@ -1417,7 +1417,7 @@ export const fetchActiveAds = () => {
   const now = new Date().toISOString();
   
   return supabase
-    .from('ads')
+    .from('anuncios')
     .select('*')
     .eq('status', 'active')
     .lte('start_date', now)
@@ -1430,7 +1430,7 @@ export const fetchActiveAds = () => {
  */
 export const fetchAdById = (adId: string) => {
   return supabase
-    .from('ads')
+    .from('anuncios')
     .select('*')
     .eq('id', adId)
     .single();

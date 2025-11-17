@@ -3,6 +3,7 @@ import { User, Ad } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import CreateAdModal from '@/components/advertising/CreateAdModal';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { Icon } from '@/components/icons/Icon';
 
 const PlusIcon = () => (
@@ -37,12 +38,14 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'ended'>('all');
+  const [adToDelete, setAdToDelete] = useState<string | null>(null);
+  const [adToPause, setAdToPause] = useState<{ id: string; status: string } | null>(null);
 
   const fetchMyAds = async () => {
     setIsLoading(true);
     try {
       let query = supabase
-        .from('ads')
+        .from('anuncios')
         .select('*')
         .eq('advertiser_id', user.id)
         .order('created_at', { ascending: false });
@@ -68,42 +71,49 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
     fetchMyAds();
   }, [user.id, filter]);
 
-  const handleDeleteAd = async (adId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este anúncio?')) return;
+  const handleDeleteAd = async () => {
+    if (!adToDelete) return;
 
     try {
-      const { error } = await supabase
-        .from('ads')
+      const { data, error } = await supabase
+        .from('anuncios')
         .delete()
-        .eq('id', adId)
-        .eq('advertiser_id', user.id);
+        .eq('id', adToDelete)
+        .eq('advertiser_id', user.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      addToast('Anúncio excluído com sucesso', 'success');
+      if (!data || data.length === 0) {
+        throw new Error('Não foi possível excluir o anúncio. Verifique se você é o proprietário.');
+      }
+
+      setAdToDelete(null);
       fetchMyAds();
     } catch (error: any) {
-      console.error('Erro ao excluir anúncio:', error);
-      addToast('Erro ao excluir anúncio', 'error');
+      addToast(error.message || 'Erro ao excluir anúncio', 'error');
     }
   };
 
-  const handleToggleStatus = async (adId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+  const handleToggleStatus = async () => {
+    if (!adToPause) return;
+
+    const newStatus = adToPause.status === 'active' ? 'paused' : 'active';
 
     try {
       const { error } = await supabase
-        .from('ads')
+        .from('anuncios')
         .update({ status: newStatus })
-        .eq('id', adId)
+        .eq('id', adToPause.id)
         .eq('advertiser_id', user.id);
 
       if (error) throw error;
 
-      addToast(`Anúncio ${newStatus === 'active' ? 'ativado' : 'pausado'} com sucesso`, 'success');
+      setAdToPause(null);
       fetchMyAds();
     } catch (error: any) {
-      console.error('Erro ao atualizar status:', error);
       addToast('Erro ao atualizar status do anúncio', 'error');
     }
   };
@@ -290,7 +300,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                 {/* Ações */}
                 <div className="flex gap-2 pt-2 border-t border-light-border dark:border-dark-border">
                   <button
-                    onClick={() => handleToggleStatus(ad.id, ad.status)}
+                    onClick={() => setAdToPause({ id: ad.id, status: ad.status })}
                     disabled={ad.status === 'ended'}
                     className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                       ad.status === 'ended'
@@ -303,7 +313,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                     {ad.status === 'active' ? 'Pausar' : ad.status === 'paused' ? 'Ativar' : 'Encerrado'}
                   </button>
                   <button
-                    onClick={() => handleDeleteAd(ad.id)}
+                    onClick={() => setAdToDelete(ad.id)}
                     className="px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800 font-medium transition-colors flex items-center gap-2"
                   >
                     <TrashIcon />
@@ -314,6 +324,34 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
           ))}
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmationModal
+        isOpen={!!adToDelete}
+        onClose={() => setAdToDelete(null)}
+        onConfirm={handleDeleteAd}
+        title="Excluir Anúncio?"
+        message="Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita e todas as métricas associadas serão perdidas."
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        isDestructive={true}
+      />
+
+      {/* Modal de Confirmação de Pausar/Ativar */}
+      <ConfirmationModal
+        isOpen={!!adToPause}
+        onClose={() => setAdToPause(null)}
+        onConfirm={handleToggleStatus}
+        title={adToPause?.status === 'active' ? 'Pausar Anúncio?' : 'Ativar Anúncio?'}
+        message={
+          adToPause?.status === 'active'
+            ? 'Tem certeza que deseja pausar este anúncio? Ele deixará de ser exibido até que seja reativado.'
+            : 'Tem certeza que deseja ativar este anúncio? Ele voltará a ser exibido para os usuários.'
+        }
+        confirmText={adToPause?.status === 'active' ? 'Sim, pausar' : 'Sim, ativar'}
+        cancelText="Cancelar"
+        isDestructive={false}
+      />
     </div>
   );
 };

@@ -41,33 +41,77 @@ export const shouldShowAd = (userPlan: User['plan'], userRole?: User['role']): b
 };
 
 /**
+ * Separa anúncios próprios dos demais
+ * @param ads - Array de anúncios
+ * @param userId - ID do usuário atual
+ * @returns Objeto com anúncios próprios e de terceiros
+ */
+export const separateOwnAds = (ads: Ad[], userId: string) => {
+  const ownAds: Ad[] = [];
+  const otherAds: Ad[] = [];
+  
+  ads.forEach(ad => {
+    if (ad.advertiser_id === userId) {
+      ownAds.push(ad);
+    } else {
+      otherAds.push(ad);
+    }
+  });
+  
+  return { ownAds, otherAds };
+};
+
+/**
  * Injeta anúncios entre os posts baseado na frequência do plano do usuário
+ * IMPORTANTE: Anúncios próprios do usuário são SEMPRE exibidos, independente do plano
  * @param posts - Array de posts
  * @param ads - Array de anúncios disponíveis
  * @param userPlan - Plano do usuário
  * @param userRole - Role do usuário (opcional)
+ * @param userId - ID do usuário atual (para separar anúncios próprios)
  * @returns Array mesclado de posts e anúncios
  */
 export const injectAdsIntoPosts = (
   posts: Post[],
   ads: Ad[],
   userPlan: User['plan'],
-  userRole?: User['role']
+  userRole?: User['role'],
+  userId?: string
 ): (Post | Ad)[] => {
-  // Se não deve mostrar anúncios, retorna apenas os posts
-  if (!shouldShowAd(userPlan, userRole)) {
-    return posts;
-  }
-  
-  // Se não há anúncios disponíveis, retorna apenas os posts
   if (!ads || ads.length === 0) {
     return posts;
   }
   
-  const frequency = getAdFrequency(userPlan);
+  const { ownAds, otherAds } = userId ? separateOwnAds(ads, userId) : { ownAds: [], otherAds: ads };
   
-  // Se frequência é 0, não mostra anúncios
-  if (frequency === 0) {
+  // Para usuários premium/admin/moderadores: APENAS anúncios próprios
+  if (!shouldShowAd(userPlan, userRole)) {
+    if (ownAds.length === 0) {
+      return posts;
+    }
+    
+    const result: (Post | Ad)[] = [];
+    let ownAdIndex = 0;
+    const fixedFrequency = 5;
+    
+    posts.forEach((post, index) => {
+      result.push(post);
+      
+      if ((index + 1) % fixedFrequency === 0 && ownAds.length > 0) {
+        const adIndex = ownAdIndex % ownAds.length;
+        result.push(ownAds[adIndex]);
+        ownAdIndex++;
+      }
+    });
+    
+    return result;
+  }
+  
+  // Para usuários free/basic: mostrar anúncios de terceiros
+  const frequency = getAdFrequency(userPlan);
+  const allAdsToInject = [...ownAds, ...otherAds];
+  
+  if (allAdsToInject.length === 0) {
     return posts;
   }
   
@@ -75,13 +119,10 @@ export const injectAdsIntoPosts = (
   let adIndex = 0;
   
   posts.forEach((post, index) => {
-    // Adiciona o post
     result.push(post);
     
-    // Insere anúncio após cada N posts (frequência)
-    if ((index + 1) % frequency === 0 && ads.length > 0) {
-      // Usa rotação circular dos anúncios disponíveis
-      result.push(ads[adIndex % ads.length]);
+    if ((index + 1) % frequency === 0 && allAdsToInject.length > 0) {
+      result.push(allAdsToInject[adIndex % allAdsToInject.length]);
       adIndex++;
     }
   });

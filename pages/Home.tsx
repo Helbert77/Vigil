@@ -4,7 +4,7 @@ import PostCard from '../components/post/PostCard';
 import AdCard from '../components/ads/AdCard';
 import Card from '../components/common/Card';
 import { Post, Poll, User, Community, EvidenceItem, TrendingTopic } from '../types';
-import { useAds, useAdTracking } from '../src/hooks/useAds';
+import { useAdsWithState, useAdTracking } from '../src/hooks/useAdsWithState';
 import { useAdInteractions } from '../src/hooks/useAdInteractions';
 import { injectAdsIntoPosts } from '../src/utils/adFrequency';
 import { isAd } from '../src/utils/typeGuards';
@@ -46,13 +46,19 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostIds, onToggleSave, user, communities, joinedCommunityIds, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll, allUsers, setCurrentPage, onAddComment, onUpdateComment, onDeleteComment, onToggleCommentLike, onViewAd }) => {
-  // Buscar anúncios ativos
-  const { ads, isLoading: isLoadingAds } = useAds('main');
+  // Buscar anúncios ativos com estado local
+  const { 
+    ads, 
+    isLoading: isLoadingAds, 
+    updateAdLikes, 
+    updateAdShares, 
+    updateAdViews 
+  } = useAdsWithState('main', undefined, user.id);
   
   // Hook para rastrear métricas de anúncios
   const trackAdMetric = useAdTracking(user.id, user.plan, 'main');
 
-  // Hook para gerenciar interações com anúncios
+  // Hook para gerenciar interações com anúncios (com callbacks de atualização otimista)
   const {
     likedAdIds,
     savedAdIds,
@@ -62,13 +68,14 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
     hideAd,
     incrementAdShares,
     incrementAdViews,
-  } = useAdInteractions(user.id);
+  } = useAdInteractions(user.id, updateAdLikes, updateAdShares);
 
   // Mesclar posts com anúncios baseado no plano do usuário
+  // IMPORTANTE: Passa user.id para incluir anúncios próprios
   const feedItems = useMemo(() => {
     const allAds = ads.filter(ad => !hiddenAdIds.includes(ad.id));
-    return injectAdsIntoPosts(posts, allAds, user.plan, user.role);
-  }, [posts, ads, user.plan, user.role, hiddenAdIds]);
+    return injectAdsIntoPosts(posts, allAds, user.plan, user.role, user.id);
+  }, [posts, ads, user.plan, user.role, user.id, hiddenAdIds]);
 
   return (
     <div>

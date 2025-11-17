@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Ad } from '../../types';
 import * as api from '../services/api';
 
 /**
- * Hook para buscar e gerenciar anúncios ativos
- * @param feedType - Tipo do feed ('main' ou 'community')
- * @param communityId - ID da comunidade (opcional, usado quando feedType é 'community')
- * @returns Objeto contendo ads, isLoading, error e função refetch
+ * Hook melhorado para buscar e gerenciar anúncios ativos com estado local
+ * Inclui atualizações otimistas para likes e shares
  */
-export const useAds = (feedType: 'main' | 'community', communityId?: string) => {
+export const useAdsWithState = (feedType: 'main' | 'community', communityId?: string, userId?: string) => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +30,7 @@ export const useAds = (feedType: 'main' | 'community', communityId?: string) => 
           image_url: ad.image_url,
           video_url: ad.video_url,
           link_url: ad.link_url,
-          advertiser_id: ad.advertiser_id, // Incluir advertiser_id
+          advertiser_id: ad.advertiser_id,
           advertiser_name: ad.advertiser_name,
           advertiser_avatar: ad.advertiser_avatar,
           type: ad.type,
@@ -47,11 +45,10 @@ export const useAds = (feedType: 'main' | 'community', communityId?: string) => 
           views: ad.views_count || 0,
           timestamp: ad.created_at,
         }));
-
+        
         setAds(formattedAds);
       }
     } catch (err: any) {
-      console.error('Erro ao buscar anúncios:', err);
       setError(err?.message || 'Erro ao carregar anúncios');
       setAds([]);
     } finally {
@@ -63,21 +60,63 @@ export const useAds = (feedType: 'main' | 'community', communityId?: string) => 
     fetchAds();
   }, [fetchAds]);
 
+  // Atualização otimista de likes
+  const updateAdLikes = useCallback((adId: string, increment: boolean) => {
+    setAds(prevAds => 
+      prevAds.map(ad => 
+        ad.id === adId 
+          ? { 
+              ...ad, 
+              likes: increment ? (ad.likes || 0) + 1 : Math.max((ad.likes || 0) - 1, 0),
+              likes_count: increment ? (ad.likes_count || 0) + 1 : Math.max((ad.likes_count || 0) - 1, 0),
+            }
+          : ad
+      )
+    );
+  }, []);
+
+  // Atualização otimista de shares
+  const updateAdShares = useCallback((adId: string) => {
+    setAds(prevAds => 
+      prevAds.map(ad => 
+        ad.id === adId 
+          ? { 
+              ...ad, 
+              shares: (ad.shares || 0) + 1,
+              shares_count: (ad.shares_count || 0) + 1,
+            }
+          : ad
+      )
+    );
+  }, []);
+
+  // Atualização otimista de views
+  const updateAdViews = useCallback((adId: string) => {
+    setAds(prevAds => 
+      prevAds.map(ad => 
+        ad.id === adId 
+          ? { 
+              ...ad, 
+              views: (ad.views || 0) + 1,
+            }
+          : ad
+      )
+    );
+  }, []);
+
   return {
     ads,
     isLoading,
     error,
     refetch: fetchAds,
+    updateAdLikes,
+    updateAdShares,
+    updateAdViews,
   };
 };
 
 /**
  * Hook para rastrear métricas de anúncios
- * @param userId - ID do usuário
- * @param userPlan - Plano do usuário
- * @param feedType - Tipo do feed
- * @param communityId - ID da comunidade (opcional)
- * @returns Função para rastrear métricas
  */
 export const useAdTracking = (
   userId: string,

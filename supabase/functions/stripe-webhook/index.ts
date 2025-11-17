@@ -12,6 +12,15 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
 
+// Função para calcular bônus de créditos
+function calculateBonus(amount: number): number {
+  if (amount >= 500) return amount * 0.20; // 20%
+  if (amount >= 250) return amount * 0.15; // 15%
+  if (amount >= 100) return amount * 0.10; // 10%
+  if (amount >= 50) return amount * 0.05;  // 5%
+  return 0;
+}
+
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,12 +69,91 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.client_reference_id;
         const subscriptionId = session.subscription as string;
+        const paymentIntentId = session.payment_intent as string;
 
-        if (userId && subscriptionId) {
-          // Buscar detalhes da subscription
+        // Verificar se é pagamento de anúncio
+        if (session.metadata?.ad_id || session.metadata?.payment_type) {
+          const paymentType = session.metadata.payment_type;
+          const adId = session.metadata.ad_id;
+          const userIdFromMeta = session.metadata.user_id;
+
+          if (paymentType === 'package' && adId) {
+            // Pagamento de pacote de anúncio
+            const packageType = session.metadata.package_type;
+            const durationDays = parseInt(session.metadata.duration_days || '7');
+            const maxImpressions = parseInt(session.metadata.max_impressions || '0');
+
+            const startDate = new Date();
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + durationDays);
+
+            await supabase.from('anuncios').update({
+              payment_status: 'paid',
+              stripe_payment_intent_id: paymentIntentId,
+              approval_status: 'pending_approval',
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString(),
+              max_impressions: maxImpressions,
+            }).eq('id', adId);
+
+            console.log(`Ad package payment completed: ${adId}, package: ${packageType}`);
+
+          } else if (paymentType === 'credits') {
+            // Compra de créditos
+            const creditAmount = parseFloat(session.metadata.credit_amount || '0');
+            const bonus = calculateBonus(creditAmount);
+            const totalCredits = creditAmount + bonus;
+
+            // Inserir/atualizar créditos do usuário
+            const { data: existingCredits } = await supabase
+              .from('user_ad_credits')
+              .select('id, balance, total_purchased')
+              .eq('user_id', userIdFromMeta)
+              .single();
+
+            if (existingCredits) {
+              await supabase.from('user_ad_credits').update({
+                balance: existingCredits.balance + totalCredits,
+                total_purchased: existingCredits.total_purchased + creditAmount,
+              }).eq('user_id', userIdFromMeta);
+            } else {
+              await supabase.from('user_ad_credits').insert({
+                user_id: userIdFromMeta,
+                balance: totalCredits,
+                total_purchased: creditAmount,
+              });
+            }
+
+            // Registrar transação
+            await supabase.from('ad_credit_transactions').insert({
+              user_id: userIdFromMeta,
+              amount: creditAmount,
+              transaction_type: 'purchase',
+              stripe_payment_intent_id: paymentIntentId,
+              description: `Compra de €${creditAmount} em créditos (+ €${bonus.toFixed(2)} bônus)`,
+            });
+
+            console.log(`Credits purchased: €${creditAmount} + €${bonus.toFixed(2)} bonus for user ${userIdFromMeta}`);
+
+          } else if (paymentType === 'cpm' && adId) {
+            // Pagamento de anúncio CPM
+            const cpmBudget = parseFloat(session.metadata.cpm_budget || '0');
+
+            await supabase.from('anuncios').update({
+              payment_status: 'paid',
+              stripe_payment_intent_id: paymentIntentId,
+              approval_status: 'pending_approval',
+              budget: cpmBudget,
+              spent: 0,
+            }).eq('id', adId);
+
+            console.log(`Ad CPM payment completed: ${adId}, budget: €${cpmBudget}`);
+          }
+
+        } else if (userId && subscriptionId) {
+          // Pagamento de assinatura (código existente)
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           
-          // Atualizar subscription no Supabase
           await supabase.from('subscriptions').upsert({
             user_id: userId,
             plan: session.metadata?.plan || 'basic',
@@ -77,7 +165,6 @@ serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           }, { onConflict: 'user_id' });
 
-          // Atualizar plano do usuário
           await supabase.from('profiles').update({
             plan: session.metadata?.plan || 'basic',
           }).eq('id', userId);
@@ -156,6 +243,27 @@ serve(async (req) => {
         // Aqui você pode implementar lógica para notificar o usuário
         // que o trial está acabando (ex: enviar email)
         console.log(`Trial will end for subscription: ${subscription.id}`);
+        break;
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntentId = paymentIntent.id;
+
+        // Verificar se é pagamento de anúncio
+        const { data: ad } = await supabase
+          .from('anuncios')
+          .select('id')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .single();
+
+        if (ad) {
+          await supabase.from('anuncios').update({
+            payment_status: 'failed',
+          }).eq('id', ad.id);
+
+          console.log(`Ad payment failed: ${ad.id}`);
+        }
         break;
       }
 

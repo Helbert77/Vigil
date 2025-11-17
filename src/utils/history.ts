@@ -15,6 +15,8 @@ export type Page =
   | 'AdDetail'
   | 'AdsDashboard'
   | 'MyAds'
+  | 'SelectAdPlan'
+  | 'PaymentSuccess'
   | 'Search'
   | 'CommunityDetail'
   | 'TopicDetail'
@@ -74,6 +76,10 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return '/ads-dashboard';
     case 'MyAds':
       return '/my-ads';
+    case 'SelectAdPlan':
+      return '/advertising/select-plan';
+    case 'PaymentSuccess':
+      return '/advertising/payment-success';
     case 'Search': {
       const q = state.searchQuery ? `?q=${encodeURIComponent(state.searchQuery)}` : '';
       return `/search${q}`;
@@ -127,6 +133,8 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/timeline': 'Timeline',
     '/ads-dashboard': 'AdsDashboard',
     '/my-ads': 'MyAds',
+    '/advertising/select-plan': 'SelectAdPlan',
+    '/advertising/payment-success': 'PaymentSuccess',
     '/about': 'About',
     '/terms': 'TermsOfService',
     '/privacy': 'PrivacyPolicy',

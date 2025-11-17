@@ -38,10 +38,6 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
     image_url: '',
     video_url: '',
     type: 'native' as 'native' | 'adsense',
-    status: 'active' as 'active' | 'paused' | 'ended',
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: '',
-    budget: 0
   });
 
   if (!isOpen) return null;
@@ -170,10 +166,9 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         image_url: formData.image_url || null,
         video_url: formData.video_url || null,
         type: formData.type,
-        status: formData.status,
-        start_date: formData.start_date,
-        end_date: formData.end_date || null,
-        budget: formData.budget,
+        status: 'draft',
+        payment_status: 'pending',
+        payment_type: null,
         advertiser_id: user.id,
         advertiser_name: user.username,
         advertiser_avatar: user.avatarUrl || null,
@@ -184,14 +179,18 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       };
 
       const { data, error } = await supabase
-        .from('ads')
+        .from('anuncios')
         .insert([adData])
         .select()
         .single();
 
       if (error) throw error;
 
-      addToast('Anúncio criado com sucesso!', 'success');
+      addToast('Anúncio criado! Agora escolha o plano de pagamento.', 'success');
+      
+      // Redirecionar para seleção de plano
+      onClose();
+      window.location.href = `/advertising/select-plan?ad_id=${data.id}`;
       
       // Resetar formulário
       setFormData({
@@ -201,10 +200,6 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         image_url: '',
         video_url: '',
         type: 'native',
-        status: 'active',
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: '',
-        budget: 0
       });
 
       onAdCreated?.();

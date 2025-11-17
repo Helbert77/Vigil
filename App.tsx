@@ -50,6 +50,8 @@ import Moderation from '@/pages/admin/Moderation';
 import Dashboard from '@/components/admin/Dashboard';
 import AdsDashboard from '@/pages/advertising/AdsDashboard';
 import MyAds from '@/pages/advertising/MyAds';
+import SelectAdPlan from '@/pages/advertising/SelectAdPlan';
+import PaymentSuccess from '@/pages/advertising/PaymentSuccess';
 import Appeals from '@/pages/admin/Appeals';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
@@ -900,6 +902,10 @@ const App: React.FC = () => {
         return <AdsDashboard user={appUser} />;
       case 'MyAds':
         return <MyAds user={appUser} />;
+      case 'SelectAdPlan':
+        return <SelectAdPlan user={appUser} />;
+      case 'PaymentSuccess':
+        return <PaymentSuccess user={appUser} />;
       case 'Appeals':
         return <Appeals appeals={appealsQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
       case 'Premium':

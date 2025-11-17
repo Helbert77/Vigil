@@ -201,6 +201,7 @@ export interface Ad {
   image_url?: string;
   video_url?: string;
   link_url: string;
+  advertiser_id?: string; // ID do anunciante para identificar anúncios próprios
   advertiser_name: string;
   advertiser_avatar?: string;
   type: 'native' | 'adsense';
