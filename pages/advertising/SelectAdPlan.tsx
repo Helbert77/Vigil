@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,11 +12,11 @@ interface SelectAdPlanProps {
 }
 
 const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
 
-  const adId = searchParams.get('ad_id');
+  // Obter ad_id da URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const adId = urlParams.get('ad_id');
 
   const [adData, setAdData] = useState<any>(null);
   const [selectedTab, setSelectedTab] = useState<'packages' | 'cpm'>('packages');
@@ -29,7 +28,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   useEffect(() => {
     if (!adId) {
       addToast('ID do anúncio não encontrado', 'error');
-      navigate('/advertising/my-ads');
+      window.location.href = '/?page=MyAds';
       return;
     }
 
@@ -47,13 +46,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 
     if (error || !data) {
       addToast('Anúncio não encontrado', 'error');
-      navigate('/advertising/my-ads');
+      window.location.href = '/?page=MyAds';
       return;
     }
 
     if (data.advertiser_id !== user.id) {
       addToast('Você não tem permissão para acessar este anúncio', 'error');
-      navigate('/advertising/my-ads');
+      window.location.href = '/?page=MyAds';
       return;
     }
 
@@ -80,8 +79,8 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         paymentType: selectedTab === 'packages' ? 'package' : 'cpm',
         ...(selectedPackage && { packageType: selectedPackage }),
         ...(selectedCpmBudget && { cpmBudget: selectedCpmBudget }),
-        successUrl: `${window.location.origin}/advertising/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-        cancelUrl: `${window.location.origin}/advertising/select-plan?ad_id=${adId}`,
+        successUrl: `${window.location.origin}/?page=PaymentSuccess&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/?page=SelectAdPlan&ad_id=${adId}`,
       };
 
       const response = await fetch(
@@ -128,7 +127,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/advertising/my-ads')}
+            onClick={() => { window.location.href = '/?page=MyAds'; }}
             className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

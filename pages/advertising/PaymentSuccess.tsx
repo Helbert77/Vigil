@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice, formatNumber } from '@/src/config/adPricing';
@@ -15,16 +14,17 @@ const CheckCircleIcon = () => (
 );
 
 const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ user }) => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [adData, setAdData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const sessionId = searchParams.get('session_id');
+  // Obter session_id da URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('session_id');
 
   useEffect(() => {
     if (!sessionId) {
-      navigate('/advertising/my-ads');
+      // Redirecionar para MyAds usando o sistema de navegação do App
+      window.location.href = '/?page=MyAds';
       return;
     }
 
@@ -41,14 +41,14 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ user }) => {
 
       if (error || !data) {
         console.error('Ad not found');
-        navigate('/advertising/my-ads');
+        window.location.href = '/?page=MyAds';
         return;
       }
 
       setAdData(data);
     } catch (error) {
       console.error('Error fetching ad:', error);
-      navigate('/advertising/my-ads');
+      window.location.href = '/?page=MyAds';
     } finally {
       setIsLoading(false);
     }
@@ -215,7 +215,7 @@ const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ user }) => {
 
           {/* Botão de ação */}
           <button
-            onClick={() => navigate('/advertising/my-ads')}
+            onClick={() => { window.location.href = '/?page=MyAds'; }}
             className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
           >
             Ver Meus Anúncios

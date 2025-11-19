@@ -35,6 +35,7 @@ interface MyAdsProps {
 const MyAds: React.FC<MyAdsProps> = ({ user }) => {
   const { addToast } = useToast();
   const [ads, setAds] = useState<any[]>([]);
+  const [allAdsCount, setAllAdsCount] = useState(0); // Contador total de anúncios
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'ended'>('all');
@@ -44,6 +45,17 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
   const fetchMyAds = async () => {
     setIsLoading(true);
     try {
+      // Buscar contagem total primeiro
+      const { count: totalCount, error: countError } = await supabase
+        .from('anuncios')
+        .select('*', { count: 'exact', head: true })
+        .eq('advertiser_id', user.id);
+
+      if (!countError && totalCount !== null) {
+        setAllAdsCount(totalCount);
+      }
+
+      // Buscar anúncios filtrados
       let query = supabase
         .from('anuncios')
         .select('*')
@@ -170,7 +182,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
               : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
         >
-          Todos ({ads.length})
+          Todos ({allAdsCount})
         </button>
         <button
           onClick={() => setFilter('active')}
@@ -293,8 +305,12 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
 
                 {/* Datas e Budget */}
                 <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                  <span>Início: {new Date(ad.start_date).toLocaleDateString('pt-BR')}</span>
-                  {ad.budget > 0 && <span>Budget: € {ad.budget.toFixed(2)}</span>}
+                  {ad.start_date && (
+                    <span>Início: {new Date(ad.start_date).toLocaleDateString('pt-BR')}</span>
+                  )}
+                  {ad.budget && ad.budget > 0 && (
+                    <span>Budget: € {ad.budget.toFixed(2)}</span>
+                  )}
                 </div>
 
                 {/* Ações */}

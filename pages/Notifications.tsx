@@ -27,10 +27,21 @@ const getNotificationText = (notification: Notification): string => {
             return 'mencionou você em uma postagem.';
         case 'message':
             return 'enviou uma mensagem para você.';
+        case 'ad_approval_pending':
+            return 'há um novo anúncio aguardando aprovação.';
+        case 'ad_approved':
+            return 'seu anúncio foi aprovado e está ativo!';
+        case 'ad_rejected':
+            const reason = notification.metadata?.rejection_reason || 'não especificado';
+            return `seu anúncio foi rejeitado. Motivo: ${reason}`;
         default:
             return '';
     }
 };
+
+const CheckCircleIcon = () => <Icon className="h-6 w-6 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></Icon>;
+const XCircleIcon = () => <Icon className="h-6 w-6 text-red-500"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></Icon>;
+const AlertCircleIcon = () => <Icon className="h-6 w-6 text-yellow-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></Icon>;
 
 const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) => {
     if (type === 'like' || type === 'comment_like') return <HeartIcon />;
@@ -38,6 +49,9 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'follow') return <UserIcon />;
     if (type === 'mention') return <AtSignIcon />;
     if (type === 'message') return <MailIcon />;
+    if (type === 'ad_approval_pending') return <AlertCircleIcon />;
+    if (type === 'ad_approved') return <CheckCircleIcon />;
+    if (type === 'ad_rejected') return <XCircleIcon />;
     return <div className="h-6 w-6"></div>;
 };
 
@@ -51,16 +65,27 @@ interface NotificationItemProps {
     onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
 }
 
-const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onViewPost, onFollowToggle, isFollowing, isCurrentUser, onViewProfile, onOpenFollowModal }) => (
+const NotificationItem: React.FC<NotificationItemProps & { onNavigateToAdApproval?: () => void }> = ({ notification, onViewPost, onFollowToggle, isFollowing, isCurrentUser, onViewProfile, onOpenFollowModal, onNavigateToAdApproval }) => {
+    const handleClick = () => {
+        if (notification.type === 'ad_approval_pending' && onNavigateToAdApproval) {
+            onNavigateToAdApproval();
+        } else if (notification.post_id) {
+            onViewPost(notification.post_id);
+        }
+    };
+
+    const isClickable = notification.post_id || (notification.type === 'ad_approval_pending' && onNavigateToAdApproval);
+
+    return (
     <div 
-        onClick={() => notification.post_id && onViewPost(notification.post_id)}
-        className={`flex items-center space-x-4 p-4 hover:bg-gray-100 dark:hover:bg-dark-card/50 border-b border-light-border dark:border-dark-border last:border-b-0 ${notification.post_id ? 'cursor-pointer' : ''}`}
-        role={notification.post_id ? 'button' : 'listitem'}
-        tabIndex={notification.post_id ? 0 : -1}
+        onClick={handleClick}
+        className={`flex items-center space-x-4 p-4 hover:bg-gray-100 dark:hover:bg-dark-card/50 border-b border-light-border dark:border-dark-border last:border-b-0 ${isClickable ? 'cursor-pointer' : ''}`}
+        role={isClickable ? 'button' : 'listitem'}
+        tabIndex={isClickable ? 0 : -1}
         onKeyDown={(e: React.KeyboardEvent) => {
-            if ((e.key === 'Enter' || e.key === ' ') && notification.post_id) {
+            if ((e.key === 'Enter' || e.key === ' ') && isClickable) {
                 e.preventDefault();
-                onViewPost(notification.post_id);
+                handleClick();
             }
         }}
     >
@@ -110,7 +135,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onVie
             )}
         </div>
     </div>
-);
+    );
+};
 
 interface NotificationsProps {
     notifications: Notification[];
@@ -121,9 +147,10 @@ interface NotificationsProps {
     onViewProfile: (userId: string) => void;
     onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
     onClearAll: () => void;
+    onNavigateToAdApproval?: () => void;
 }
 
-const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost, onFollowToggle, followedUserIds, currentUser, onViewProfile, onOpenFollowModal, onClearAll }) => {
+const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost, onFollowToggle, followedUserIds, currentUser, onViewProfile, onOpenFollowModal, onClearAll, onNavigateToAdApproval }) => {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
@@ -149,6 +176,7 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost
                           isCurrentUser={notification.actor.id === currentUser.id}
                           onViewProfile={onViewProfile}
                           onOpenFollowModal={onOpenFollowModal}
+                          onNavigateToAdApproval={onNavigateToAdApproval}
                         />
                     ))
                 ) : (

@@ -1411,7 +1411,7 @@ export const saveDeviceToken = async (userId: string, token: string, platform: '
 
 /**
  * Busca anúncios ativos
- * Retorna apenas anúncios com status 'active' e dentro do período de validade
+ * Retorna apenas anúncios com status 'active', approval_status 'approved' e dentro do período de validade
  */
 export const fetchActiveAds = () => {
   const now = new Date().toISOString();
@@ -1420,6 +1420,8 @@ export const fetchActiveAds = () => {
     .from('anuncios')
     .select('*')
     .eq('status', 'active')
+    .eq('approval_status', 'approved')
+    .eq('payment_status', 'paid')
     .lte('start_date', now)
     .or(`end_date.is.null,end_date.gte.${now}`)
     .order('created_at', { ascending: false });

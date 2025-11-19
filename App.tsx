@@ -38,6 +38,7 @@ import { useCommunities } from '@/src/hooks/useCommunities';
 import { useNotifications } from '@/src/hooks/useNotifications';
 import { useConversations } from '@/src/hooks/useConversations';
 import { useModerationData } from '@/src/hooks/useModerationData';
+import { useAdApprovalData } from '@/src/hooks/useAdApprovalData';
 import { useAds, useAdTracking } from '@/src/hooks/useAds';
 import { useAdInteractions } from '@/src/hooks/useAdInteractions';
 import { useLibrary } from '@/src/hooks/useLibrary';
@@ -53,6 +54,7 @@ import MyAds from '@/pages/advertising/MyAds';
 import SelectAdPlan from '@/pages/advertising/SelectAdPlan';
 import PaymentSuccess from '@/pages/advertising/PaymentSuccess';
 import Appeals from '@/pages/admin/Appeals';
+import AdApprovalQueue from '@/pages/admin/AdApprovalQueue';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
 import MobileBottomNav from '@/src/components/layout/MobileBottomNav';
@@ -97,6 +99,7 @@ const App: React.FC = () => {
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
+  const { pendingAdsCount } = useAdApprovalData(appUser);
   const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = useLibrary(appUser);
 
   // Hooks para anúncios (devem estar no nível superior do componente)
@@ -227,6 +230,7 @@ const App: React.FC = () => {
     setActivePostId(snapshot.activePostId || null);
     setActiveCommentId(snapshot.activeCommentId || null);
     setActiveTag(snapshot.activeTag || null);
+    setActiveAdId(snapshot.activeAdId || null);
     setSearchQuery(snapshot.searchQuery || '');
     if (snapshot.activeCommunityId) {
       refetchActiveMembers(snapshot.activeCommunityId);
@@ -249,8 +253,21 @@ const App: React.FC = () => {
         applySnapshotToState(fallback);
       }
     };
+    
+    // Listener para eventos customizados de navegação (usado por componentes que usam pushHistoryState diretamente)
+    const onNavigation = (event: CustomEvent<NavigationSnapshot>) => {
+      const snapshot = event.detail;
+      if (snapshot && snapshot.page) {
+        applySnapshotToState(snapshot);
+      }
+    };
+    
     window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    window.addEventListener('navigation', onNavigation as EventListener);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('navigation', onNavigation as EventListener);
+    };
   }, []);
 
   const handleAddPostAndUpdate = async (text: string, imageUrl?: string, videoUrl?: string, audioUrl?: string, poll?: Poll, communityId?: string, evidenceBoard?: EvidenceItem[]) => {
@@ -658,6 +675,7 @@ const App: React.FC = () => {
           followedUserIds={followedUserIds}
           currentUser={appUser}
           onOpenFollowModal={handleOpenFollowModal}
+          onNavigateToAdApproval={() => handleNavigation('AdApprovalQueue')}
         />;
       case 'Messages':
         return <Messages 
@@ -908,6 +926,8 @@ const App: React.FC = () => {
         return <PaymentSuccess user={appUser} />;
       case 'Appeals':
         return <Appeals appeals={appealsQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
+      case 'AdApprovalQueue':
+        return <AdApprovalQueue user={appUser} />;
       case 'Premium':
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'TrendingTopics':
@@ -1005,6 +1025,7 @@ const App: React.FC = () => {
               isCollapsed={false}
               pendingModerationCount={pendingModerationCount}
               pendingAppealsCount={pendingAppealsCount}
+              pendingAdsCount={pendingAdsCount}
             />
           </aside>
           
@@ -1019,6 +1040,7 @@ const App: React.FC = () => {
               isCollapsed={isSidebarCollapsed}
               pendingModerationCount={pendingModerationCount}
               pendingAppealsCount={pendingAppealsCount}
+              pendingAdsCount={pendingAdsCount}
             />
             <button 
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 

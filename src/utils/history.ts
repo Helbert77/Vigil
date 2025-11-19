@@ -29,6 +29,7 @@ export type Page =
   | 'Moderation'
   | 'Dashboard'
   | 'Appeals'
+  | 'AdApprovalQueue'
   | 'Premium'
   | 'TrendingTopics'
   | 'ExploreUsers'
@@ -76,10 +77,14 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return '/ads-dashboard';
     case 'MyAds':
       return '/my-ads';
-    case 'SelectAdPlan':
-      return '/advertising/select-plan';
-    case 'PaymentSuccess':
-      return '/advertising/payment-success';
+    case 'SelectAdPlan': {
+      const adId = state.activeAdId ? `?ad_id=${encodeURIComponent(state.activeAdId)}` : '';
+      return `/advertising/select-plan${adId}`;
+    }
+    case 'PaymentSuccess': {
+      const sessionId = state.activeCommentId ? `?session_id=${encodeURIComponent(state.activeCommentId)}` : '';
+      return `/advertising/payment-success${sessionId}`;
+    }
     case 'Search': {
       const q = state.searchQuery ? `?q=${encodeURIComponent(state.searchQuery)}` : '';
       return `/search${q}`;
@@ -104,6 +109,8 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return '/dashboard';
     case 'Appeals':
       return '/appeals';
+    case 'AdApprovalQueue':
+      return '/ad-approval-queue';
     case 'Premium':
       return '/premium';
     case 'TrendingTopics':
@@ -120,6 +127,45 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
 // Parse a URL location into navigation snapshot
 export function parseLocationToSnapshot(pathname: string, search: string): NavigationSnapshot {
   const withDefault = (page: Page, extra?: Partial<NavigationSnapshot>): NavigationSnapshot => ({ page, ...extra });
+
+  // Processar query parameters primeiro (para suportar ?page=SelectAdPlan&ad_id=xxx)
+  const params = new URLSearchParams(search);
+  const pageParam = params.get('page');
+  if (pageParam) {
+    // Mapear nomes de página dos query params para tipos Page
+    const pageMap: Record<string, Page> = {
+      'SelectAdPlan': 'SelectAdPlan',
+      'PaymentSuccess': 'PaymentSuccess',
+      'MyAds': 'MyAds',
+      'AdsDashboard': 'AdsDashboard',
+      'Home': 'Home',
+      'Profile': 'Profile',
+      'Settings': 'Settings',
+      'Notifications': 'Notifications',
+      'Messages': 'Messages',
+      'Saved': 'Saved',
+      'Communities': 'Communities',
+      'Library': 'Library',
+      'Timeline': 'Timeline',
+      'Premium': 'Premium',
+    };
+    
+    const page = pageMap[pageParam];
+    if (page) {
+      const extra: Partial<NavigationSnapshot> = {};
+      // Processar ad_id se existir
+      const adId = params.get('ad_id');
+      if (adId && page === 'SelectAdPlan') {
+        extra.activeAdId = adId;
+      }
+      // Processar session_id para PaymentSuccess (usando activeCommentId temporariamente)
+      const sessionId = params.get('session_id');
+      if (sessionId && page === 'PaymentSuccess') {
+        extra.activeCommentId = sessionId; // Reutilizando activeCommentId para sessionId
+      }
+      return withDefault(page, extra);
+    }
+  }
 
   // Static routes mapping
   const staticMap: Record<string, Page> = {
@@ -144,13 +190,30 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/moderation': 'Moderation',
     '/dashboard': 'Dashboard',
     '/appeals': 'Appeals',
+    '/ad-approval-queue': 'AdApprovalQueue',
     '/premium': 'Premium',
     '/trending': 'TrendingTopics',
     '/explore': 'ExploreUsers',
     '/update-password': 'UpdatePassword',
   };
 
-  if (staticMap[pathname]) return withDefault(staticMap[pathname]);
+  if (staticMap[pathname]) {
+    const page = staticMap[pathname];
+    // Processar query params para páginas específicas
+    if (page === 'SelectAdPlan') {
+      const adId = params.get('ad_id');
+      if (adId) {
+        return withDefault(page, { activeAdId: adId });
+      }
+    }
+    if (page === 'PaymentSuccess') {
+      const sessionId = params.get('session_id');
+      if (sessionId) {
+        return withDefault(page, { activeCommentId: sessionId }); // Reutilizando activeCommentId para sessionId
+      }
+    }
+    return withDefault(page);
+  }
 
   // Dynamic routes
   const profileMatch = pathname.match(/^\/profile\/(.+)$/);

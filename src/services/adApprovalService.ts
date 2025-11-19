@@ -53,8 +53,15 @@ export const approveAd = async ({ adId, adminId }: ApproveAdParams) => {
       throw error;
     }
 
-    // TODO: Enviar notificação para o anunciante
-    // await sendNotification(ad.advertiser_id, 'Seu anúncio foi aprovado!');
+    // Enviar notificação para o anunciante
+    if (data?.advertiser_id) {
+      await supabase.from('notifications').insert({
+        recipient_id: data.advertiser_id,
+        actor_id: adminId,
+        type: 'ad_approved',
+        metadata: { ad_id: adId, ad_title: data.title }
+      });
+    }
 
     return { data, error: null };
   } catch (error: any) {
@@ -120,8 +127,15 @@ export const rejectAd = async ({ adId, adminId, reason }: RejectAdParams) => {
       }
     }
 
-    // TODO: Enviar notificação para o anunciante
-    // await sendNotification(ad.advertiser_id, `Seu anúncio "${ad.title}" foi rejeitado. Motivo: ${reason}`);
+    // Enviar notificação para o anunciante
+    if (ad.advertiser_id) {
+      await supabase.from('notifications').insert({
+        recipient_id: ad.advertiser_id,
+        actor_id: adminId,
+        type: 'ad_rejected',
+        metadata: { ad_id: adId, ad_title: ad.title, rejection_reason: reason }
+      });
+    }
 
     return { data, error: null };
   } catch (error: any) {

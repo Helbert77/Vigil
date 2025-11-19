@@ -6,6 +6,30 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 /**
+ * Rastrear uma impressão (view) de anúncio
+ * Versão simplificada para uso no hook
+ */
+export const trackImpression = async (adId: string, userId: string, userPlan: string): Promise<boolean> => {
+  return trackAdImpression(adId);
+};
+
+/**
+ * Rastrear um clique em anúncio
+ * Nota: clicks_count não existe na tabela ainda - implementar no futuro se necessário
+ */
+export const trackClick = async (adId: string, userId: string): Promise<boolean> => {
+  try {
+    // TODO: Adicionar coluna clicks_count na tabela anuncios se necessário
+    // Por enquanto, apenas retornamos true para não quebrar a aplicação
+    console.log('Click tracked for ad:', adId, 'by user:', userId);
+    return true;
+  } catch (error) {
+    console.error('Error tracking click:', error);
+    return false;
+  }
+};
+
+/**
  * Rastrear uma impressão de anúncio
  * Verifica automaticamente se atingiu limites e pausa se necessário
  */

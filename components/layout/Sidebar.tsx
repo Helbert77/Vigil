@@ -23,6 +23,7 @@ const DashboardIcon = () => <Icon><rect x="3" y="3" width="7" height="9"></rect>
 const GavelIcon = () => <Icon><path d="m14 13-7.5 7.5"/><path d="m18 17-5.5 5.5"/><path d="m15 6-3.5 3.5"/><path d="m2 21 6-6"/><path d="m3 3 7.5 7.5"/><path d="m13 1 6 6"/><path d="M12 6 9 3 3 9l3 3"/><path d="M18 12 21 9l-6-6-3 3"/></Icon>;
 const AnalyticsIcon = () => <Icon><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path><circle cx="21" cy="21" r="2"></circle></Icon>;
 const MegaphoneIcon = () => <Icon><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></Icon>;
+const CheckCircleIcon = () => <Icon><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></Icon>;
 
 interface SidebarProps {
   user: User | null;
@@ -33,11 +34,21 @@ interface SidebarProps {
   isCollapsed: boolean;
   pendingModerationCount: number;
   pendingAppealsCount: number;
+  pendingAdsCount?: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount }) => {
+const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount, pendingAdsCount = 0 }) => {
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
   const { addToast } = useToast();
+  
+  // Debug: verificar se pendingAdsCount está sendo recebido
+  useEffect(() => {
+    if (isModerator) {
+      console.log('🔍 Sidebar - pendingAdsCount:', pendingAdsCount);
+      console.log('🔍 Sidebar - isModerator:', isModerator);
+      console.log('🔍 Sidebar - user role:', user?.role);
+    }
+  }, [pendingAdsCount, isModerator, user?.role]);
 
   const handlePostClick = () => {
     if (currentPage !== 'Home') {
@@ -209,6 +220,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
                 isActive={currentPage === 'Appeals'} 
                 onClick={() => setCurrentPage('Appeals')} 
                 notificationCount={pendingAppealsCount} 
+                isCollapsed={isCollapsed} 
+              />
+              <NavLink 
+                icon={<CheckCircleIcon />} 
+                label="Aprovar Anúncios" 
+                isActive={currentPage === 'AdApprovalQueue'} 
+                onClick={() => setCurrentPage('AdApprovalQueue')} 
+                notificationCount={pendingAdsCount > 0 ? pendingAdsCount : undefined} 
                 isCollapsed={isCollapsed} 
               />
             </>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-export type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Library' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers' | 'SelectAdPlan' | 'PaymentSuccess';
+export type Page = 'Home' | 'Profile' | 'Settings' | 'Notifications' | 'Messages' | 'Saved' | 'Communities' | 'Library' | 'Timeline' | 'PostDetail' | 'Search' | 'CommunityDetail' | 'TopicDetail' | 'About' | 'TermsOfService' | 'PrivacyPolicy' | 'CookiePolicy' | 'Disclaimer' | 'Accessibility' | 'UpdatePassword' | 'Moderation' | 'Dashboard' | 'Appeals' | 'Premium' | 'TrendingTopics' | 'ExploreUsers' | 'AdDetail' | 'AdsDashboard' | 'MyAds' | 'SelectAdPlan' | 'PaymentSuccess';
 
 interface NavigationState {
   currentPage: Page;

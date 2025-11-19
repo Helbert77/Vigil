@@ -90,10 +90,16 @@ export interface Post {
 export interface Notification {
   id: string;
   actor: User; // O usuário que realizou a ação
-  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message';
+  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected';
   post_id?: string;
   is_read: boolean;
   created_at: string;
+  metadata?: {
+    ad_id?: string;
+    ad_title?: string;
+    rejection_reason?: string;
+    [key: string]: any;
+  };
 }
 
 export interface ChatMessage {

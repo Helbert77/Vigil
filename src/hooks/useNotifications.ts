@@ -19,6 +19,7 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
       if (error) throw error;
       const formattedNotifications: AppNotification[] = data.filter((n: any) => n.actor).map((n: any) => ({
         id: n.id, type: n.type, post_id: n.post_id, is_read: n.is_read, created_at: n.created_at,
+        metadata: n.metadata || undefined,
         actor: {
           id: n.actor.id, name: `${n.actor.first_name || ''} ${n.actor.last_name || ''}`.trim() || n.actor.username,
           username: n.actor.username, avatarUrl: n.actor.avatar_url || `https://picsum.photos/seed/${n.actor.id}/100/100`,
@@ -41,6 +42,7 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
           if (!actor) return;
           const newNotification: AppNotification = {
             id: payload.new.id, type: payload.new.type, post_id: payload.new.post_id, is_read: payload.new.is_read, created_at: payload.new.created_at,
+            metadata: payload.new.metadata || undefined,
             actor: { ...actor }
           };
           setNotifications(prev => [newNotification, ...prev]);

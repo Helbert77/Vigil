@@ -91,12 +91,46 @@ serve(async (req) => {
               payment_status: 'paid',
               stripe_payment_intent_id: paymentIntentId,
               approval_status: 'pending_approval',
+              status: 'paused', // Manter pausado até aprovação
               start_date: startDate.toISOString(),
               end_date: endDate.toISOString(),
               max_impressions: maxImpressions,
             }).eq('id', adId);
 
             console.log(`Ad package payment completed: ${adId}, package: ${packageType}`);
+
+            // Enviar notificações para moderadores/admins sobre novo anúncio pendente
+            try {
+              const { data: moderators, error: moderatorsError } = await supabase
+                .from('profiles')
+                .select('id')
+                .in('role', ['admin', 'moderator']);
+              
+              if (moderatorsError) {
+                console.error('Error fetching moderators:', moderatorsError);
+              } else if (moderators && moderators.length > 0) {
+                const notifications = moderators.map(mod => ({
+                  recipient_id: mod.id,
+                  actor_id: userIdFromMeta || null,
+                  type: 'ad_approval_pending',
+                  metadata: { ad_id: adId }
+                }));
+                
+                const { error: notificationError } = await supabase
+                  .from('notifications')
+                  .insert(notifications);
+                
+                if (notificationError) {
+                  console.error('Error sending notifications:', notificationError);
+                } else {
+                  console.log(`✅ Notifications sent to ${moderators.length} moderators/admins for ad ${adId}`);
+                }
+              } else {
+                console.log('No moderators/admins found to notify');
+              }
+            } catch (error) {
+              console.error('Error in notification process:', error);
+            }
 
           } else if (paymentType === 'credits') {
             // Compra de créditos
@@ -143,11 +177,45 @@ serve(async (req) => {
               payment_status: 'paid',
               stripe_payment_intent_id: paymentIntentId,
               approval_status: 'pending_approval',
+              status: 'paused', // Manter pausado até aprovação
               budget: cpmBudget,
               spent: 0,
             }).eq('id', adId);
 
             console.log(`Ad CPM payment completed: ${adId}, budget: €${cpmBudget}`);
+
+            // Enviar notificações para moderadores/admins sobre novo anúncio pendente
+            try {
+              const { data: moderators, error: moderatorsError } = await supabase
+                .from('profiles')
+                .select('id')
+                .in('role', ['admin', 'moderator']);
+              
+              if (moderatorsError) {
+                console.error('Error fetching moderators:', moderatorsError);
+              } else if (moderators && moderators.length > 0) {
+                const notifications = moderators.map(mod => ({
+                  recipient_id: mod.id,
+                  actor_id: userIdFromMeta || null,
+                  type: 'ad_approval_pending',
+                  metadata: { ad_id: adId }
+                }));
+                
+                const { error: notificationError } = await supabase
+                  .from('notifications')
+                  .insert(notifications);
+                
+                if (notificationError) {
+                  console.error('Error sending notifications:', notificationError);
+                } else {
+                  console.log(`✅ Notifications sent to ${moderators.length} moderators/admins for ad ${adId}`);
+                }
+              } else {
+                console.log('No moderators/admins found to notify');
+              }
+            } catch (error) {
+              console.error('Error in notification process:', error);
+            }
           }
 
         } else if (userId && subscriptionId) {
