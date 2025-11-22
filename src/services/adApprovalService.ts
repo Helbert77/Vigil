@@ -112,7 +112,7 @@ export const rejectAd = async ({ adId, adminId, reason }: RejectAdParams) => {
         // TODO: Implementar chamada ao Stripe para criar refund
         // Isso deve ser feito via Edge Function por segurança
         console.log('TODO: Process refund for payment intent:', ad.stripe_payment_intent_id);
-        
+
         // await fetch(`${SUPABASE_URL}/functions/v1/process-ad-refund`, {
         //   method: 'POST',
         //   body: JSON.stringify({
@@ -129,12 +129,16 @@ export const rejectAd = async ({ adId, adminId, reason }: RejectAdParams) => {
 
     // Enviar notificação para o anunciante
     if (ad.advertiser_id) {
-      await supabase.from('notifications').insert({
+      const { error: notifError } = await supabase.from('notifications').insert({
         recipient_id: ad.advertiser_id,
         actor_id: adminId,
         type: 'ad_rejected',
         metadata: { ad_id: adId, ad_title: ad.title, rejection_reason: reason }
       });
+
+      if (notifError) {
+        console.error('Erro ao criar notificação:', notifError);
+      }
     }
 
     return { data, error: null };

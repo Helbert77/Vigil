@@ -1944,3 +1944,14 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
     cpc: Number(item.cpc) || 0
   }));
 };
+/**
+ * Processar reembolso de anúncio rejeitado
+ */
+export const processAdRefund = async (adId: string, userId: string) => {
+  const { data, error } = await supabase.functions.invoke('process-ad-refund', {
+    body: { adId, userId }
+  });
+
+  if (error) throw error;
+  return data;
+};

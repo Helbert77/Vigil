@@ -36,35 +36,60 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
     if (appUser) {
       fetchNotifications();
       const notificationsChannel = supabase.channel('public:notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${appUser.id}` }, 
-        (payload) => {
-          const actor = allUsers.find(u => u.id === payload.new.actor_id);
-          if (!actor) return;
-          const newNotification: AppNotification = {
-            id: payload.new.id, type: payload.new.type, post_id: payload.new.post_id, is_read: payload.new.is_read, created_at: payload.new.created_at,
-            metadata: payload.new.metadata || undefined,
-            actor: { ...actor }
-          };
-          setNotifications(prev => [newNotification, ...prev]);
-          addToast(`Nova notificação de ${newNotification.actor.name}!`, 'info');
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            const hidden = document.visibilityState === 'hidden' || !document.hasFocus();
-            const now = Date.now();
-            const canShow = hidden && (now - _lastShownTs > 15000) && !_notifiedIds.has(newNotification.id);
-            if (canShow) {
-              try {
-                new Notification('Nova notificação', {
-                  body: `${newNotification.actor.name} enviou uma ${newNotification.type}`,
-                  icon: '/logo.png',
-                  tag: `notif-${newNotification.id}`,
-                });
-                if (navigator?.vibrate) navigator.vibrate([20]);
-              } catch {}
-              _lastShownTs = now;
-              _notifiedIds.add(newNotification.id);
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${appUser.id}` },
+          async (payload) => {
+            let actor = allUsers.find(u => u.id === payload.new.actor_id);
+
+            // Se actor não está em allUsers, buscar do banco
+            if (!actor) {
+              const { data: actorProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', payload.new.actor_id)
+                .single();
+
+              if (actorProfile) {
+                actor = {
+                  id: actorProfile.id,
+                  name: `${actorProfile.first_name || ''} ${actorProfile.last_name || ''}`.trim() || actorProfile.username,
+                  username: actorProfile.username,
+                  avatarUrl: actorProfile.avatar_url || `https://picsum.photos/seed/${actorProfile.id}/100/100`,
+                  joinDate: '',
+                  followingCount: 0,
+                  followersCount: 0,
+                  plan: actorProfile.plan || 'free',
+                  role: actorProfile.role || 'user',
+                };
+              }
             }
-          }
-        })
+
+            if (!actor) return;
+
+            const newNotification: AppNotification = {
+              id: payload.new.id, type: payload.new.type, post_id: payload.new.post_id, is_read: payload.new.is_read, created_at: payload.new.created_at,
+              metadata: payload.new.metadata || undefined,
+              actor: { ...actor }
+            };
+            setNotifications(prev => [newNotification, ...prev]);
+            addToast(`Nova notificação de ${newNotification.actor.name}!`, 'info');
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              const hidden = document.visibilityState === 'hidden' || !document.hasFocus();
+              const now = Date.now();
+              const canShow = hidden && (now - _lastShownTs > 15000) && !_notifiedIds.has(newNotification.id);
+              if (canShow) {
+                try {
+                  new Notification('Nova notificação', {
+                    body: `${newNotification.actor.name} enviou uma ${newNotification.type}`,
+                    icon: '/logo.png',
+                    tag: `notif-${newNotification.id}`,
+                  });
+                  if (navigator?.vibrate) navigator.vibrate([20]);
+                } catch { }
+                _lastShownTs = now;
+                _notifiedIds.add(newNotification.id);
+              }
+            }
+          })
         .subscribe();
       return () => { supabase.removeChannel(notificationsChannel); };
     }
