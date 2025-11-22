@@ -56,11 +56,11 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
       className={`
         relative rounded-xl p-6 cursor-pointer transition-all duration-300 transform
         ${isSelected
-          ? 'ring-4 ring-primary-500 scale-105 shadow-2xl'
-          : 'ring-2 ring-gray-300 dark:ring-gray-700 hover:ring-primary-300 hover:scale-102 shadow-lg hover:shadow-xl'
+          ? 'ring-4 ring-primary scale-105 shadow-2xl'
+          : 'ring-2 ring-gray-300 dark:ring-dark-border hover:ring-primary hover:scale-102 shadow-lg hover:shadow-xl'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        bg-white dark:bg-gray-800
+        bg-light-card dark:bg-dark-card
       `}
     >
       {/* Badge de destaque */}
@@ -68,8 +68,8 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
         <div className="absolute -top-3 -right-3">
           <span className={`
             inline-flex px-4 py-1 rounded-full text-xs font-semibold
-            ${pkg.recommended 
-              ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white' 
+            ${pkg.recommended
+              ? 'bg-gradient-to-r from-primary to-blue-600 text-white'
               : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
             }
             shadow-lg
@@ -99,7 +99,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
         </div>
 
         {isSelected && (
-          <div className="flex items-center justify-center w-8 h-8 bg-primary-500 rounded-full">
+          <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
             <CheckIcon />
           </div>
         )}
@@ -118,9 +118,9 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
       </div>
 
       {/* Informações principais */}
-      <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+      <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-light-bg dark:bg-dark-bg rounded-lg">
         <div className="text-center">
-          <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+          <div className="text-2xl font-bold text-primary dark:text-primary">
             {pkg.duration}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase">
@@ -128,7 +128,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
           </div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+          <div className="text-2xl font-bold text-primary dark:text-primary">
             {formatNumber(pkg.impressions)}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase">
@@ -156,7 +156,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
         className={`
           w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
           ${isSelected
-            ? 'bg-primary-600 text-white ring-2 ring-primary-500 ring-offset-2'
+            ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
             : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600'
           }
           ${disabled ? 'cursor-not-allowed' : 'hover:scale-105'}

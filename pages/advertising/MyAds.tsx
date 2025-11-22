@@ -3,26 +3,11 @@ import { User, Ad } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import CreateAdModal from '@/components/advertising/CreateAdModal';
+import EditAdModal from '@/components/advertising/EditAdModal';
+import AdActionsMenu from '@/components/advertising/AdActionsMenu';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { Icon } from '@/components/icons/Icon';
-
-const PlusIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
+import { pushHistoryState, type NavigationSnapshot } from '@/src/utils/history';
 
 const EyeIcon = () => <Icon className="h-5 w-5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
 const HeartIcon = () => <Icon className="h-5 w-5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></Icon>;
@@ -38,6 +23,8 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
   const [allAdsCount, setAllAdsCount] = useState(0); // Contador total de anúncios
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingAd, setEditingAd] = useState<Ad | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'paused' | 'ended'>('all');
   const [adToDelete, setAdToDelete] = useState<string | null>(null);
   const [adToPause, setAdToPause] = useState<{ id: string; status: string } | null>(null);
@@ -130,6 +117,22 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
     }
   };
 
+  const handleEditAd = (ad: Ad) => {
+    setEditingAd(ad);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpgradePlan = (ad: Ad) => {
+    // Usar navegação SPA sem reload
+    const snapshot: NavigationSnapshot = {
+      page: 'SelectAdPlan',
+      activeAdId: ad.id,
+    };
+
+    pushHistoryState(snapshot);
+    window.dispatchEvent(new CustomEvent('navigation', { detail: snapshot }));
+  };
+
   const getStatusBadge = (status: string) => {
     const styles = {
       active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
@@ -165,9 +168,10 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-primary hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+          className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
+              /* Mobile adjustments: smaller size */
+              md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
         >
-          <PlusIcon />
           Criar Anúncio
         </button>
       </div>
@@ -176,41 +180,37 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
       <div className="flex gap-2">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'all'
-              ? 'bg-primary text-white'
-              : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'all'
+            ? 'bg-primary text-white'
+            : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
         >
           Todos ({allAdsCount})
         </button>
         <button
           onClick={() => setFilter('active')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'active'
-              ? 'bg-primary text-white'
-              : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'active'
+            ? 'bg-primary text-white'
+            : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
         >
           Ativos
         </button>
         <button
           onClick={() => setFilter('paused')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'paused'
-              ? 'bg-primary text-white'
-              : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'paused'
+            ? 'bg-primary text-white'
+            : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
         >
           Pausados
         </button>
         <button
           onClick={() => setFilter('ended')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'ended'
-              ? 'bg-primary text-white'
-              : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'ended'
+            ? 'bg-primary text-white'
+            : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
         >
           Encerrados
         </button>
@@ -224,28 +224,42 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
         onAdCreated={fetchMyAds}
       />
 
+      {editingAd && (
+        <EditAdModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingAd(null);
+          }}
+          user={user}
+          ad={editingAd}
+          onAdUpdated={fetchMyAds}
+        />
+      )}
+
       {/* Lista de Anúncios */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : ads.length === 0 ? (
-        <div className="bg-light-card dark:bg-dark-card p-12 rounded-lg shadow-sm border border-light-border dark:border-dark-border text-center">
+        <div className="bg-light-card dark:bg-dark-card p-12 rounded-lg shadow-sm border border-light-border dark:border-dark-border text-center flex flex-col items-center justify-center">
           <div className="text-6xl mb-4">📢</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Nenhum anúncio encontrado
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {filter === 'all' 
+            {filter === 'all'
               ? 'Você ainda não criou nenhum anúncio.'
               : `Você não tem anúncios ${filter === 'active' ? 'ativos' : filter === 'paused' ? 'pausados' : 'encerrados'}.`
             }
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-colors inline-flex items-center gap-2"
+            className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
+              /* Mobile adjustments: smaller size */
+              md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
           >
-            <PlusIcon />
             Criar Primeiro Anúncio
           </button>
         </div>
@@ -276,10 +290,22 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
               <div className="p-4 space-y-3">
                 {/* Título e Status */}
                 <div className="flex justify-between items-start gap-2">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex-1">
-                    {ad.title}
-                  </h3>
-                  {getStatusBadge(ad.status)}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                        {ad.title}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(ad.status)}
+                        <AdActionsMenu
+                          ad={ad}
+                          onEdit={handleEditAd}
+                          onUpgradePlan={handleUpgradePlan}
+                          onDelete={(ad) => setAdToDelete(ad.id)}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Descrição */}
@@ -305,11 +331,61 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
 
                 {/* Datas e Budget */}
                 <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                  {ad.start_date && (
-                    <span>Início: {new Date(ad.start_date).toLocaleDateString('pt-BR')}</span>
-                  )}
-                  {ad.budget && ad.budget > 0 && (
-                    <span>Budget: € {ad.budget.toFixed(2)}</span>
+                  <div className="flex flex-col gap-1">
+                    {ad.start_date && (
+                      <span>Início: {new Date(ad.start_date).toLocaleDateString('pt-BR')}</span>
+                    )}
+                    {ad.end_date && (
+                      <span>Término: {new Date(ad.end_date).toLocaleDateString('pt-BR')}</span>
+                    )}
+                  </div>
+                  {ad.budget !== undefined && ad.budget !== null && (
+                    <div className="text-right">
+                      <span className="block">Valor Restante:</span>
+                      <span className={`font-bold ${(() => {
+                          let remaining = ad.budget;
+
+                          // Cálculo para pacotes baseados em tempo
+                          if (ad.payment_type === 'package' && ad.start_date && ad.end_date && ad.status === 'active') {
+                            const start = new Date(ad.start_date).getTime();
+                            const end = new Date(ad.end_date).getTime();
+                            const now = new Date().getTime();
+                            const totalDuration = end - start;
+                            const elapsed = now - start;
+
+                            if (totalDuration > 0) {
+                              const percentageRemaining = Math.max(0, 1 - (elapsed / totalDuration));
+                              remaining = ad.budget * percentageRemaining;
+                            }
+                          } else if (ad.status === 'ended') {
+                            remaining = 0;
+                          }
+
+                          return remaining <= 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400';
+                        })()
+                        }`}>
+                        € {(() => {
+                          let remaining = ad.budget;
+
+                          if (ad.payment_type === 'package' && ad.start_date && ad.end_date && ad.status === 'active') {
+                            const start = new Date(ad.start_date).getTime();
+                            const end = new Date(ad.end_date).getTime();
+                            const now = new Date().getTime();
+                            const totalDuration = end - start;
+                            const elapsed = now - start;
+
+                            if (totalDuration > 0) {
+                              const percentageRemaining = Math.max(0, 1 - (elapsed / totalDuration));
+                              remaining = ad.budget * percentageRemaining;
+                            }
+                          } else if (ad.status === 'ended') {
+                            remaining = 0;
+                          }
+
+                          return remaining.toFixed(2);
+                        })()}
+                      </span>
+                    </div>
                   )}
                 </div>
 
@@ -317,22 +393,22 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                 <div className="flex gap-2 pt-2 border-t border-light-border dark:border-dark-border">
                   <button
                     onClick={() => setAdToPause({ id: ad.id, status: ad.status })}
-                    disabled={ad.status === 'ended'}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      ad.status === 'ended'
+                    disabled={ad.status === 'ended' || (ad.status === 'paused' && ad.approval_status !== 'approved')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${ad.status === 'ended'
+                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                      : ad.status === 'paused' && ad.approval_status !== 'approved'
                         ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                         : ad.status === 'active'
-                        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800'
-                        : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
-                    }`}
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800'
+                          : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                      }`}
+                    title={ad.status === 'paused' && ad.approval_status !== 'approved' ? 'Aguardando aprovação da moderação' : ''}
                   >
-                    {ad.status === 'active' ? 'Pausar' : ad.status === 'paused' ? 'Ativar' : 'Encerrado'}
-                  </button>
-                  <button
-                    onClick={() => setAdToDelete(ad.id)}
-                    className="px-4 py-2 rounded-lg bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800 font-medium transition-colors flex items-center gap-2"
-                  >
-                    <TrashIcon />
+                    {ad.status === 'active'
+                      ? 'Pausar'
+                      : ad.status === 'paused'
+                        ? (ad.approval_status !== 'approved' ? 'Aguardando Aprovação' : 'Ativar')
+                        : 'Encerrado'}
                   </button>
                 </div>
               </div>
@@ -373,4 +449,3 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
 };
 
 export default MyAds;
-

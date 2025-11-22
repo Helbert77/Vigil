@@ -67,19 +67,19 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
   const [searchTerm, setSearchTerm] = useState('');
   const pickerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   const isDark = theme === 'dark';
 
   // Fechar ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
+
       // Não fechar se clicar no botão que abre o picker
       if (buttonRef?.current?.contains(target)) {
         return;
       }
-      
+
       // Fechar se clicar fora do picker
       if (pickerRef.current && !pickerRef.current.contains(target)) {
         onClose();
@@ -214,21 +214,21 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
   // Filtrar emojis por busca
   const getDisplayedEmojis = () => {
     const currentEmojis = EMOJI_CATEGORIES[activeCategory].emojis;
-    
+
     if (!searchTerm.trim()) {
       return currentEmojis;
     }
 
     const term = searchTerm.toLowerCase().trim();
-    
+
     // Buscar em todas as categorias se houver termo de busca
     const allEmojis = Object.values(EMOJI_CATEGORIES).flatMap(cat => cat.emojis);
-    
+
     // Filtrar por correspondência de nome
     return allEmojis.filter((emoji, index, self) => {
       // Remove duplicatas
       if (self.indexOf(emoji) !== index) return false;
-      
+
       // Verifica se o emoji tem correspondência no mapa de nomes
       const names = emojiNames[emoji] || [];
       return names.some(name => name.includes(term));
@@ -255,7 +255,8 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
             onChange={(e) => setSearchTerm(e.target.value)}
             className="emoji-search-input"
           />
-          <button 
+          <button
+            type="button"
             onClick={onClose}
             className="emoji-close-button"
             aria-label="Fechar"
@@ -269,6 +270,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
           <div className="emoji-categories">
             {Object.entries(EMOJI_CATEGORIES).map(([key, category]) => (
               <button
+                type="button"
                 key={key}
                 className={`emoji-category-btn ${activeCategory === key ? 'active' : ''}`}
                 onClick={() => setActiveCategory(key as keyof typeof EMOJI_CATEGORIES)}
@@ -287,6 +289,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
             <div className="emoji-grid">
               {displayedEmojis.map((emoji, index) => (
                 <button
+                  type="button"
                   key={`${emoji}-${index}`}
                   className="emoji-button"
                   onClick={() => handleEmojiClick(emoji)}

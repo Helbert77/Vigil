@@ -43,18 +43,19 @@ interface HomeProps {
   followedUserIds: string[];
   allUsers: User[];
   setCurrentPage: (page: any) => void;
+  onViewAd?: (adId: string) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostIds, onToggleSave, user, communities, joinedCommunityIds, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll, allUsers, setCurrentPage, onAddComment, onUpdateComment, onDeleteComment, onToggleCommentLike, onViewAd }) => {
   // Buscar anúncios ativos com estado local
-  const { 
-    ads, 
-    isLoading: isLoadingAds, 
-    updateAdLikes, 
-    updateAdShares, 
-    updateAdViews 
+  const {
+    ads,
+    isLoading: isLoadingAds,
+    updateAdLikes,
+    updateAdShares,
+    updateAdViews
   } = useAdsWithState('main', undefined, user.id);
-  
+
   // Hook para rastrear métricas de anúncios
   const trackAdMetric = useAdTracking(user.id, user.plan, 'main');
 
@@ -80,7 +81,7 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
   return (
     <div>
       <CreatePost onAddPost={onAddPost} user={user} communities={communities} joinedCommunityIds={joinedCommunityIds} allUsers={allUsers} setCurrentPage={setCurrentPage} />
-      
+
       <div>
         {feedItems.length > 0 ? feedItems.map((item, index) => {
           // Verificar se é um anúncio ou post
@@ -105,10 +106,10 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
             );
           } else {
             return (
-              <PostCard 
-                key={`post-${item.id}-${index}`} 
-                post={item} 
-                onUpdatePost={onUpdatePost} 
+              <PostCard
+                key={`post-${item.id}-${index}`}
+                post={item}
+                onUpdatePost={onUpdatePost}
                 isSaved={savedPostIds.includes(item.id)}
                 onToggleSave={onToggleSave}
                 user={user}

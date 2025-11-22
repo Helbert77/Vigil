@@ -6,6 +6,7 @@ import { AD_PRICING_CONFIG, getPackageArray, PackageType } from '@/src/config/ad
 import AdPackageCard from '@/components/advertising/AdPackageCard';
 import CPMCalculator from '@/components/advertising/CPMCalculator';
 import BuyCreditsModal from '@/components/advertising/BuyCreditsModal';
+import { pushHistoryState } from '@/src/utils/history';
 
 interface SelectAdPlanProps {
   user: User;
@@ -111,6 +112,31 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
     }
   };
 
+  const handleBack = async () => {
+    if (adId) {
+      // Se o usuário voltar, excluímos o anúncio rascunho para não ficar "pendente" sem pagamento
+      // Isso corrige o problema de anúncios criados sem checkout
+      try {
+        const { error } = await supabase
+          .from('anuncios')
+          .delete()
+          .eq('id', adId)
+          .eq('payment_status', 'pending'); // Garantir que só deleta se estiver pendente
+
+        if (error) {
+          console.error('Erro ao limpar anúncio rascunho:', error);
+        } else {
+          console.log('Anúncio rascunho limpo com sucesso');
+        }
+      } catch (err) {
+        console.error('Erro ao tentar excluir anúncio:', err);
+      }
+    }
+
+    pushHistoryState({ page: 'MyAds' });
+    window.dispatchEvent(new CustomEvent('navigation', { detail: { page: 'MyAds' } }));
+  };
+
   if (!adData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -122,13 +148,15 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   const packages = getPackageArray();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
+
+
           <button
-            onClick={() => { window.location.href = '/?page=MyAds'; }}
-            className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+            onClick={handleBack}
+            className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 transition-colors"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -145,7 +173,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         </div>
 
         {/* Preview do anúncio */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg mb-8">
+        <div className="bg-light-card dark:bg-dark-card rounded-xl p-6 shadow-lg mb-8 border border-light-border dark:border-dark-border">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Preview do Anúncio
           </h3>
@@ -169,7 +197,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
                   href={adData.link_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
+                  className="text-primary hover:text-blue-600 text-sm mt-2 inline-block"
                 >
                   {adData.link_url}
                 </a>
@@ -179,20 +207,20 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex space-x-4 mb-6 border-b border-light-border dark:border-dark-border">
           <button
             onClick={() => setSelectedTab('packages')}
             className={`
               pb-4 px-2 font-semibold transition-colors relative
               ${selectedTab === 'packages'
-                ? 'text-primary-600 dark:text-primary-400'
+                ? 'text-primary dark:text-primary'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }
             `}
           >
             Pacotes Fixos
             {selectedTab === 'packages' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
@@ -200,14 +228,14 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             className={`
               pb-4 px-2 font-semibold transition-colors relative
               ${selectedTab === 'cpm'
-                ? 'text-primary-600 dark:text-primary-400'
+                ? 'text-primary dark:text-primary'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }
             `}
           >
             Orçamento Personalizado (CPM)
             {selectedTab === 'cpm' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
         </div>
@@ -265,7 +293,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         </div>
 
         {/* Botão de prosseguir */}
-        <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-6 -mx-4 sm:-mx-6 lg:-mx-8">
+        <div className="sticky bottom-0 bg-light-card dark:bg-dark-card border-t border-light-border dark:border-dark-border p-6 -mx-4 sm:-mx-6 lg:-mx-8 shadow-lg">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -278,7 +306,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               className={`
                 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200
                 ${(selectedPackage || selectedCpmBudget) && !isLoading
-                  ? 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
+                  ? 'bg-primary hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                   : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }
               `}

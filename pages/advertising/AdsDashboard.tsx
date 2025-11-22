@@ -23,7 +23,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<number>(7);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+
   // Estados para métricas
   const [aggregatedMetrics, setAggregatedMetrics] = useState<any>(null);
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
@@ -74,24 +74,23 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
             Acompanhe a performance das suas campanhas
           </p>
         </div>
-        
+
         {/* Botão Criar Anúncio e Seletor de período */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-primary hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
+              /* Mobile adjustments: smaller size */
+              md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
             Criar Anúncio
           </button>
-          
+
           <label className="text-sm text-gray-600 dark:text-gray-400">
             Período:
           </label>
-          <select 
-            value={timeframe} 
+          <select
+            value={timeframe}
             onChange={(e) => setTimeframe(Number(e.target.value))}
             className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
           >
@@ -124,21 +123,21 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
               description="Total de visualizações"
               icon={<EyeIcon />}
             />
-            
+
             <AdMetricsCard
               title="Cliques"
               value={aggregatedMetrics?.total_clicks?.toLocaleString('pt-BR') || '0'}
               description={`CTR: ${aggregatedMetrics?.ctr?.toFixed(2) || '0.00'}%`}
               icon={<MousePointerIcon />}
             />
-            
+
             <AdMetricsCard
               title="Engajamento"
               value={aggregatedMetrics?.total_engagement?.toLocaleString('pt-BR') || '0'}
               description={`Taxa: ${aggregatedMetrics?.engagement_rate?.toFixed(2) || '0.00'}%`}
               icon={<HeartIcon />}
             />
-            
+
             <AdMetricsCard
               title="Custo Total"
               value={`€ ${totalCost.toFixed(2)}`}
@@ -155,14 +154,14 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
                 {aggregatedMetrics?.total_likes?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
-            
+
             <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Compartilhamentos</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
                 {aggregatedMetrics?.total_shares?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
-            
+
             <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Salvamentos</p>
               <p className="text-xl font-bold text-gray-900 dark:text-white">
@@ -175,8 +174,8 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           <AdPerformanceChart data={dailyMetrics} isLoading={false} />
 
           {/* Tabela de Performance por Anúncio */}
-          <AdsPerformanceTable 
-            ads={adsPerformance} 
+          <AdsPerformanceTable
+            ads={adsPerformance}
             isLoading={false}
             onViewDetails={(adId) => {
               // TODO: Implementar navegação para página de detalhes do anúncio
@@ -197,7 +196,9 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
                 </p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-primary hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+                  className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
+              /* Mobile adjustments: smaller size */
+              md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
                 >
                   Criar Primeiro Anúncio
                 </button>

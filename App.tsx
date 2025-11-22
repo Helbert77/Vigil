@@ -10,7 +10,17 @@ import Messages from '@/pages/Messages';
 import Saved from '@/pages/Saved';
 import Communities from '@/pages/Communities';
 import PostDetail from '@/pages/PostDetail';
-import AdDetail from '@/pages/AdDetail';
+import AdDetailContainer from '@/components/ads/AdDetailContainer';
+
+// ... (imports)
+
+// ... inside App component ...
+
+
+
+// ...
+
+
 import Search from '@/pages/Search';
 import CommunityDetail from '@/pages/CommunityDetail';
 import TopicDetail from '@/pages/TopicDetail';
@@ -71,7 +81,7 @@ import {
 const App: React.FC = () => {
   const { session, user: appUser, loading: sessionLoading, refreshUser } = useSession();
   const { addToast } = useToast();
-  
+
   // State for navigation and UI
   const [currentPage, setCurrentPage] = useState<Page>('Home');
   const [previousPage, setPreviousPage] = useState<Page>('Home');
@@ -99,19 +109,19 @@ const App: React.FC = () => {
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
   const { moderationQueue, appealsQueue, pendingModerationCount, pendingAppealsCount, isLoadingModeration, refetchModerationData } = useModerationData(appUser);
-  const { pendingAdsCount } = useAdApprovalData(appUser);
+  const { pendingAdsCount, refetchPendingAdsCount } = useAdApprovalData(appUser);
   const { items: libraryItems, isLoading: isLibraryLoading, handleAddItem: handleAddLibraryItem, handleUpdateItem: handleUpdateLibraryItem, handleDeleteItem: handleDeleteLibraryItem, handleIncrementView: handleIncrementLibraryView, handleIncrementDownload: handleIncrementLibraryDownload } = useLibrary(appUser);
 
   // Hooks para anúncios (devem estar no nível superior do componente)
   const { ads: mainAds } = useAds('main');
-  const { 
-    likedAdIds, 
-    savedAdIds, 
-    toggleAdLike, 
-    toggleAdSave, 
-    hideAd, 
-    incrementAdShares, 
-    incrementAdViews 
+  const {
+    likedAdIds,
+    savedAdIds,
+    toggleAdLike,
+    toggleAdSave,
+    hideAd,
+    incrementAdShares,
+    incrementAdViews
   } = useAdInteractions(appUser?.id || '');
   const trackAdMetric = useAdTracking(appUser?.id || '', appUser?.plan || 'free', 'main');
 
@@ -130,9 +140,9 @@ const App: React.FC = () => {
     loadSupportButtonPreference();
   }, [appUser?.id]);
 
-  
 
-  
+
+
 
   const scrollToTop = () => {
     window.scrollTo(0, 0);
@@ -170,12 +180,12 @@ const App: React.FC = () => {
         return;
       }
     }
-    
+
     // Não faz scroll automático para a página de mensagens para manter o título visível
     if (page !== 'Messages') {
       scrollToTop();
     }
-    
+
     if (page === 'Home') { setActiveTag(null); setSearchQuery(''); }
     if (page === 'Profile') setViewedUserId(null);
     if (page === 'Notifications' && unreadNotificationsCount > 0) {
@@ -206,7 +216,7 @@ const App: React.FC = () => {
     // This effect resets the page to Home upon login.
     // It checks if the user state has transitioned from logged-out to logged-in.
     if (!previousUserRef.current && appUser) {
-        handleNavigation('Home');
+      handleNavigation('Home');
     }
     // Store the current user state for the next render comparison.
     previousUserRef.current = appUser;
@@ -253,7 +263,7 @@ const App: React.FC = () => {
         applySnapshotToState(fallback);
       }
     };
-    
+
     // Listener para eventos customizados de navegação (usado por componentes que usam pushHistoryState diretamente)
     const onNavigation = (event: CustomEvent<NavigationSnapshot>) => {
       const snapshot = event.detail;
@@ -261,7 +271,7 @@ const App: React.FC = () => {
         applySnapshotToState(snapshot);
       }
     };
-    
+
     window.addEventListener('popstate', onPopState);
     window.addEventListener('navigation', onNavigation as EventListener);
     return () => {
@@ -488,7 +498,7 @@ const App: React.FC = () => {
     try {
       // Timeout para evitar que o logout trave indefinidamente
       const logoutPromise = api.logout();
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Timeout no logout')), 10000)
       );
 
@@ -510,7 +520,7 @@ const App: React.FC = () => {
       forceWebBrowserLogout();
       return;
     }
-    
+
     // Redirecionamento apenas se não houve erro crítico
     window.location.href = '/';
   };
@@ -518,13 +528,13 @@ const App: React.FC = () => {
   const filteredContent = useMemo(() => {
     const mutedWords = (appUser?.mutedWords || []).map(w => w.trim().toLowerCase()).filter(Boolean);
     const filterComments = (comments: Comment[]): Comment[] => comments.filter(c => !blockedUserIds.includes(c.user.id) && !mutedWords.some(word => c.text.toLowerCase().includes(word))).map(c => ({ ...c, replies: c.replies ? filterComments(c.replies) : [] }));
-    
+
     // Filtrar posts considerando restrições de comunidade
     const filteredPosts = posts.filter((p: Post) => {
       // Filtrar usuários bloqueados e palavras silenciadas
       if (blockedUserIds.includes(p.user.id)) return false;
       if (mutedWords.some(word => p.text.toLowerCase().includes(word))) return false;
-      
+
       // Se o post pertence a uma comunidade, verificar acesso
       if (p.communityId) {
         const community = communities.find(c => c.id === p.communityId);
@@ -545,30 +555,30 @@ const App: React.FC = () => {
               default: return true;
             }
           };
-          
+
           // Verificar se o usuário tem acesso à comunidade
           if (!canAccessCommunity(appUser?.plan || 'free', community.requiredPlan)) {
             return false;
           }
         }
       }
-      
+
       return true;
     }).map((p: Post) => ({ ...p, comments: filterComments(p.comments) }));
-    
+
     const filteredAllUsers = allUsers.filter((u: User) => !blockedUserIds.includes(u.id));
     const filteredNotifications = notifications.filter((n: Notification) => !blockedUserIds.includes(n.actor.id));
     const filteredConversations = conversations.filter((c: Conversation) => c.participants.every((p: User) => !blockedUserIds.includes(p.id)));
-    const filteredUsersToFollow = usersToFollow.filter((u: User) => 
-      !blockedUserIds.includes(u.id) && 
-      !followedUserIds.includes(u.id) && 
+    const filteredUsersToFollow = usersToFollow.filter((u: User) =>
+      !blockedUserIds.includes(u.id) &&
+      !followedUserIds.includes(u.id) &&
       u.id !== appUser?.id
     );
     return { filteredPosts, filteredAllUsers, filteredNotifications, filteredConversations, filteredUsersToFollow };
   }, [posts, allUsers, notifications, conversations, usersToFollow, blockedUserIds, followedUserIds, appUser, communities]);
 
   if (sessionLoading) return <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div></div>;
-  
+
   if (!session && showSplashScreen) {
     return <SplashScreen />;
   }
@@ -586,35 +596,35 @@ const App: React.FC = () => {
     }
     switch (currentPage) {
       case 'Home':
-        return <Home 
-          posts={filteredContent.filteredPosts} 
-          onFollowToggle={handleFollowToggle} 
-          onToggleLike={handleToggleLike} 
-          onToggleSave={handleToggleSavePost} 
-          onAddComment={handleAddComment} 
-          onUpdateComment={handleUpdateComment} 
-          onDeleteComment={handleDeleteComment} 
-          onToggleCommentLike={handleToggleCommentLike} 
-          onVoteOnPoll={handleVoteOnPoll} 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
-          onOpenFollowModal={handleOpenFollowModal} 
-          onIncrementView={handleIncrementView} 
-          onAddPost={handleAddPostAndUpdate} 
-          onUpdatePost={handleUpdatePost} 
-          onDeletePost={handleDeletePost} 
-          usersToFollow={filteredContent.filteredUsersToFollow} 
-          trendingTopics={trendingTopics} 
-          onJoinCommunity={handleJoinCommunityToggle} 
-          user={appUser} 
-          communities={communities} 
-          joinedCommunityIds={joinedCommunityIds} 
-          blockedUserIds={blockedUserIds} 
+        return <Home
+          posts={filteredContent.filteredPosts}
+          onFollowToggle={handleFollowToggle}
+          onToggleLike={handleToggleLike}
+          onToggleSave={handleToggleSavePost}
+          onAddComment={handleAddComment}
+          onUpdateComment={handleUpdateComment}
+          onDeleteComment={handleDeleteComment}
+          onToggleCommentLike={handleToggleCommentLike}
+          onVoteOnPoll={handleVoteOnPoll}
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
+          onOpenFollowModal={handleOpenFollowModal}
+          onIncrementView={handleIncrementView}
+          onAddPost={handleAddPostAndUpdate}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+          usersToFollow={filteredContent.filteredUsersToFollow}
+          trendingTopics={trendingTopics}
+          onJoinCommunity={handleJoinCommunityToggle}
+          user={appUser}
+          communities={communities}
+          joinedCommunityIds={joinedCommunityIds}
+          blockedUserIds={blockedUserIds}
           onBlockToggle={handleBlockToggle}
-          shareableUsers={allUsers} 
-          onSendMessage={handleSendMessage} 
-          followedUserIds={followedUserIds} 
-          allUsers={allUsers} 
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          allUsers={allUsers}
           setCurrentPage={handleNavigation}
           onViewCommunity={handleViewCommunity}
           onViewTag={handleViewTag}
@@ -624,16 +634,16 @@ const App: React.FC = () => {
         />;
       case 'Profile':
         // Sempre buscar de allUsers primeiro para garantir dados atualizados em tempo real
-        const userToView = viewedUserId 
-          ? allUsers.find(u => u.id === viewedUserId) 
+        const userToView = viewedUserId
+          ? allUsers.find(u => u.id === viewedUserId)
           : allUsers.find(u => u.id === appUser.id) || appUser;
-        
+
         if (!userToView) return null;
-        return <Profile 
-          user={userToView} 
+        return <Profile
+          user={userToView}
           posts={posts.filter(p => p.user.id === userToView.id)}
-          followers={[]} 
-          following={[]} 
+          followers={[]}
+          following={[]}
           onUpdatePost={handleUpdatePost}
           savedPostIds={savedPostIds}
           onToggleSave={handleToggleSavePost}
@@ -657,20 +667,20 @@ const App: React.FC = () => {
           allUsers={allUsers}
         />;
       case 'Settings':
-        return <Settings 
-          onLogout={handleLogout} 
-          user={appUser} 
-          onUpdateUser={() => handleUpdateUser({})} 
-          blockedUsers={blockedUsersList} 
+        return <Settings
+          onLogout={handleLogout}
+          user={appUser}
+          onUpdateUser={() => handleUpdateUser({})}
+          blockedUsers={blockedUsersList}
           onBlockToggle={handleBlockToggle}
           onSupportButtonToggle={(show: boolean) => setShowSupportButton(show)}
         />;
       case 'Notifications':
-        return <Notifications 
-          notifications={filteredContent.filteredNotifications} 
-          onClearAll={handleClearNotifications} 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
+        return <Notifications
+          notifications={filteredContent.filteredNotifications}
+          onClearAll={handleClearNotifications}
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
           onFollowToggle={handleFollowToggle}
           followedUserIds={followedUserIds}
           currentUser={appUser}
@@ -678,19 +688,19 @@ const App: React.FC = () => {
           onNavigateToAdApproval={() => handleNavigation('AdApprovalQueue')}
         />;
       case 'Messages':
-        return <Messages 
-          conversations={filteredContent.filteredConversations} 
-          handleSendMessage={handleSendMessage} 
-          isLoading={isConversationsLoading} 
-          onDeleteConversation={handleDeleteConversation} 
+        return <Messages
+          conversations={filteredContent.filteredConversations}
+          handleSendMessage={handleSendMessage}
+          isLoading={isConversationsLoading}
+          onDeleteConversation={handleDeleteConversation}
           followedUsers={allUsers.filter(u => followedUserIds.includes(u.id))}
         />;
       case 'Saved':
-        return <Saved 
-          savedPostIds={savedPostIds} 
-          posts={posts} 
-          onToggleSave={handleToggleSavePost} 
-          onViewPost={handleViewPost} 
+        return <Saved
+          savedPostIds={savedPostIds}
+          posts={posts}
+          onToggleSave={handleToggleSavePost}
+          onViewPost={handleViewPost}
           user={appUser}
           onToggleLike={handleToggleLike}
           onIncrementView={handleIncrementView}
@@ -708,11 +718,11 @@ const App: React.FC = () => {
           allUsers={allUsers}
         />;
       case 'Communities':
-        return <Communities 
-          communities={communities} 
-          joinedCommunityIds={joinedCommunityIds} 
-          onJoinCommunityToggle={handleJoinCommunityToggle} 
-          onCreateCommunity={handleCreateCommunity} 
+        return <Communities
+          communities={communities}
+          joinedCommunityIds={joinedCommunityIds}
+          onJoinCommunityToggle={handleJoinCommunityToggle}
+          onCreateCommunity={handleCreateCommunity}
           onViewCommunity={handleViewCommunity}
           user={appUser}
           setCurrentPage={handleNavigation}
@@ -724,7 +734,7 @@ const App: React.FC = () => {
           setTimeout(() => handleNavigation('Premium'), 100);
           return null;
         }
-        return <Library 
+        return <Library
           items={libraryItems}
           user={appUser}
           onAddItem={handleAddLibraryItem}
@@ -738,7 +748,7 @@ const App: React.FC = () => {
       case 'PostDetail':
         const post = posts.find(p => p.id === activePostId);
         if (!post) return null;
-        
+
         // Determinar para onde voltar baseado na origem do post
         const handlePostDetailBack = () => {
           if (post.communityId && previousPage === 'CommunityDetail') {
@@ -752,30 +762,30 @@ const App: React.FC = () => {
             handleNavigation('Home');
           }
         };
-        
-        return <PostDetail 
-          post={post} 
-          onFollowToggle={handleFollowToggle} 
-          onToggleLike={handleToggleLike} 
-          onToggleSave={handleToggleSavePost} 
-          onAddComment={handleAddComment} 
-          onUpdateComment={handleUpdateComment} 
-          onDeleteComment={handleDeleteComment} 
-          onToggleCommentLike={handleToggleCommentLike} 
-          onVoteOnPoll={handleVoteOnPoll} 
-          onViewProfile={handleViewProfile} 
-          onOpenFollowModal={handleOpenFollowModal} 
-          onIncrementView={handleIncrementView} 
-          onUpdatePost={handleUpdatePost} 
-          onDeletePost={handleDeletePost} 
-          activeCommentId={activeCommentId} 
+
+        return <PostDetail
+          post={post}
+          onFollowToggle={handleFollowToggle}
+          onToggleLike={handleToggleLike}
+          onToggleSave={handleToggleSavePost}
+          onAddComment={handleAddComment}
+          onUpdateComment={handleUpdateComment}
+          onDeleteComment={handleDeleteComment}
+          onToggleCommentLike={handleToggleCommentLike}
+          onVoteOnPoll={handleVoteOnPoll}
+          onViewProfile={handleViewProfile}
+          onOpenFollowModal={handleOpenFollowModal}
+          onIncrementView={handleIncrementView}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+          activeCommentId={activeCommentId}
           onViewCommentThread={handleViewCommentThread}
           user={appUser}
           onBlockToggle={handleBlockToggle}
           onSendMessage={handleSendMessage}
           shareableUsers={allUsers}
           savedPostIds={savedPostIds}
-          onToggleSaveComment={() => {}}
+          onToggleSaveComment={() => { }}
           savedCommentIds={[]}
           onNavigateBack={handlePostDetailBack}
           onViewPost={handleViewPost}
@@ -784,10 +794,8 @@ const App: React.FC = () => {
           allUsers={allUsers}
         />;
       case 'AdDetail': {
-        // Usar os hooks que já estão no topo do componente
-        const ad = mainAds.find(a => a.id === activeAdId);
-        if (!ad) return null;
-        
+        if (!activeAdId) return null;
+
         const handleAdDetailBack = () => {
           if (previousPage && previousPage !== 'AdDetail') {
             handleNavigation(previousPage);
@@ -795,20 +803,20 @@ const App: React.FC = () => {
             handleNavigation('Home');
           }
         };
-        
+
         return (
-          <AdDetail
-            ad={ad}
+          <AdDetailContainer
+            adId={activeAdId}
             activeCommentId={activeCommentId}
             onNavigateBack={handleAdDetailBack}
             user={appUser}
-            isLiked={likedAdIds.includes(ad.id)}
-            isSaved={savedAdIds.includes(ad.id)}
-            onToggleLike={toggleAdLike}
-            onToggleSave={toggleAdSave}
-            onHideAd={hideAd}
-            onIncrementShares={incrementAdShares}
-            onIncrementViews={incrementAdViews}
+            likedAdIds={likedAdIds}
+            savedAdIds={savedAdIds}
+            toggleAdLike={toggleAdLike}
+            toggleAdSave={toggleAdSave}
+            hideAd={hideAd}
+            incrementAdShares={incrementAdShares}
+            incrementAdViews={incrementAdViews}
             onTrackMetric={trackAdMetric}
             shareableUsers={allUsers}
             onSendMessage={handleSendMessage}
@@ -817,9 +825,9 @@ const App: React.FC = () => {
         );
       }
       case 'Search':
-        return <Search 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
+        return <Search
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
           onSearch={setSearchQuery}
           query={searchQuery}
           posts={filteredContent.filteredPosts}
@@ -845,12 +853,12 @@ const App: React.FC = () => {
       case 'CommunityDetail':
         const community = communities.find(c => c.id === activeCommunityId);
         if (!community) return null;
-        return <CommunityDetail 
-          community={community} 
-          onAddPost={handleAddPostAndUpdate} 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
-          onJoinCommunityToggle={handleJoinCommunityToggle} 
+        return <CommunityDetail
+          community={community}
+          onAddPost={handleAddPostAndUpdate}
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
+          onJoinCommunityToggle={handleJoinCommunityToggle}
           activeMembers={activeMembers}
           user={appUser}
           posts={posts.filter(p => p.communityId === community.id)}
@@ -877,10 +885,10 @@ const App: React.FC = () => {
           onUpdateCommunityPlan={handleUpdateCommunityPlan}
         />;
       case 'TopicDetail':
-        return activeTag ? <TopicDetail 
-          tag={activeTag} 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
+        return activeTag ? <TopicDetail
+          tag={activeTag}
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
           posts={posts.filter(p => p.tags?.includes(activeTag))}
           onUpdatePost={handleUpdatePost}
           savedPostIds={savedPostIds}
@@ -927,52 +935,52 @@ const App: React.FC = () => {
       case 'Appeals':
         return <Appeals appeals={appealsQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
       case 'AdApprovalQueue':
-        return <AdApprovalQueue user={appUser} />;
+        return <AdApprovalQueue user={appUser} onAdProcessed={refetchPendingAdsCount} />;
       case 'Premium':
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'TrendingTopics':
         return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => handleNavigation('Home')} />;
       case 'ExploreUsers':
-        return <ExploreUsers 
-          usersToFollow={filteredContent.filteredUsersToFollow} 
-          onFollowToggle={handleFollowToggle} 
-          onViewProfile={handleViewProfile} 
+        return <ExploreUsers
+          usersToFollow={filteredContent.filteredUsersToFollow}
+          onFollowToggle={handleFollowToggle}
+          onViewProfile={handleViewProfile}
           currentUser={appUser}
           followedUserIds={followedUserIds}
           onOpenFollowModal={handleOpenFollowModal}
           onGoBack={() => handleNavigation('Home')}
         />;
       default:
-        return <Home 
-          posts={filteredContent.filteredPosts} 
-          onFollowToggle={handleFollowToggle} 
-          onToggleLike={handleToggleLike} 
-          onToggleSave={handleToggleSavePost} 
-          onAddComment={handleAddComment} 
-          onUpdateComment={handleUpdateComment} 
-          onDeleteComment={handleDeleteComment} 
-          onToggleCommentLike={handleToggleCommentLike} 
-          onVoteOnPoll={handleVoteOnPoll} 
-          onViewPost={handleViewPost} 
-          onViewProfile={handleViewProfile} 
-          onOpenFollowModal={handleOpenFollowModal} 
-          onIncrementView={handleIncrementView} 
-          onAddPost={handleAddPostAndUpdate} 
-          onUpdatePost={handleUpdatePost} 
-          onDeletePost={handleDeletePost} 
-          usersToFollow={filteredContent.filteredUsersToFollow} 
-          trendingTopics={trendingTopics} 
-          onJoinCommunity={handleJoinCommunityToggle} 
-          user={appUser} 
-          communities={communities} 
-          joinedCommunityIds={joinedCommunityIds} 
-          blockedUserIds={blockedUserIds} 
+        return <Home
+          posts={filteredContent.filteredPosts}
+          onFollowToggle={handleFollowToggle}
+          onToggleLike={handleToggleLike}
+          onToggleSave={handleToggleSavePost}
+          onAddComment={handleAddComment}
+          onUpdateComment={handleUpdateComment}
+          onDeleteComment={handleDeleteComment}
+          onToggleCommentLike={handleToggleCommentLike}
+          onVoteOnPoll={handleVoteOnPoll}
+          onViewPost={handleViewPost}
+          onViewProfile={handleViewProfile}
+          onOpenFollowModal={handleOpenFollowModal}
+          onIncrementView={handleIncrementView}
+          onAddPost={handleAddPostAndUpdate}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+          usersToFollow={filteredContent.filteredUsersToFollow}
+          trendingTopics={trendingTopics}
+          onJoinCommunity={handleJoinCommunityToggle}
+          user={appUser}
+          communities={communities}
+          joinedCommunityIds={joinedCommunityIds}
+          blockedUserIds={blockedUserIds}
           onBlockToggle={handleBlockToggle}
-          shareableUsers={allUsers} 
-          onSendMessage={handleSendMessage} 
-          followedUserIds={followedUserIds} 
-          allUsers={allUsers} 
-          setCurrentPage={setCurrentPage} 
+          shareableUsers={allUsers}
+          onSendMessage={handleSendMessage}
+          followedUserIds={followedUserIds}
+          allUsers={allUsers}
+          setCurrentPage={setCurrentPage}
           onViewCommunity={handleViewCommunity}
           onViewTag={handleViewTag}
           onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
@@ -984,121 +992,121 @@ const App: React.FC = () => {
     <UsersProvider users={allUsers}>
       <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
         <ToastContainer />
-        <Header 
-          user={appUser} 
-          onNavigateProfile={() => handleNavigation('Profile')} 
-          onSearch={setSearchQuery} 
-          onNavigateHome={() => handleNavigation('Home')} 
-          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch} 
-          query={searchQuery} 
-          allUsers={filteredContent.filteredAllUsers} 
-          communities={communities} 
-          trendingTopics={trendingTopics} 
-          onNavigateToUser={(id) => { handleViewProfile(id); setSearchQuery(''); }} 
-          onNavigateToCommunity={(id) => { handleViewCommunity(id); setSearchQuery(''); }} 
+        <Header
+          user={appUser}
+          onNavigateProfile={() => handleNavigation('Profile')}
+          onSearch={setSearchQuery}
+          onNavigateHome={() => handleNavigation('Home')}
+          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
+          query={searchQuery}
+          allUsers={filteredContent.filteredAllUsers}
+          communities={communities}
+          trendingTopics={trendingTopics}
+          onNavigateToUser={(id) => { handleViewProfile(id); setSearchQuery(''); }}
+          onNavigateToCommunity={(id) => { handleViewCommunity(id); setSearchQuery(''); }}
           onNavigateToTopic={(tag) => { handleViewTag(tag); setSearchQuery(''); }}
           onToggleMobileSidebar={handleToggleMobileSidebar}
           isMobileSidebarOpen={isMobileSidebarOpen}
           onLogout={handleLogout}
         />
-        
+
         {/* Mobile Sidebar Overlay */}
         {isMobileSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
         )}
-        
+
         <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
           {/* Mobile Sidebar */}
           <aside className={`fixed top-16 left-0 w-64 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <Sidebar 
+            <Sidebar
               user={appUser}
-              currentPage={currentPage} 
+              currentPage={currentPage}
               setCurrentPage={(page) => {
                 handleNavigation(page);
                 setIsMobileSidebarOpen(false);
-              }} 
-              unreadNotificationsCount={unreadNotificationsCount} 
-              unreadMessagesCount={unreadMessagesCount} 
+              }}
+              unreadNotificationsCount={unreadNotificationsCount}
+              unreadMessagesCount={unreadMessagesCount}
               isCollapsed={false}
               pendingModerationCount={pendingModerationCount}
               pendingAppealsCount={pendingAppealsCount}
               pendingAdsCount={pendingAdsCount}
             />
           </aside>
-          
+
           {/* Desktop Sidebar */}
           <aside className={`hidden md:block relative transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-1' : 'md:col-span-3 lg:col-span-2'}`}>
-            <Sidebar 
+            <Sidebar
               user={appUser}
-              currentPage={currentPage} 
-              setCurrentPage={handleNavigation} 
-              unreadNotificationsCount={unreadNotificationsCount} 
-              unreadMessagesCount={unreadMessagesCount} 
+              currentPage={currentPage}
+              setCurrentPage={handleNavigation}
+              unreadNotificationsCount={unreadNotificationsCount}
+              unreadMessagesCount={unreadMessagesCount}
               isCollapsed={isSidebarCollapsed}
               pendingModerationCount={pendingModerationCount}
               pendingAppealsCount={pendingAppealsCount}
               pendingAdsCount={pendingAdsCount}
             />
-            <button 
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
             >
               <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
             </button>
           </aside>
-          
+
           <main ref={mainContentRef} id="main-content" className={`transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-11 lg:col-span-8' : 'md:col-span-9 lg:col-span-7'}`}>
             {renderPage()}
           </main>
-          
+
           <aside className="hidden lg:block lg:col-span-3">
-            <Rightbar 
-              trendingTopics={trendingTopics} 
-              usersToFollow={filteredContent.filteredUsersToFollow} 
-              onViewTag={handleViewTag} 
-              onViewProfile={handleViewProfile} 
-              followedUserIds={followedUserIds} 
-              onFollowToggle={handleFollowToggle} 
-              onNavigateAbout={() => handleNavigation('About')} 
-              onNavigateTerms={() => handleNavigation('TermsOfService')} 
-              onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')} 
-              onNavigateCookies={() => handleNavigation('CookiePolicy')} 
-              onNavigateDisclaimer={() => handleNavigation('Disclaimer')} 
-              onNavigateAccessibility={() => handleNavigation('Accessibility')} 
-              onOpenFollowModal={handleOpenFollowModal} 
-              currentUser={appUser!} 
-              onNavigatePremium={() => handleNavigation('Premium')} 
+            <Rightbar
+              trendingTopics={trendingTopics}
+              usersToFollow={filteredContent.filteredUsersToFollow}
+              onViewTag={handleViewTag}
+              onViewProfile={handleViewProfile}
+              followedUserIds={followedUserIds}
+              onFollowToggle={handleFollowToggle}
+              onNavigateAbout={() => handleNavigation('About')}
+              onNavigateTerms={() => handleNavigation('TermsOfService')}
+              onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')}
+              onNavigateCookies={() => handleNavigation('CookiePolicy')}
+              onNavigateDisclaimer={() => handleNavigation('Disclaimer')}
+              onNavigateAccessibility={() => handleNavigation('Accessibility')}
+              onOpenFollowModal={handleOpenFollowModal}
+              currentUser={appUser!}
+              onNavigatePremium={() => handleNavigation('Premium')}
               onNavigateTrendingTopics={() => handleNavigation('TrendingTopics')}
               onNavigateExploreUsers={() => handleNavigation('ExploreUsers')}
             />
           </aside>
         </div>
-        
+
         {isFollowModalOpen && followModalData && (
-          <FollowListModal 
-            isOpen={isFollowModalOpen} 
-            onClose={() => setIsFollowModalOpen(false)} 
-            initialUser={followModalData.user} 
-            initialFollowers={followModalData.initialFollowers} 
-            initialFollowing={followModalData.initialFollowing} 
-            initialTab={followModalData.initialTab} 
-            currentUser={appUser} 
-            followedUserIds={followedUserIds} 
-            onFollowToggle={handleFollowToggle} 
-            onViewProfile={(id) => { setIsFollowModalOpen(false); handleViewProfile(id); }} 
-            onFetchFollows={handleFetchFollows} 
+          <FollowListModal
+            isOpen={isFollowModalOpen}
+            onClose={() => setIsFollowModalOpen(false)}
+            initialUser={followModalData.user}
+            initialFollowers={followModalData.initialFollowers}
+            initialFollowing={followModalData.initialFollowing}
+            initialTab={followModalData.initialTab}
+            currentUser={appUser}
+            followedUserIds={followedUserIds}
+            onFollowToggle={handleFollowToggle}
+            onViewProfile={(id) => { setIsFollowModalOpen(false); handleViewProfile(id); }}
+            onFetchFollows={handleFetchFollows}
           />
         )}
-        
+
         {/* Botão de Suporte Flutuante - Apenas para usuários Basic, Pro e Premium */}
         {showSupportButton && (appUser.plan === 'basic' || appUser.plan === 'pro' || appUser.plan === 'premium') && (
-          <SupportButton 
-            user={appUser} 
-            variant="floating" 
+          <SupportButton
+            user={appUser}
+            variant="floating"
             onVisibilityChange={(visible) => setShowSupportButton(visible)}
           />
         )}

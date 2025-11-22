@@ -7,6 +7,7 @@ import ConfirmationModal from '@/components/common/ConfirmationModal';
 
 interface AdApprovalQueueProps {
   user: User;
+  onAdProcessed?: () => void;
 }
 
 interface PendingAd {
@@ -30,7 +31,7 @@ interface PendingAd {
   stripe_payment_intent_id: string | null;
 }
 
-const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user }) => {
+const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }) => {
   const { addToast } = useToast();
   const [ads, setAds] = useState<PendingAd[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,22 +72,42 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user }) => {
     fetchPendingAds();
   }, [user.role]);
 
+  const sendNotification = async (recipientId: string, type: 'ad_approved' | 'ad_rejected', adId: string, reason?: string) => {
+    try {
+      await supabase.from('notifications').insert({
+        recipient_id: recipientId,
+        actor_id: user.id, // Admin/Moderator
+        type: type,
+        metadata: {
+          ad_id: adId,
+          reason: reason
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao enviar notificação:', error);
+    }
+  };
+
   const handleApprove = async () => {
     if (!selectedAd) return;
 
     setIsProcessing(true);
     try {
-      const { error } = await approveAd({ 
-        adId: selectedAd.id, 
-        adminId: user.id 
+      const { error } = await approveAd({
+        adId: selectedAd.id,
+        adminId: user.id
       });
-      
+
       if (error) throw new Error(error);
+
+      // Enviar notificação
+      await sendNotification(selectedAd.advertiser_id, 'ad_approved', selectedAd.id);
 
       addToast('Anúncio aprovado com sucesso', 'success');
       setShowApproveModal(false);
       setSelectedAd(null);
       fetchPendingAds();
+      if (onAdProcessed) onAdProcessed();
     } catch (error: any) {
       addToast(`Erro ao aprovar anúncio: ${error.message}`, 'error');
     } finally {
@@ -104,19 +125,23 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user }) => {
 
     setIsProcessing(true);
     try {
-      const { error } = await rejectAd({ 
-        adId: selectedAd.id, 
-        adminId: user.id, 
-        reason: rejectionReason.trim() 
+      const { error } = await rejectAd({
+        adId: selectedAd.id,
+        adminId: user.id,
+        reason: rejectionReason.trim()
       });
-      
+
       if (error) throw new Error(error);
+
+      // Enviar notificação
+      await sendNotification(selectedAd.advertiser_id, 'ad_rejected', selectedAd.id, rejectionReason.trim());
 
       addToast('Anúncio rejeitado com sucesso', 'success');
       setShowRejectModal(false);
       setSelectedAd(null);
       setRejectionReason('');
       fetchPendingAds();
+      if (onAdProcessed) onAdProcessed();
     } catch (error: any) {
       addToast(`Erro ao rejeitar anúncio: ${error.message}`, 'error');
     } finally {
