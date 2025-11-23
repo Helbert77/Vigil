@@ -31,7 +31,7 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement | null>(null);
   const { addToast } = useToast();
 
   const resetState = () => {

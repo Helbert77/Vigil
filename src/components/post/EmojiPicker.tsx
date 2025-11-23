@@ -4,7 +4,7 @@ import { useTheme } from '@/hooks/useTheme';
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
   onClose: () => void;
-  buttonRef?: React.RefObject<HTMLButtonElement>;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 // Categorias de emojis organizadas logicamente
@@ -315,7 +315,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose, butto
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .emoji-picker-container {
           position: absolute;
           top: 100%;

@@ -31,6 +31,7 @@ import CookiePolicy from '@/pages/CookiePolicy';
 import Disclaimer from '@/pages/Disclaimer';
 import Accessibility from '@/pages/Accessibility';
 import PremiumPage from '@/src/pages/PremiumPage';
+import ChatPage from '@/src/pages/ChatPage';
 import ToastContainer from '@/components/common/ToastContainer';
 import type { User, Post, Comment, ActiveMember, Community, Notification, Conversation, Poll, EvidenceItem } from '@/types';
 import { useSession } from '@/contexts/SessionContext';
@@ -938,6 +939,8 @@ const App: React.FC = () => {
         return <AdApprovalQueue user={appUser} onAdProcessed={refetchPendingAdsCount} />;
       case 'Premium':
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
+      case 'Chat':
+        return <ChatPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'TrendingTopics':
         return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => handleNavigation('Home')} />;
       case 'ExploreUsers':
@@ -1019,16 +1022,16 @@ const App: React.FC = () => {
         )}
 
 
-        {/* 
+        {/*
           ============================================================================
-          TESTE: Renderização em tela cheia para SelectAdPlan e Premium
+          TESTE: Renderização em tela cheia para SelectAdPlan, Premium e Chat
           ============================================================================
-          Esta seção renderiza as páginas SelectAdPlan e Premium em tela cheia, 
+          Esta seção renderiza as páginas SelectAdPlan, Premium e Chat em tela cheia, 
           sem sidebars. Para reverter ao comportamento original, comente este bloco 
           e descomente o bloco "LAYOUT ORIGINAL" abaixo.
           ============================================================================
         */}
-        {(currentPage === 'SelectAdPlan' || currentPage === 'Premium') ? (
+        {(currentPage === 'SelectAdPlan' || currentPage === 'Premium' || currentPage === 'Chat') ? (
           <div className="pt-16 sm:pt-20">
             {renderPage()}
           </div>

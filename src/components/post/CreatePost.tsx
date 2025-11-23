@@ -54,7 +54,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement | null>(null);
   const { addToast } = useToast();
 
   const [uploadingEvidenceId, setUploadingEvidenceId] = useState<string | null>(null);

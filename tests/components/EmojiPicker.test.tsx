@@ -6,7 +6,7 @@ describe('EmojiPicker - tema e funcionalidades', () => {
   const setup = () => {
     const onEmojiSelect = jest.fn();
     const onClose = jest.fn();
-    const buttonRef = createRef<HTMLButtonElement>();
+    const buttonRef = createRef<HTMLButtonElement | null>();
     const utils = render(
       <div>
         <button ref={buttonRef}>open</button>
@@ -20,8 +20,8 @@ describe('EmojiPicker - tema e funcionalidades', () => {
     document.documentElement.classList.remove('dark');
     document.documentElement.classList.add('light');
     const { utils, onEmojiSelect, onClose } = setup();
-    const input = utils.getByPlaceholderText('Buscar emojis...');
-    expect(input).toBeInTheDocument();
+    const input = utils.container.querySelector('input[placeholder="Buscar emojis..."]');
+    expect(input).toBeTruthy();
     const emojiButtons = utils.getAllByRole('button', { name: /Selecionar emoji/ });
     fireEvent.click(emojiButtons[0]);
     expect(onEmojiSelect).toHaveBeenCalled();
