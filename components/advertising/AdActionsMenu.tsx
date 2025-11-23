@@ -21,6 +21,9 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
     const menuRef = useRef<HTMLDivElement>(null);
     const { addToast } = useToast();
 
+    // Ocultar menu para anúncios encerrados
+    const isAdEnded = ad.status === 'ended';
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -45,6 +48,11 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
         onDelete(ad);
         setIsOpen(false);
     };
+
+    // Não renderizar o menu para anúncios encerrados
+    if (isAdEnded) {
+        return null;
+    }
 
     return (
         <div className="relative" ref={menuRef}>

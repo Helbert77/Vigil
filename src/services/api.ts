@@ -1955,3 +1955,96 @@ export const processAdRefund = async (adId: string, userId: string) => {
   if (error) throw error;
   return data;
 };
+/**
+ * Buscar detalhes completos de um anúncio específico
+ */
+export const fetchAdDetails = async (adId: string): Promise<{
+  ad_id: string;
+  ad_title: string;
+  ad_description: string;
+  ad_image_url: string | null;
+  ad_video_url: string | null;
+  ad_link_url: string;
+  ad_status: string;
+  ad_type: string;
+  ad_start_date: string;
+  ad_end_date: string | null;
+  ad_budget: number;
+  total_impressions: number;
+  total_clicks: number;
+  total_likes: number;
+  total_shares: number;
+  total_saves: number;
+  total_comments: number;
+  total_engagement: number;
+  ctr: number;
+  engagement_rate: number;
+  cost: number;
+  cpc: number;
+} | null> => {
+  const { data, error } = await supabase.rpc('get_ad_details', {
+    p_ad_id: adId
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchAdDetails', { adId });
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  const item = data[0];
+  return {
+    ad_id: item.ad_id,
+    ad_title: item.ad_title || 'Sem título',
+    ad_description: item.ad_description || '',
+    ad_image_url: item.ad_image_url,
+    ad_video_url: item.ad_video_url,
+    ad_link_url: item.ad_link_url || '',
+    ad_status: item.ad_status || 'active',
+    ad_type: item.ad_type || 'native',
+    ad_start_date: item.ad_start_date,
+    ad_end_date: item.ad_end_date,
+    ad_budget: Number(item.ad_budget) || 0,
+    total_impressions: Number(item.total_impressions) || 0,
+    total_clicks: Number(item.total_clicks) || 0,
+    total_likes: Number(item.total_likes) || 0,
+    total_shares: Number(item.total_shares) || 0,
+    total_saves: Number(item.total_saves) || 0,
+    total_comments: Number(item.total_comments) || 0,
+    total_engagement: Number(item.total_engagement) || 0,
+    ctr: Number(item.ctr) || 0,
+    engagement_rate: Number(item.engagement_rate) || 0,
+    cost: Number(item.cost) || 0,
+    cpc: Number(item.cpc) || 0
+  };
+};
+
+/**
+ * Buscar métricas diárias de um anúncio específico
+ */
+export const fetchAdDailyMetrics = async (adId: string, daysInterval: number = 30): Promise<Array<{
+  date: string;
+  impressions: number;
+  clicks: number;
+  engagement: number;
+}>> => {
+  const { data, error } = await supabase.rpc('get_ad_daily_metrics', {
+    p_ad_id: adId,
+    p_days_interval: daysInterval
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchAdDailyMetrics', { adId, daysInterval });
+    return [];
+  }
+
+  return (data || []).map((item: any) => ({
+    date: item.date,
+    impressions: Number(item.impressions) || 0,
+    clicks: Number(item.clicks) || 0,
+    engagement: Number(item.engagement) || 0
+  }));
+};

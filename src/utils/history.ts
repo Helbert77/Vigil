@@ -149,7 +149,7 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
       'Timeline': 'Timeline',
       'Premium': 'Premium',
     };
-    
+
     const page = pageMap[pageParam];
     if (page) {
       const extra: Partial<NavigationSnapshot> = {};

@@ -128,8 +128,6 @@ export const rejectAd = async ({ adId, adminId, reason }: RejectAdParams) => {
     }
 
     // Enviar notificação para o anunciante
-    // COMENTADO PARA EVITAR DUPLICIDADE (Trigger do banco já deve estar fazendo isso)
-    /*
     if (ad.advertiser_id) {
       const { error: notifError } = await supabase.from('notifications').insert({
         recipient_id: ad.advertiser_id,
@@ -142,7 +140,7 @@ export const rejectAd = async ({ adId, adminId, reason }: RejectAdParams) => {
         console.error('Erro ao criar notificação:', notifError);
       }
     }
-    */
+
 
     return { data, error: null };
   } catch (error: any) {

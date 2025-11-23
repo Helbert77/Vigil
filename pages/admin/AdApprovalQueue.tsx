@@ -72,21 +72,6 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
     fetchPendingAds();
   }, [user.role]);
 
-  const sendNotification = async (recipientId: string, type: 'ad_approved' | 'ad_rejected', adId: string, reason?: string) => {
-    try {
-      await supabase.from('notifications').insert({
-        recipient_id: recipientId,
-        actor_id: user.id, // Admin/Moderator
-        type: type,
-        metadata: {
-          ad_id: adId,
-          reason: reason
-        }
-      });
-    } catch (error) {
-      console.error('Erro ao enviar notificação:', error);
-    }
-  };
 
   const handleApprove = async () => {
     if (!selectedAd) return;
@@ -100,8 +85,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
 
       if (error) throw new Error(error);
 
-      // Enviar notificação
-      await sendNotification(selectedAd.advertiser_id, 'ad_approved', selectedAd.id);
+      // Notificação já é enviada pelo serviço approveAd
 
       // addToast('Anúncio aprovado com sucesso', 'success');
       setShowApproveModal(false);
@@ -133,8 +117,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
 
       if (error) throw new Error(error);
 
-      // Enviar notificação
-      await sendNotification(selectedAd.advertiser_id, 'ad_rejected', selectedAd.id, rejectionReason.trim());
+      // Notificação já é enviada pelo serviço rejectAd
 
       // addToast('Anúncio rejeitado com sucesso', 'success');
       setShowRejectModal(false);

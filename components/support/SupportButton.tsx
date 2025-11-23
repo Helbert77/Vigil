@@ -14,6 +14,7 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showButton, setShowButton] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Carregar preferência do usuário ao montar o componente
   useEffect(() => {
@@ -33,10 +34,38 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
     loadUserPreference();
   }, [user.id]);
 
+  // Limpar timeout ao desmontar
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [hoverTimeout]);
+
+  // Função para mostrar o X
+  const handleMouseEnter = () => {
+    // Cancelar qualquer timeout pendente
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+    setIsHovered(true);
+  };
+
+  // Função para ocultar o X com delay
+  const handleMouseLeave = () => {
+    // Adicionar delay de 500ms antes de ocultar o X
+    const timeout = setTimeout(() => {
+      setIsHovered(false);
+    }, 500);
+    setHoverTimeout(timeout);
+  };
+
   // Função para ocultar o botão
   const handleHideButton = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Atualizar no banco de dados
     await supabase
       .from('profiles')
@@ -45,7 +74,7 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
 
     // Atualizar estado local
     setShowButton(false);
-    
+
     // Notificar componente pai (App)
     if (onVisibilityChange) {
       onVisibilityChange(false);
@@ -61,7 +90,7 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
     // Buscar o email real do Supabase Auth
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const userEmail = authUser?.email || `${user.username}@vigil.app`;
-    
+
     // Converter anexos para Base64
     const attachmentsBase64 = await Promise.all(
       (ticket.attachments || []).map(async (file) => {
@@ -73,7 +102,7 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
         };
       })
     );
-    
+
     await api.submitSupportTicket({
       category: ticket.category,
       subject: ticket.subject,
@@ -106,12 +135,14 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
     return (
       <>
         {/* Container para botão e X */}
-        <div className="fixed bottom-24 right-6 md:bottom-6 z-40">
+        <div
+          className="fixed bottom-24 right-6 md:bottom-6 z-40"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           {/* Botão Flutuante */}
           <button
             onClick={() => setIsModalOpen(true)}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
             className="bg-primary hover:bg-gray-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group support-floating-btn"
             aria-label="Abrir suporte"
             title="Precisa de ajuda?"
@@ -125,7 +156,6 @@ const SupportButton: React.FC<SupportButtonProps> = ({ user, variant = 'floating
           {isHovered && (
             <button
               onClick={handleHideButton}
-              onMouseEnter={() => setIsHovered(true)}
               className="absolute -top-8 right-0 transition-all duration-200"
               aria-label="Ocultar botão de suporte"
               title="Não mostrar este botão"
