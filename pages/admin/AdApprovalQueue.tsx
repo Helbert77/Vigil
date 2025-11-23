@@ -103,7 +103,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       // Enviar notificação
       await sendNotification(selectedAd.advertiser_id, 'ad_approved', selectedAd.id);
 
-      addToast('Anúncio aprovado com sucesso', 'success');
+      // addToast('Anúncio aprovado com sucesso', 'success');
       setShowApproveModal(false);
       setSelectedAd(null);
       fetchPendingAds();
@@ -136,7 +136,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       // Enviar notificação
       await sendNotification(selectedAd.advertiser_id, 'ad_rejected', selectedAd.id, rejectionReason.trim());
 
-      addToast('Anúncio rejeitado com sucesso', 'success');
+      // addToast('Anúncio rejeitado com sucesso', 'success');
       setShowRejectModal(false);
       setSelectedAd(null);
       setRejectionReason('');

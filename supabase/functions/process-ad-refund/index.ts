@@ -14,9 +14,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
+    // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
@@ -89,9 +91,12 @@ serve(async (req: Request) => {
         });
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error('Error processing refund:', error);
+        // Retornar 200 mesmo em caso de erro de lógica de negócio para que o cliente possa ler a mensagem de erro
+        // Erros 400/500 muitas vezes são mascarados pelo cliente do Supabase ou CORS
+        return new Response(JSON.stringify({ error: error.message, details: error }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
+            status: 200,
         });
     }
 });

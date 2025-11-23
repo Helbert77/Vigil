@@ -21,7 +21,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  
+
   // Use the prop user instead of session user
   const user = propUser;
   const currentPlan = user?.plan || 'free';
@@ -35,7 +35,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutStatus = urlParams.get('checkout');
-    
+
     if (checkoutStatus === 'success') {
       addToast('Pagamento processado com sucesso! Aguarde a confirmação da assinatura.', 'success');
       // Limpar parâmetro da URL
@@ -49,9 +49,9 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
 
   // Verificar se promoção está ativa
   const promotionActive = isPromotionActive();
-  
+
   // Debug: log para verificar se a promoção está ativa
-  console.log('[PremiumPage] Promoção ativa:', promotionActive);
+  // console.log('[PremiumPage] Promoção ativa:', promotionActive);
 
   // Função para calcular desconto percentual
   const calculateDiscount = (originalPrice: number, promoPrice: number) => {
@@ -66,42 +66,42 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       annually: { value: 0, display: "Grátis", original: null, discount: 0 },
     },
     basic: {
-      monthly: { 
-        value: getCurrentPrice('basic', 'monthly', promotionActive), 
+      monthly: {
+        value: getCurrentPrice('basic', 'monthly', promotionActive),
         display: formatPrice(getCurrentPrice('basic', 'monthly', promotionActive)) + '/mês',
         original: promotionActive ? formatPrice(getCurrentPrice('basic', 'monthly', false)) + '/mês' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('basic', 'monthly', false), getCurrentPrice('basic', 'monthly', true)) : 0
       },
-      annually: { 
-        value: getCurrentPrice('basic', 'annually', promotionActive), 
+      annually: {
+        value: getCurrentPrice('basic', 'annually', promotionActive),
         display: formatPrice(getCurrentPrice('basic', 'annually', promotionActive)) + '/ano',
         original: promotionActive ? formatPrice(getCurrentPrice('basic', 'annually', false)) + '/ano' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('basic', 'annually', false), getCurrentPrice('basic', 'annually', true)) : 0
       },
     },
     pro: {
-      monthly: { 
-        value: getCurrentPrice('pro', 'monthly', promotionActive), 
+      monthly: {
+        value: getCurrentPrice('pro', 'monthly', promotionActive),
         display: formatPrice(getCurrentPrice('pro', 'monthly', promotionActive)) + '/mês',
         original: promotionActive ? formatPrice(getCurrentPrice('pro', 'monthly', false)) + '/mês' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('pro', 'monthly', false), getCurrentPrice('pro', 'monthly', true)) : 0
       },
-      annually: { 
-        value: getCurrentPrice('pro', 'annually', promotionActive), 
+      annually: {
+        value: getCurrentPrice('pro', 'annually', promotionActive),
         display: formatPrice(getCurrentPrice('pro', 'annually', promotionActive)) + '/ano',
         original: promotionActive ? formatPrice(getCurrentPrice('pro', 'annually', false)) + '/ano' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('pro', 'annually', false), getCurrentPrice('pro', 'annually', true)) : 0
       },
     },
     premium: {
-      monthly: { 
-        value: getCurrentPrice('premium', 'monthly', promotionActive), 
+      monthly: {
+        value: getCurrentPrice('premium', 'monthly', promotionActive),
         display: formatPrice(getCurrentPrice('premium', 'monthly', promotionActive)) + '/mês',
         original: promotionActive ? formatPrice(getCurrentPrice('premium', 'monthly', false)) + '/mês' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('premium', 'monthly', false), getCurrentPrice('premium', 'monthly', true)) : 0
       },
-      annually: { 
-        value: getCurrentPrice('premium', 'annually', promotionActive), 
+      annually: {
+        value: getCurrentPrice('premium', 'annually', promotionActive),
         display: formatPrice(getCurrentPrice('premium', 'annually', promotionActive)) + '/ano',
         original: promotionActive ? formatPrice(getCurrentPrice('premium', 'annually', false)) + '/ano' : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('premium', 'annually', false), getCurrentPrice('premium', 'annually', true)) : 0
@@ -134,7 +134,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
     try {
       // Verificar se já usou trial
       const { hasUsed, error: checkError } = await api.hasUsedTrial(session.user.id, plan);
-      
+
       if (checkError) {
         console.error('Erro ao verificar trial:', checkError);
         // Se a tabela não está configurada, mostrar mensagem apropriada
@@ -143,15 +143,15 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           return;
         }
       }
-      
+
       if (hasUsed) {
         addToast('Você já utilizou o período de teste para este plano.', 'info');
         return;
       }
-      
+
       // Iniciar trial
       const { error } = await api.startTrial(session.user.id, plan);
-      
+
       if (error) {
         console.error('Erro ao iniciar trial:', error);
         if (error.code === 'PGRST204' || error.code === '42P01') {
@@ -268,7 +268,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
           Cada plano desbloqueia um novo nível de liberdade, acesso e conexão. O despertar começa com uma escolha.
         </p>
-        
+
         {/* Banner de Promoção */}
         {promotionActive && (
           <div className="mt-8 mx-auto max-w-3xl">
@@ -289,7 +289,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 </p>
                 <div className="mt-4 inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-4 py-2 rounded-full text-sm font-bold">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
                   <span>Oferta por tempo limitado - Não perca!</span>
                 </div>

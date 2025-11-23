@@ -70,7 +70,7 @@ export type ComponentConfig = IconConfig | ModalConfig | CardConfig | ButtonConf
 export class ComponentFactory {
   private static instance: ComponentFactory;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Singleton pattern para garantir uma única instância
@@ -262,7 +262,7 @@ export class ComponentFactory {
     factory: (config: any) => React.ComponentType<any>
   ): void {
     // Implementação futura para extensibilidade
-    console.log(`Registrando novo tipo de componente: ${type}`);
+    // console.log(`Registrando novo tipo de componente: ${type}`);
   }
 }
 
@@ -270,14 +270,14 @@ export class ComponentFactory {
 export const componentFactory = ComponentFactory.getInstance();
 
 // Funções de conveniência para uso direto
-export const createIcon = (config: Omit<IconConfig, 'type'>) => 
+export const createIcon = (config: Omit<IconConfig, 'type'>) =>
   componentFactory.createComponent({ ...config, type: 'icon' });
 
-export const createModal = (config: Omit<ModalConfig, 'type'>) => 
+export const createModal = (config: Omit<ModalConfig, 'type'>) =>
   componentFactory.createComponent({ ...config, type: 'modal' });
 
-export const createCard = (config: Omit<CardConfig, 'type'>) => 
+export const createCard = (config: Omit<CardConfig, 'type'>) =>
   componentFactory.createComponent({ ...config, type: 'card' });
 
-export const createButton = (config: Omit<ButtonConfig, 'type'>) => 
+export const createButton = (config: Omit<ButtonConfig, 'type'>) =>
   componentFactory.createComponent({ ...config, type: 'button' });

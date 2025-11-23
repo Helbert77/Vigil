@@ -35,7 +35,7 @@ const Login: React.FC = () => {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Estados para controlar visibilidade das senhas
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -64,7 +64,7 @@ const Login: React.FC = () => {
       addToast(signInError.message, 'error');
     } else if (data.session) {
       await supabase.auth.setSession(data.session);
-      
+
       // Configurar duração da sessão baseada na escolha do usuário
       if (keepLoggedIn) {
         // Manter conectado: armazenar preferência no localStorage
@@ -76,7 +76,7 @@ const Login: React.FC = () => {
         const inactivityTimeout = 30 * 60 * 1000; // 30 minutos em millisegundos
         const expiryTime = Date.now() + inactivityTimeout;
         localStorage.setItem('sessionExpiry', expiryTime.toString());
-        
+
         // Configurar timer para logout automático
         setTimeout(() => {
           const currentExpiry = localStorage.getItem('sessionExpiry');
@@ -86,7 +86,7 @@ const Login: React.FC = () => {
               addToast('Sessão expirada por inatividade', 'info');
             } catch (error) {
               // Silenciar erros de logout automático
-              console.log('Logout automático por inatividade realizado');
+              // console.log('Logout automático por inatividade realizado');
               addToast('Sessão expirada por inatividade', 'info');
             }
           }
@@ -169,15 +169,15 @@ const Login: React.FC = () => {
           <form onSubmit={handlePasswordReset} className="space-y-6">
             <div>
               <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-              <input 
-                id="resetEmail" 
-                name="resetEmail" 
-                type="email" 
-                autoComplete="email" 
-                required 
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                value={resetEmail} 
-                onChange={(e) => setResetEmail(e.target.value)} 
+              <input
+                id="resetEmail"
+                name="resetEmail"
+                type="email"
+                autoComplete="email"
+                required
+                className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
               />
             </div>
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -213,41 +213,41 @@ const Login: React.FC = () => {
             </div>
             <div>
               <label htmlFor="username-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome de Usuário</label>
-              <input 
-                id="username-signup" 
-                name="username" 
-                type="text" 
-                autoComplete="username" 
-                required 
-                className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)} 
+              <input
+                id="username-signup"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div>
               <label htmlFor="email-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-              <input 
-                id="email-signup" 
-                name="email" 
-                type="email" 
-                autoComplete="email" 
-                required 
-                className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
+              <input
+                id="email-signup"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
               <label htmlFor="password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
               <div className="relative">
-                <input 
-                  id="password-signup" 
-                  name="password" 
-                  type={showPassword ? "text" : "password"} 
-                  required 
-                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
+                <input
+                  id="password-signup"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -265,14 +265,14 @@ const Login: React.FC = () => {
             <div>
               <label htmlFor="confirm-password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar Senha</label>
               <div className="relative">
-                <input 
-                  id="confirm-password-signup" 
-                  name="confirmPassword" 
-                  type={showConfirmPassword ? "text" : "password"} 
-                  required 
-                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                <input
+                  id="confirm-password-signup"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  className="mt-1 w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -308,29 +308,29 @@ const Login: React.FC = () => {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-            <input 
-              id="email-address" 
-              name="email" 
-              type="email" 
-              autoComplete="email" 
-              required 
-              className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+            <input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className="mt-1 appearance-none block w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
             <div className="relative">
-              <input 
-                id="password" 
-                name="password" 
-                type={showPassword ? "text" : "password"} 
-                autoComplete="current-password" 
-                required 
-                className="mt-1 appearance-none block w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                className="mt-1 appearance-none block w-full px-3 py-2 pr-10 border border-light-border dark:border-dark-border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
               <button
                 type="button"

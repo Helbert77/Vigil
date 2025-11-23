@@ -127,7 +127,7 @@ export const logout = async () => {
     
     if (!session) {
       // Se não há sessão ativa, considerar logout bem-sucedido
-      console.log('Nenhuma sessão ativa encontrada, logout local realizado');
+      // console.log('Nenhuma sessão ativa encontrada, logout local realizado');
       return { error: null };
     }
     
@@ -170,7 +170,7 @@ export const logout = async () => {
         errorMessage.includes('AbortError') ||
         errorName === 'AbortError') {
       // Não logar erro para ERR_ABORTED pois é esperado em algumas situações
-      console.log('Logout local realizado (conexão interrompida)');
+      // console.log('Logout local realizado (conexão interrompida)');
       return { error: null };
     }
     
@@ -1098,7 +1098,7 @@ export const deleteLibraryItem = async (id: string) => {
   const profile = await getCurrentUserProfile();
   const { data: { user } } = await supabase.auth.getUser();
   
-  console.log('[deleteLibraryItem] Iniciando exclusão:', { id, userId: user?.id, userRole: profile?.role });
+  // console.log('[deleteLibraryItem] Iniciando exclusão:', { id, userId: user?.id, userRole: profile?.role });
   
   if (!profile || !user) {
     console.error('[deleteLibraryItem] Usuário não autenticado');
@@ -1117,13 +1117,13 @@ export const deleteLibraryItem = async (id: string) => {
     return { data: null, error: { message: 'Item não encontrado.' } };
   }
   
-  console.log('[deleteLibraryItem] Item encontrado:', { itemId: id, createdBy: item?.created_by, currentUser: user.id });
+  // console.log('[deleteLibraryItem] Item encontrado:', { itemId: id, createdBy: item?.created_by, currentUser: user.id });
   
   // Permitir se for admin OU criador do item
   const isCreator = item?.created_by === user.id;
   const isAdmin = profile.role === 'admin';
   
-  console.log('[deleteLibraryItem] Verificação de permissões:', { isAdmin, isCreator });
+  // console.log('[deleteLibraryItem] Verificação de permissões:', { isAdmin, isCreator });
   
   if (!isAdmin && !isCreator) {
     console.error('[deleteLibraryItem] Permissão negada');
@@ -1133,13 +1133,13 @@ export const deleteLibraryItem = async (id: string) => {
     };
   }
   
-  console.log('[deleteLibraryItem] Executando DELETE no banco...');
+  // console.log('[deleteLibraryItem] Executando DELETE no banco...');
   const result = await supabase.from('library_items').delete().eq('id', id);
   
   if (result.error) {
     console.error('[deleteLibraryItem] Erro ao excluir do banco:', result.error);
   } else {
-    console.log('[deleteLibraryItem] Item excluído com sucesso do banco');
+    // console.log('[deleteLibraryItem] Item excluído com sucesso do banco');
   }
   
   return result;

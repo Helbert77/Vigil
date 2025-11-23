@@ -4,7 +4,7 @@ import NavLink from './NavLink';
 import { PostIcon } from '@/src/components/icons/PostIcon';
 import Tooltip from '@/components/common/Tooltip';
 import { User } from '@/types';
-import { DiamondIcon } from '@/src/components/icons/DiamondIcon'; // Caminho corrigido
+import { DiamondIcon } from '@/src/components/icons/DiamondIcon';
 import { canAccessLibrary, getLibraryAccessDeniedMessage } from '@/src/utils/libraryAccess';
 import { useToast } from '@/hooks/useToast';
 
@@ -14,13 +14,13 @@ const BellIcon = () => <Icon><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"
 const MailIcon = () => <Icon><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></Icon>;
 const BookmarkIcon = () => <Icon><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></Icon>;
 const UsersIcon = () => <Icon><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
-const SettingsIcon = () => <Icon><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0-.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></Icon>;
+const SettingsIcon = () => <Icon><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></Icon>;
 
 const TimelineIcon = () => <Icon><path d="M3 3v18h18"></path><path d="M7 12h10"></path><path d="M7 8h7"></path><path d="M7 16h4"></path></Icon>;
 const LibraryIcon = () => <Icon><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></Icon>;
 const ShieldIcon = () => <Icon><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></Icon>;
 const DashboardIcon = () => <Icon><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></Icon>;
-const GavelIcon = () => <Icon><path d="m14 13-7.5 7.5"/><path d="m18 17-5.5 5.5"/><path d="m15 6-3.5 3.5"/><path d="m2 21 6-6"/><path d="m3 3 7.5 7.5"/><path d="m13 1 6 6"/><path d="M12 6 9 3 3 9l3 3"/><path d="M18 12 21 9l-6-6-3 3"/></Icon>;
+const GavelIcon = () => <Icon><path d="m14 13-7.5 7.5" /><path d="m18 17-5.5 5.5" /><path d="m15 6-3.5 3.5" /><path d="m2 21 6-6" /><path d="m3 3 7.5 7.5" /><path d="m13 1 6 6" /><path d="M12 6 9 3 3 9l3 3" /><path d="M18 12 21 9l-6-6-3 3" /></Icon>;
 const AnalyticsIcon = () => <Icon><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path><circle cx="21" cy="21" r="2"></circle></Icon>;
 const MegaphoneIcon = () => <Icon><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></Icon>;
 const CheckCircleIcon = () => <Icon><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></Icon>;
@@ -40,14 +40,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount, pendingAdsCount = 0 }) => {
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
   const { addToast } = useToast();
-  
+
   // Debug: verificar se pendingAdsCount está sendo recebido
   useEffect(() => {
-    if (isModerator) {
-      console.log('🔍 Sidebar - pendingAdsCount:', pendingAdsCount);
-      console.log('🔍 Sidebar - isModerator:', isModerator);
-      console.log('🔍 Sidebar - user role:', user?.role);
-    }
+    // Logs removidos
   }, [pendingAdsCount, isModerator, user?.role]);
 
   const handlePostClick = () => {
@@ -110,125 +106,125 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto sidebar-scrollable p-2 md:p-0">
         <nav className={`space-y-1 ${isCollapsed ? 'px-1' : 'px-2 md:px-0'}`}>
-          <NavLink 
-            icon={<HomeIcon />} 
-            label="Home" 
-            isActive={currentPage === 'Home'} 
-            onClick={() => setCurrentPage('Home')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<HomeIcon />}
+            label="Home"
+            isActive={currentPage === 'Home'}
+            onClick={() => setCurrentPage('Home')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<BellIcon />} 
-            label="Notifications" 
-            isActive={currentPage === 'Notifications'} 
-            onClick={() => setCurrentPage('Notifications')} 
-            notificationCount={unreadNotificationsCount} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<BellIcon />}
+            label="Notifications"
+            isActive={currentPage === 'Notifications'}
+            onClick={() => setCurrentPage('Notifications')}
+            notificationCount={unreadNotificationsCount}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<MailIcon />} 
-            label="Messages" 
-            isActive={currentPage === 'Messages'} 
-            onClick={() => setCurrentPage('Messages')} 
-            notificationCount={unreadMessagesCount} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<MailIcon />}
+            label="Messages"
+            isActive={currentPage === 'Messages'}
+            onClick={() => setCurrentPage('Messages')}
+            notificationCount={unreadMessagesCount}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<BookmarkIcon />} 
-            label="Saved" 
-            isActive={currentPage === 'Saved'} 
-            onClick={() => setCurrentPage('Saved')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<BookmarkIcon />}
+            label="Saved"
+            isActive={currentPage === 'Saved'}
+            onClick={() => setCurrentPage('Saved')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<UsersIcon />} 
-            label="Communities" 
-            isActive={currentPage === 'Communities'} 
-            onClick={() => setCurrentPage('Communities')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<UsersIcon />}
+            label="Communities"
+            isActive={currentPage === 'Communities'}
+            onClick={() => setCurrentPage('Communities')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<LibraryIcon />} 
-            label="Biblioteca" 
-            isActive={currentPage === 'Library'} 
-            onClick={handleLibraryClick} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<LibraryIcon />}
+            label="Biblioteca"
+            isActive={currentPage === 'Library'}
+            onClick={handleLibraryClick}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<TimelineIcon />} 
-            label="Timeline" 
-            isActive={currentPage === 'Timeline'} 
-            onClick={() => setCurrentPage('Timeline')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<TimelineIcon />}
+            label="Timeline"
+            isActive={currentPage === 'Timeline'}
+            onClick={() => setCurrentPage('Timeline')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<UserIcon />} 
-            label="Profile" 
-            isActive={currentPage === 'Profile'} 
-            onClick={() => setCurrentPage('Profile')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<UserIcon />}
+            label="Profile"
+            isActive={currentPage === 'Profile'}
+            onClick={() => setCurrentPage('Profile')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<SettingsIcon />} 
-            label="Settings" 
-            isActive={currentPage === 'Settings'} 
-            onClick={() => setCurrentPage('Settings')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<SettingsIcon />}
+            label="Settings"
+            isActive={currentPage === 'Settings'}
+            onClick={() => setCurrentPage('Settings')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<MegaphoneIcon />} 
-            label="Meus Anúncios" 
-            isActive={currentPage === 'MyAds'} 
-            onClick={() => setCurrentPage('MyAds')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<MegaphoneIcon />}
+            label="Meus Anúncios"
+            isActive={currentPage === 'MyAds'}
+            onClick={() => setCurrentPage('MyAds')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<AnalyticsIcon />} 
-            label="Analytics" 
-            isActive={currentPage === 'AdsDashboard'} 
-            onClick={() => setCurrentPage('AdsDashboard')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<AnalyticsIcon />}
+            label="Analytics"
+            isActive={currentPage === 'AdsDashboard'}
+            onClick={() => setCurrentPage('AdsDashboard')}
+            isCollapsed={isCollapsed}
           />
-          <NavLink 
-            icon={<DiamondIcon />} 
-            label="Premium" 
-            isActive={currentPage === 'Premium'} 
-            onClick={() => setCurrentPage('Premium')} 
-            isCollapsed={isCollapsed} 
+          <NavLink
+            icon={<DiamondIcon />}
+            label="Premium"
+            isActive={currentPage === 'Premium'}
+            onClick={() => setCurrentPage('Premium')}
+            isCollapsed={isCollapsed}
           />
           {isModerator && (
             <>
               <div className="border-t border-light-border dark:border-dark-border my-2 md:my-3"></div>
-              <NavLink 
-                icon={<DashboardIcon />} 
-                label="Dashboard" 
-                isActive={currentPage === 'Dashboard'} 
-                onClick={() => setCurrentPage('Dashboard')} 
-                isCollapsed={isCollapsed} 
+              <NavLink
+                icon={<DashboardIcon />}
+                label="Dashboard"
+                isActive={currentPage === 'Dashboard'}
+                onClick={() => setCurrentPage('Dashboard')}
+                isCollapsed={isCollapsed}
               />
-              <NavLink 
-                icon={<ShieldIcon />} 
-                label="Moderação" 
-                isActive={currentPage === 'Moderation'} 
-                onClick={() => setCurrentPage('Moderation')} 
-                notificationCount={pendingModerationCount} 
-                isCollapsed={isCollapsed} 
+              <NavLink
+                icon={<ShieldIcon />}
+                label="Moderação"
+                isActive={currentPage === 'Moderation'}
+                onClick={() => setCurrentPage('Moderation')}
+                notificationCount={pendingModerationCount}
+                isCollapsed={isCollapsed}
               />
-              <NavLink 
-                icon={<GavelIcon />} 
-                label="Apelações" 
-                isActive={currentPage === 'Appeals'} 
-                onClick={() => setCurrentPage('Appeals')} 
-                notificationCount={pendingAppealsCount} 
-                isCollapsed={isCollapsed} 
+              <NavLink
+                icon={<GavelIcon />}
+                label="Apelações"
+                isActive={currentPage === 'Appeals'}
+                onClick={() => setCurrentPage('Appeals')}
+                notificationCount={pendingAppealsCount}
+                isCollapsed={isCollapsed}
               />
-              <NavLink 
-                icon={<CheckCircleIcon />} 
-                label="Aprovar Anúncios" 
-                isActive={currentPage === 'AdApprovalQueue'} 
-                onClick={() => setCurrentPage('AdApprovalQueue')} 
-                notificationCount={pendingAdsCount > 0 ? pendingAdsCount : undefined} 
-                isCollapsed={isCollapsed} 
+              <NavLink
+                icon={<CheckCircleIcon />}
+                label="Aprovar Anúncios"
+                isActive={currentPage === 'AdApprovalQueue'}
+                onClick={() => setCurrentPage('AdApprovalQueue')}
+                notificationCount={pendingAdsCount > 0 ? pendingAdsCount : undefined}
+                isCollapsed={isCollapsed}
               />
             </>
           )}
@@ -238,7 +234,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
         <div className={`mt-4 md:mt-6 px-2 md:px-0 ${isCollapsed ? 'flex justify-center' : ''}`}>
           {isCollapsed ? (
             <Tooltip text="Post" position="right">
-              <button 
+              <button
                 onClick={handlePostClick}
                 className="w-12 h-12 bg-primary hover:bg-gray-600 text-white font-bold rounded-full flex items-center justify-center transition-all duration-200 transform active:scale-95 shadow-lg"
               >
@@ -246,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
               </button>
             </Tooltip>
           ) : (
-            <button 
+            <button
               onClick={handlePostClick}
               className="w-full bg-primary hover:bg-gray-600 text-white font-bold py-3 md:py-2 px-4 rounded-full transition-all duration-200 transform active:scale-95 shadow-lg text-base md:text-sm"
             >

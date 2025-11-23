@@ -195,6 +195,12 @@ export interface Subscription {
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
   promotional_price?: boolean;
+  user?: {
+    id: string;
+    username: string;
+    name?: string;
+    avatar_url?: string;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -217,12 +223,21 @@ export interface Ad {
   // Contadores reais do banco de dados
   likes_count?: number;
   shares_count?: number;
+  views_count?: number;
+  clicks_count?: number;
   // Campos para compatibilidade com PostCard
   likes?: number; // Alias para likes_count
   comments?: number;
   shares?: number; // Alias para shares_count
   views?: number;
   timestamp?: string;
+  // Campos administrativos e financeiros
+  approval_status?: 'pending_approval' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  payment_status?: 'pending' | 'paid' | 'refunded' | 'failed';
+  payment_type?: 'package' | 'cpm';
+  budget?: number;
+  stripe_payment_intent_id?: string;
 }
 
 export interface AdComment {

@@ -92,7 +92,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
             const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
 
             setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-            addToast('Imagem carregada com sucesso', 'success');
+            // addToast('Imagem carregada com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao fazer upload da imagem:', error);
             addToast('Erro ao fazer upload da imagem', 'error');
@@ -129,7 +129,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
             const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
 
             setFormData(prev => ({ ...prev, video_url: data.publicUrl }));
-            addToast('Vídeo carregado com sucesso', 'success');
+            // addToast('Vídeo carregado com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao fazer upload do vídeo:', error);
             addToast('Erro ao fazer upload do vídeo', 'error');
@@ -178,6 +178,10 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                 video_url: formData.video_url || null,
                 type: formData.type,
                 updated_at: new Date().toISOString(),
+                // Reset approval status if it was rejected
+                approval_status: 'pending_approval',
+                status: 'paused', // Pause until approved
+                rejection_reason: null, // Clear rejection reason
             };
 
             const { error } = await supabase
@@ -188,7 +192,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
 
             if (error) throw error;
 
-            addToast('Anúncio atualizado com sucesso!', 'success');
+            // addToast('Anúncio atualizado com sucesso!', 'success');
 
             if (onAdUpdated) {
                 onAdUpdated();

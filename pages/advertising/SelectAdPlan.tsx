@@ -126,7 +126,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         if (error) {
           console.error('Erro ao limpar anúncio rascunho:', error);
         } else {
-          console.log('Anúncio rascunho limpo com sucesso');
+          // console.log('Anúncio rascunho limpo com sucesso');
         }
       } catch (err) {
         console.error('Erro ao tentar excluir anúncio:', err);

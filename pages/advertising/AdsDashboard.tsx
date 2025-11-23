@@ -179,7 +179,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
             isLoading={false}
             onViewDetails={(adId) => {
               // TODO: Implementar navegação para página de detalhes do anúncio
-              addToast('Página de detalhes do anúncio será implementada em breve', 'info');
+              // addToast('Página de detalhes do anúncio será implementada em breve', 'info');
             }}
           />
 

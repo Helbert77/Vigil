@@ -28,7 +28,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
-  
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,9 +79,9 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
-      
+
       setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
-      addToast('Imagem carregada com sucesso', 'success');
+      // addToast('Imagem carregada com sucesso', 'success');
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
       addToast('Erro ao fazer upload da imagem', 'error');
@@ -118,9 +118,9 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
-      
+
       setFormData(prev => ({ ...prev, video_url: data.publicUrl }));
-      addToast('Vídeo carregado com sucesso', 'success');
+      // addToast('Vídeo carregado com sucesso', 'success');
     } catch (error) {
       console.error('Erro ao fazer upload do vídeo:', error);
       addToast('Erro ao fazer upload do vídeo', 'error');
@@ -130,7 +130,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('🚀 ========== HANDLE SUBMIT INICIADO ==========');
+    // console.log('🚀 ========== HANDLE SUBMIT INICIADO ==========');
     e.preventDefault();
 
     // Validações
@@ -160,7 +160,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
     }
 
     setIsLoading(true);
-    
+
     try {
       // Verificar se user existe
       if (!user || !user.id) {
@@ -168,10 +168,10 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         setIsLoading(false);
         return;
       }
-      
+
       // Preparar dados do anúncio
       const linkUrl = formData.link_url.trim() || null;
-      
+
       const adData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -194,13 +194,13 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         views_count: 0,
         comments_count: 0
       };
-      
+
       if (!supabase) {
         addToast('Erro: Cliente do banco de dados não disponível.', 'error');
         setIsLoading(false);
         return;
       }
-      
+
       // Verificar se está autenticado
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
@@ -208,21 +208,21 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         setIsLoading(false);
         return;
       }
-      
+
       const { data, error } = await supabase
         .from('anuncios')
         .insert([adData])
         .select()
         .single();
-      
+
       if (error) {
         throw error;
       }
-      
-      console.log('✅ Anúncio criado com sucesso:', data);
 
-      addToast('Anúncio criado! Redirecionando para seleção de plano...', 'success');
-      
+      // console.log('✅ Anúncio criado com sucesso:', data);
+
+      // addToast('Anúncio criado! Redirecionando para seleção de plano...', 'success');
+
       // Resetar formulário
       setFormData({
         title: '',
@@ -238,25 +238,25 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         onAdCreated();
       }
       onClose();
-      
+
       // Usar navegação SPA sem reload
       const snapshot: NavigationSnapshot = {
         page: 'SelectAdPlan',
         activeAdId: data.id,
       };
-      
+
       pushHistoryState(snapshot);
       window.dispatchEvent(new CustomEvent('navigation', { detail: snapshot }));
-      
+
     } catch (error: any) {
       console.error('Erro ao criar anúncio:', error);
-      
+
       let errorMessage = 'Erro ao criar anúncio. Tente novamente.';
-      
+
       if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       addToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
@@ -264,19 +264,19 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-light-card dark:bg-dark-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 border-b border-light-border dark:border-dark-border flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Criar Novo Anúncio</h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
             disabled={isLoading}
           >
@@ -285,7 +285,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
         </div>
 
         {/* Form */}
-        <form 
+        <form
           onSubmit={handleSubmit}
           className="flex-1 flex flex-col overflow-hidden"
           noValidate

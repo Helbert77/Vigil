@@ -21,7 +21,7 @@ export const trackClick = async (adId: string, userId: string): Promise<boolean>
   try {
     // TODO: Adicionar coluna clicks_count na tabela anuncios se necessário
     // Por enquanto, apenas retornamos true para não quebrar a aplicação
-    console.log('Click tracked for ad:', adId, 'by user:', userId);
+    // console.log('Click tracked for ad:', adId, 'by user:', userId);
     return true;
   } catch (error) {
     console.error('Error tracking click:', error);
@@ -53,7 +53,7 @@ export const trackAdImpression = async (adId: string): Promise<boolean> => {
     }
 
     const newViewsCount = (ad.views_count || 0) + 1;
-    
+
     // Verificar limites baseado no tipo de pagamento
     let shouldPause = false;
     let completionReason = null;
@@ -185,7 +185,7 @@ export const checkAndPauseExpiredAds = async (): Promise<number> => {
       return 0;
     }
 
-    console.log(`Paused ${expiredAds.length} expired ads`);
+    // console.log(`Paused ${expiredAds.length} expired ads`);
     return expiredAds.length;
 
   } catch (error) {
@@ -303,4 +303,3 @@ export const pauseAd = async (adId: string, reason: 'manual_pause' | 'budget_exh
     return { data: null, error: error.message };
   }
 };
-

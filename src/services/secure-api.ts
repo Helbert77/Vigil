@@ -53,7 +53,7 @@ export class SecureApiService {
   private readonly defaultTimeout = 30000; // 30 segundos
   private readonly defaultRetries = 3;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Singleton pattern para garantir uma única instância
@@ -93,7 +93,7 @@ export class SecureApiService {
         return result as T;
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt < retries) {
           // Backoff exponencial: 1s, 2s, 4s
           const delay = Math.pow(2, attempt - 1) * 1000;
@@ -137,7 +137,7 @@ export class SecureApiService {
       return response;
     } catch (error) {
       console.error('[SecureApiService] Content moderation failed:', error);
-      
+
       // Fallback: rejeitar conteúdo em caso de erro
       return {
         isAppropriate: false,
@@ -187,7 +187,7 @@ export class SecureApiService {
       return response;
     } catch (error) {
       console.error('[SecureApiService] Content generation failed:', error);
-      
+
       return {
         content: '',
         success: false,
@@ -232,7 +232,7 @@ export class SecureApiService {
    */
   public reset(): void {
     // Implementar limpeza de cache se necessário
-    console.log('[SecureApiService] Service reset completed');
+    // console.log('[SecureApiService] Service reset completed');
   }
 }
 
@@ -241,7 +241,7 @@ export const secureApiService = SecureApiService.getInstance();
 
 // Exportar funções de conveniência
 export const moderateContent = (content: string) => secureApiService.moderateContent(content);
-export const generateContent = (prompt: string, options?: Parameters<typeof secureApiService.generateContent>[1]) => 
+export const generateContent = (prompt: string, options?: Parameters<typeof secureApiService.generateContent>[1]) =>
   secureApiService.generateContent(prompt, options);
 export const apiHealthCheck = () => secureApiService.healthCheck();
 

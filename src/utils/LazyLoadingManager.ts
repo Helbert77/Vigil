@@ -231,7 +231,7 @@ export class LazyLoadingManager {
     try {
       // Simula carregamento do componente
       // Em implementação real, usaria as configurações armazenadas
-      console.log(`Preloading componente: ${componentKey}`);
+      // console.log(`Preloading componente: ${componentKey}`);
     } catch (error) {
       console.warn(`Erro no preload de ${componentKey}:`, error);
     }
@@ -261,7 +261,7 @@ export class LazyLoadingManager {
    */
   public getPreloadRecommendations(): string[] {
     const patterns = Array.from(this.usagePatterns.values());
-    
+
     return patterns
       .filter(p => p.frequency > 2) // Apenas rotas acessadas mais de 2 vezes
       .sort((a, b) => b.frequency - a.frequency) // Ordena por frequência
@@ -316,7 +316,7 @@ export class LazyLoadingManager {
    */
   private recordLoadingStats(stats: LoadingStats): void {
     this.loadingStats.push(stats);
-    
+
     // Mantém apenas os últimos 100 registros
     if (this.loadingStats.length > 100) {
       this.loadingStats.shift();
@@ -355,14 +355,14 @@ export class LazyLoadingManager {
 export const lazyLoadingManager = LazyLoadingManager.getInstance();
 
 // Funções de conveniência
-export const createLazyComponent = (config: LazyLoadConfig) => 
+export const createLazyComponent = (config: LazyLoadConfig) =>
   lazyLoadingManager.createLazyComponent(config);
 
-export const recordPageUsage = (route: string) => 
+export const recordPageUsage = (route: string) =>
   lazyLoadingManager.recordUsage(route);
 
-export const getPreloadRecommendations = () => 
+export const getPreloadRecommendations = () =>
   lazyLoadingManager.getPreloadRecommendations();
 
-export const getPerformanceStats = () => 
+export const getPerformanceStats = () =>
   lazyLoadingManager.getPerformanceStats();
