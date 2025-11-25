@@ -122,6 +122,7 @@ export interface ChatRoom {
   created_at: string;
   updated_at: string;
   participant_count: number;
+  users_online: number; // Count of users active in last 5 minutes
   is_hot: boolean;
   is_new: boolean;
   creator?: {
@@ -292,8 +293,12 @@ export const fetchConversations = async (userId: string) => {
       .eq('user_id', userId);
 
     if (participantError) {
+      // If table doesn't exist, return empty array (this is for private conversations, not rooms)
+      if (isMissingResourceError(participantError)) {
+        return { data: [], error: null };
+      }
       handleApiError(participantError, 'fetchConversations - get participant IDs', { userId });
-      return { data: null, error: participantError };
+      return { data: [], error: null }; // Return empty array instead of error
     }
 
     if (!participantData || participantData.length === 0) {
@@ -318,14 +323,17 @@ export const fetchConversations = async (userId: string) => {
       .order('updated_at', { ascending: false });
 
     if (error) {
+      if (isMissingResourceError(error)) {
+        return { data: [], error: null };
+      }
       handleApiError(error, 'fetchConversations - get conversations', { userId, conversationIds });
-      return { data: null, error };
+      return { data: [], error: null }; // Return empty array instead of error
     }
 
     return { data, error: null };
   } catch (error) {
     handleApiError(error, 'fetchConversations', { userId });
-    return { data: null, error };
+    return { data: [], error: null }; // Return empty array instead of error for missing tables
   }
 };
 
@@ -405,10 +413,7 @@ export const fetchChatRooms = async (category?: string) => {
   try {
     let query = supabase
       .from('chat_rooms')
-      .select(`
-        *,
-        creator:created_by(id, username, avatar_url)
-      `)
+      .select('*')
       .eq('is_public', true)
       .order('participant_count', { ascending: false });
 
@@ -421,6 +426,39 @@ export const fetchChatRooms = async (category?: string) => {
     if (error) {
       handleApiError(error, 'fetchChatRooms', { category });
       return { data: null, error };
+    }
+
+    // Fetch creator info and online users count for each room
+    if (data && data.length > 0) {
+      const creatorIds = data.filter(r => r.created_by).map(r => r.created_by);
+      if (creatorIds.length > 0) {
+        const { data: creators } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', creatorIds);
+
+        if (creators) {
+          const creatorMap = new Map(creators.map(c => [c.id, c]));
+          data.forEach(room => {
+            if (room.created_by && creatorMap.has(room.created_by)) {
+              room.creator = creatorMap.get(room.created_by);
+            }
+          });
+        }
+      }
+
+      // Calculate online users for each room (active in last 5 minutes)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      
+      for (const room of data) {
+        const { count } = await supabase
+          .from('chat_room_participants')
+          .select('*', { count: 'exact', head: true })
+          .eq('room_id', room.id)
+          .gte('last_activity', fiveMinutesAgo);
+        
+        room.users_online = count || 0;
+      }
     }
 
     return { data, error: null };
@@ -454,72 +492,240 @@ export const joinChatRoom = async (roomId: string) => {
       return { data: null, error: { message: 'Sala cheia' } };
     }
 
-    // Create conversation for the room if it doesn't exist
-    let conversationId: string;
-
-    const { data: existingConversation, error: conversationError } = await supabase
-      .from('chat_conversations')
+    // Check if user is already a participant
+    const { data: existingParticipant } = await supabase
+      .from('chat_room_participants')
       .select('id')
       .eq('room_id', roomId)
+      .eq('user_id', user.id)
       .single();
 
-    if (conversationError && !isMissingResourceError(conversationError)) {
-      handleApiError(conversationError, 'joinChatRoom - check existing conversation', { roomId });
-      return { data: null, error: conversationError };
-    }
-
-    if (existingConversation) {
-      conversationId = existingConversation.id;
-    } else {
-      // Create new conversation for the room
-      const { data: newConversation, error: createError } = await supabase
-        .from('chat_conversations')
+    // If not a participant, add them
+    if (!existingParticipant) {
+      const { error: participantError } = await supabase
+        .from('chat_room_participants')
         .insert({
-          title: `Sala: ${roomId}`,
-          is_group: true,
-          room_id: roomId
-        })
-        .select()
-        .single();
+          room_id: roomId,
+          user_id: user.id,
+          joined_at: new Date().toISOString(),
+          last_activity: new Date().toISOString()
+        });
 
-      if (createError) {
-        handleApiError(createError, 'joinChatRoom - create conversation', { roomId });
-        return { data: null, error: createError };
+      if (participantError) {
+        handleApiError(participantError, 'joinChatRoom - add participant', { roomId, userId: user.id });
+        return { data: null, error: participantError };
       }
 
-      conversationId = newConversation.id;
+      // Increment participant count
+      const { error: incrementError } = await supabase
+        .from('chat_rooms')
+        .update({ participant_count: room.participant_count + 1 })
+        .eq('id', roomId);
+
+      if (incrementError) {
+        handleApiError(incrementError, 'joinChatRoom - increment count', { roomId });
+      }
     }
 
-    // Add user as participant
-    const { error: participantError } = await supabase
-      .from('chat_participants')
-      .insert({
-        conversation_id: conversationId,
-        user_id: user.id,
-        role: 'member',
-        joined_at: new Date().toISOString()
-      });
-
-    if (participantError) {
-      handleApiError(participantError, 'joinChatRoom - add participant', { conversationId, userId: user.id });
-      return { data: null, error: participantError };
-    }
-
-    // Increment participant count
-    const { error: incrementError } = await supabase
-      .from('chat_rooms')
-      .update({ participant_count: room.participant_count + 1 })
-      .eq('id', roomId);
-
-    if (incrementError) {
-      handleApiError(incrementError, 'joinChatRoom - increment count', { roomId });
-    }
-
-    return { data: { conversationId, roomId }, error: null };
+    return { data: { roomId }, error: null };
   } catch (error) {
     handleApiError(error, 'joinChatRoom', { roomId });
     return { data: null, error };
   }
+};
+
+// Fetch messages from a chat room
+export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_room_messages')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      handleApiError(error, 'fetchRoomMessages', { roomId, limit });
+      return { data: null, error };
+    }
+
+    // Fetch sender info for all messages
+    const userIds = [...new Set((data || []).map((msg: any) => msg.user_id))];
+    let senderMap = new Map();
+
+    if (userIds.length > 0) {
+      try {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, full_name')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.warn('Error fetching profiles for messages:', profilesError);
+        }
+
+        if (profiles) {
+          profiles.forEach(profile => {
+            senderMap.set(profile.id, profile);
+          });
+        }
+      } catch (err) {
+        console.error('Exception fetching profiles:', err);
+      }
+    }
+
+    // Format messages to match ChatMessage interface
+    const formattedMessages = (data || []).map((msg: any) => {
+      const sender = senderMap.get(msg.user_id);
+      return {
+        id: msg.id,
+        conversation_id: roomId,
+        sender_id: msg.user_id,
+        content: msg.content,
+        created_at: msg.created_at,
+        is_read: false,
+        is_deleted: false,
+        sender: sender || null
+      };
+    });
+
+    return { data: formattedMessages, error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchRoomMessages', { roomId, limit });
+    return { data: null, error };
+  }
+};
+
+// Send a message to a chat room
+export const sendRoomMessage = async (roomId: string, content: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    // Verify user is a participant
+    const { data: participant } = await supabase
+      .from('chat_room_participants')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!participant) {
+      return { data: null, error: { message: 'Você precisa entrar na sala primeiro' } };
+    }
+
+    const { data, error } = await supabase
+      .from('chat_room_messages')
+      .insert({
+        room_id: roomId,
+        user_id: user.id,
+        content: content.trim()
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      handleApiError(error, 'sendRoomMessage', { roomId, content });
+      return { data: null, error };
+    }
+
+    // Update last activity
+    await supabase
+      .from('chat_room_participants')
+      .update({ last_activity: new Date().toISOString() })
+      .eq('room_id', roomId)
+      .eq('user_id', user.id);
+
+    // Fetch sender info with fallback to user metadata
+    let sender = null;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, full_name')
+        .eq('id', user.id)
+        .single();
+      
+      sender = profile;
+    } catch (e) {
+      console.warn('Could not fetch profile for sent message, using metadata');
+    }
+
+    // If profile fetch fails, use user metadata
+    if (!sender) {
+      sender = {
+        id: user.id,
+        username: user.user_metadata?.username || user.email?.split('@')[0] || 'Usuário',
+        full_name: user.user_metadata?.full_name,
+        avatar_url: user.user_metadata?.avatar_url
+      };
+    }
+
+    // Format message
+    const formattedMessage = {
+      id: data.id,
+      conversation_id: roomId,
+      sender_id: data.user_id,
+      content: data.content,
+      created_at: data.created_at,
+      is_read: false,
+      is_deleted: false,
+      sender: sender
+    };
+
+    return { data: formattedMessage, error: null };
+  } catch (error) {
+    handleApiError(error, 'sendRoomMessage', { roomId, content });
+    return { data: null, error };
+  }
+};
+
+// Subscribe to room messages
+export const subscribeToRoomMessages = (roomId: string, callback: (message: ChatMessage) => void) => {
+  const channel = supabase
+    .channel(`room_messages:${roomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_room_messages',
+        filter: `room_id=eq.${roomId}`
+      },
+      async (payload) => {
+        // Fetch complete message
+        const { data: messageData, error: msgError } = await supabase
+          .from('chat_room_messages')
+          .select('*')
+          .eq('id', payload.new.id)
+          .single();
+
+        if (msgError || !messageData) return;
+
+        // Fetch sender info
+        const { data: sender } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, full_name')
+          .eq('id', messageData.user_id)
+          .single();
+
+        const formattedMessage = {
+          id: messageData.id,
+          conversation_id: roomId,
+          sender_id: messageData.user_id,
+          content: messageData.content,
+          created_at: messageData.created_at,
+          is_read: false,
+          is_deleted: false,
+          sender: sender || null
+        };
+        callback(formattedMessage);
+      }
+    )
+    .subscribe();
+
+  return channel;
 };
 
 // Leave a chat room
@@ -530,27 +736,15 @@ export const leaveChatRoom = async (roomId: string) => {
       throw new Error('Usuário não autenticado');
     }
 
-    // Find conversation for the room
-    const { data: conversation, error: conversationError } = await supabase
-      .from('chat_conversations')
-      .select('id')
-      .eq('room_id', roomId)
-      .single();
-
-    if (conversationError) {
-      handleApiError(conversationError, 'leaveChatRoom - find conversation', { roomId });
-      return { data: null, error: conversationError };
-    }
-
-    // Remove user as participant
+    // Remove user from chat_room_participants
     const { error: participantError } = await supabase
-      .from('chat_participants')
+      .from('chat_room_participants')
       .delete()
-      .eq('conversation_id', conversation.id)
+      .eq('room_id', roomId)
       .eq('user_id', user.id);
 
     if (participantError) {
-      handleApiError(participantError, 'leaveChatRoom - remove participant', { conversationId: conversation.id, userId: user.id });
+      handleApiError(participantError, 'leaveChatRoom - remove participant', { roomId, userId: user.id });
       return { data: null, error: participantError };
     }
 
@@ -578,6 +772,72 @@ export const leaveChatRoom = async (roomId: string) => {
   } catch (error) {
     handleApiError(error, 'leaveChatRoom', { roomId });
     return { data: null, error };
+  }
+};
+
+// Check if user is in a room
+export const isUserInRoom = async (roomId: string): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('chat_room_participants')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('user_id', user.id)
+      .single();
+
+    return !error && !!data;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Update room activity timestamp
+export const updateRoomActivity = async (roomId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: new Error('Usuário não autenticado') };
+
+    const { error } = await supabase
+      .from('chat_room_participants')
+      .update({ last_activity: new Date().toISOString() })
+      .eq('room_id', roomId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      handleApiError(error, 'updateRoomActivity', { roomId });
+      return { data: null, error };
+    }
+
+    return { data: { success: true }, error: null };
+  } catch (error) {
+    handleApiError(error, 'updateRoomActivity', { roomId });
+    return { data: null, error };
+  }
+};
+
+// Get user's joined rooms
+export const getUserJoinedRooms = async (): Promise<string[]> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('chat_room_participants')
+      .select('room_id')
+      .eq('user_id', user.id);
+
+    if (error) {
+      handleApiError(error, 'getUserJoinedRooms');
+      return [];
+    }
+
+    return (data || []).map(p => p.room_id);
+  } catch (error) {
+    handleApiError(error, 'getUserJoinedRooms');
+    return [];
   }
 };
 
@@ -647,6 +907,27 @@ export const subscribeToConversations = (userId: string, callback: (conversation
         if (!error && data) {
           callback(data);
         }
+      }
+    )
+    .subscribe();
+
+  return channel;
+};
+
+// Subscribe to chat room participant changes for real-time updates
+export const subscribeToRoomParticipants = (roomId: string, callback: () => void) => {
+  const channel = supabase
+    .channel(`room_participants:${roomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'chat_room_participants',
+        filter: `room_id=eq.${roomId}`
+      },
+      () => {
+        callback();
       }
     )
     .subscribe();
@@ -778,6 +1059,110 @@ export const fetchChatBuddies = async (userId: string) => {
     return { data: sortedBuddies, error: null };
   } catch (error) {
     handleApiError(error, 'fetchChatBuddies', { userId });
+    return { data: null, error };
+  }
+};
+
+// Create a new chat room
+export const createChatRoom = async (roomData: {
+  name: string;
+  description?: string;
+  category?: string;
+  is_public?: boolean;
+  max_participants?: number;
+}) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data, error } = await supabase.functions.invoke('create-chat-room', {
+      body: roomData,
+    });
+
+    if (error) {
+      handleApiError(error, 'createChatRoom', roomData);
+      return { data: null, error };
+    }
+
+    if (!data || !data.success) {
+      const errorMsg = data?.error || 'Erro ao criar sala';
+      handleApiError(errorMsg, 'createChatRoom', roomData);
+      return { data: null, error: errorMsg };
+    }
+
+    return { data: data.room, error: null };
+  } catch (error) {
+    handleApiError(error, 'createChatRoom', roomData);
+    return { data: null, error };
+  }
+};
+
+// Update a chat room
+export const updateChatRoom = async (roomId: string, updates: {
+  name?: string;
+  description?: string;
+  category?: string;
+  is_public?: boolean;
+  max_participants?: number;
+  is_hot?: boolean;
+  is_new?: boolean;
+}) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data, error } = await supabase.functions.invoke('update-chat-room', {
+      body: { room_id: roomId, ...updates },
+    });
+
+    if (error) {
+      handleApiError(error, 'updateChatRoom', { roomId, updates });
+      return { data: null, error };
+    }
+
+    if (!data || !data.success) {
+      const errorMsg = data?.error || 'Erro ao atualizar sala';
+      handleApiError(errorMsg, 'updateChatRoom', { roomId, updates });
+      return { data: null, error: errorMsg };
+    }
+
+    return { data: data.room, error: null };
+  } catch (error) {
+    handleApiError(error, 'updateChatRoom', { roomId, updates });
+    return { data: null, error };
+  }
+};
+
+// Delete a chat room
+export const deleteChatRoom = async (roomId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data, error } = await supabase.functions.invoke('delete-chat-room', {
+      body: { room_id: roomId },
+    });
+
+    if (error) {
+      handleApiError(error, 'deleteChatRoom', { roomId });
+      return { data: null, error };
+    }
+
+    if (!data || !data.success) {
+      const errorMsg = data?.error || 'Erro ao excluir sala';
+      handleApiError(errorMsg, 'deleteChatRoom', { roomId });
+      return { data: null, error: errorMsg };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    handleApiError(error, 'deleteChatRoom', { roomId });
     return { data: null, error };
   }
 };
