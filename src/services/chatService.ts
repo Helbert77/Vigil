@@ -35,11 +35,11 @@ const handleApiError = (error: any, operation: string, context?: any) => {
 // Utility function to check if error is related to missing table/column
 const isMissingResourceError = (error: any) => {
   return error?.code === 'PGRST205' || // Table not found
-         error?.code === 'PGRST116' || // Column not found
-         error?.code === '42703' ||    // PostgreSQL: column does not exist
-         error?.message?.includes('column') ||
-         error?.message?.includes('table') ||
-         error?.message?.includes('relation');
+    error?.code === 'PGRST116' || // Column not found
+    error?.code === '42703' ||    // PostgreSQL: column does not exist
+    error?.message?.includes('column') ||
+    error?.message?.includes('table') ||
+    error?.message?.includes('relation');
 };
 
 // Cache for table existence checks to avoid repeated API calls
@@ -57,13 +57,13 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
       .from(tableName)
       .select('*')
       .limit(1);
-    
+
     const exists = !error || !isMissingResourceError(error);
-    
+
     // Cache the result for 5 minutes
     tableExistenceCache.set(tableName, exists);
     setTimeout(() => tableExistenceCache.delete(tableName), 5 * 60 * 1000);
-    
+
     return exists;
   } catch (error) {
     console.debug(`Table existence check failed for ${tableName}:`, error);
@@ -231,7 +231,7 @@ export const editMessage = async (messageId: string, newContent: string) => {
 
     const { data, error } = await supabase
       .from('chat_messages')
-      .update({ 
+      .update({
         content: newContent,
         edited_at: new Date().toISOString()
       })
@@ -456,7 +456,7 @@ export const joinChatRoom = async (roomId: string) => {
 
     // Create conversation for the room if it doesn't exist
     let conversationId: string;
-    
+
     const { data: existingConversation, error: conversationError } = await supabase
       .from('chat_conversations')
       .select('id')
@@ -712,7 +712,7 @@ export const fetchNewUsers = async (days: number = 7, limit: number = 10) => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, full_name, created_at')
+      .select('id, username, avatar_url, full_name, created_at, plan, role, interests, age, location')
       .gte('created_at', dateThreshold.toISOString())
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -745,8 +745,8 @@ export const fetchChatBuddies = async (userId: string) => {
 
     // Extract buddy IDs (other participants in conversations)
     const buddyIds = new Set<string>();
-    conversations.forEach(conversation => {
-      conversation.participants?.forEach(participant => {
+    conversations.forEach((conversation: any) => {
+      conversation.participants?.forEach((participant: any) => {
         if (participant.user_id !== userId) {
           buddyIds.add(participant.user_id);
         }
@@ -760,7 +760,7 @@ export const fetchChatBuddies = async (userId: string) => {
     // Fetch buddy profiles
     const { data: buddies, error: buddiesError } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, full_name, last_active_at')
+      .select('id, username, avatar_url, full_name, last_active_at, plan, role, interests, age, location')
       .in('id', Array.from(buddyIds));
 
     if (buddiesError) {
@@ -781,6 +781,7 @@ export const fetchChatBuddies = async (userId: string) => {
     return { data: null, error };
   }
 };
+
 
 // Export types
 export type { RealtimeChannel };

@@ -7,12 +7,12 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useToast } from '@/hooks/useToast';
 import RadarView from '@/src/components/chat/RadarView';
-import { 
-  fetchChatRooms, 
-  fetchNewUsers, 
-  fetchChatBuddies, 
-  fetchMessages, 
-  sendMessage, 
+import {
+  fetchChatRooms,
+  fetchNewUsers,
+  fetchChatBuddies,
+  fetchMessages,
+  sendMessage,
   joinChatRoom,
   searchUsers,
   ChatRoom as ChatRoomType,
@@ -20,6 +20,7 @@ import {
   subscribeToMessages,
   RealtimeChannel
 } from '@/src/services/chatService';
+import * as api from '@/src/services/api';
 
 // Icons
 const SearchIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
@@ -50,12 +51,15 @@ interface Buddy {
   unreadCount: number;
   plan?: string;
   role?: string;
+  interests?: string[];
+  age?: number;
+  location?: string;
 }
 
 export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const { session } = useSession();
   const { addToast } = useToast();
-  
+
   // State
   const [selectedBuddy, setSelectedBuddy] = useState<Buddy | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -63,61 +67,61 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeAccordion, setActiveAccordion] = useState<string>('search');
   const [currentView, setCurrentView] = useState<'radar' | 'chat'>('radar');
-  
+
   // Filters
   const [ageFilter, setAgeFilter] = useState<string>('');
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [interestsFilter, setInterestsFilter] = useState<string>('');
-  
+
   // Data states
   const [chatRooms, setChatRooms] = useState<ChatRoomType[]>([]);
   const [newUsers, setNewUsers] = useState<any[]>([]);
   const [buddies, setBuddies] = useState<Buddy[]>([]);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
-  
+
   // Loading states
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [loadingNewUsers, setLoadingNewUsers] = useState(true);
   const [loadingBuddies, setLoadingBuddies] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  
+
   // Error states
   const [roomsError, setRoomsError] = useState<string | null>(null);
   const [newUsersError, setNewUsersError] = useState<string | null>(null);
   const [buddiesError, setBuddiesError] = useState<string | null>(null);
-  
+
   // Real-time subscription
   const [messageSubscription, setMessageSubscription] = useState<RealtimeChannel | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Effects
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-  
+
   // Network status monitoring
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       addToast('Conexão restaurada', 'success');
     };
-    
+
     const handleOffline = () => {
       setIsOnline(false);
       addToast('Conexão perdida', 'info');
     };
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -129,19 +133,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     const checkDarkMode = () => {
       setIsDarkMode(document.documentElement.classList.contains('dark'));
     };
-    
+
     checkDarkMode();
-    
+
     // Create observer for theme changes
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class']
     });
-    
+
     return () => observer.disconnect();
   }, []);
-  
+
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
@@ -159,16 +163,16 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         setIsInitializing(false);
       }
     };
-    
+
     loadInitialData();
   }, []);
-  
+
   // Subscribe to messages when conversation is selected
   useEffect(() => {
     if (selectedBuddy && session?.user?.id) {
       subscribeToConversationMessages(selectedBuddy.id);
     }
-    
+
     return () => {
       if (messageSubscription) {
         messageSubscription.unsubscribe();
@@ -176,15 +180,15 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }
     };
   }, [selectedBuddy, session?.user?.id]);
-  
+
   // Load chat rooms
   const loadChatRooms = async () => {
     try {
       setLoadingRooms(true);
       setRoomsError(null);
-      
+
       const { data, error } = await fetchChatRooms();
-      
+
       if (error) {
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
         setRoomsError(errorMessage);
@@ -200,91 +204,91 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       setLoadingRooms(false);
     }
   };
-  
-  // Load new users
+
+  // Load new users (suggestions from main app)
   const loadNewUsers = async () => {
     try {
       setLoadingNewUsers(true);
       setNewUsersError(null);
-      
-      const { data, error } = await fetchNewUsers(7, 10);
-      
+      const { data, error } = await api.fetchUsersToFollow(user.id);
+
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar novos usuários';
-        setNewUsersError(errorMessage);
-        addToast('Erro ao carregar novos usuários', 'error');
-      } else {
-        setNewUsers(data || []);
+        setNewUsersError('Erro ao carregar sugestões de usuários');
+        return;
       }
-    } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar novos usuários';
-      setNewUsersError(errorMessage);
-      addToast('Erro ao carregar novos usuários', 'error');
+
+      setNewUsers(data || []);
+    } catch (error) {
+      console.error('Error loading user suggestions:', error);
+      setNewUsersError('Erro ao carregar sugestões de usuários');
     } finally {
       setLoadingNewUsers(false);
     }
   };
-  
-  // Load buddies
+
+  // Load buddies (chat buddies - conceito Odigo)
   const loadBuddies = async () => {
-    if (!session?.user?.id) return;
-    
     try {
       setLoadingBuddies(true);
       setBuddiesError(null);
-      
-      const { data, error } = await fetchChatBuddies(session.user.id);
-      
+      const { data, error } = await fetchChatBuddies(user.id);
+
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar buddies';
-        setBuddiesError(errorMessage);
-        addToast('Erro ao carregar buddies', 'error');
-      } else {
-        // Transform data to Buddy interface
-        const transformedBuddies = (data || []).map(profile => ({
+        setBuddiesError('Erro ao carregar buddies');
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const transformedBuddies: Buddy[] = data.map((profile: any) => ({
           id: profile.id,
           name: profile.full_name || profile.username,
           username: profile.username,
           avatarUrl: profile.avatar_url,
+          lastMessage: 'Última mensagem...',
           lastActivity: profile.last_active_at || new Date().toISOString(),
-          isOnline: !!profile.last_active_at && 
-            new Date(profile.last_active_at).getTime() > Date.now() - 5 * 60 * 1000, // Online if active in last 5 minutes
+          isOnline: profile.last_active_at ?
+            new Date(profile.last_active_at).getTime() > Date.now() - 5 * 60 * 1000 :
+            false,
           unreadCount: 0, // TODO: Implement unread count
           plan: profile.plan,
-          role: profile.role
+          role: profile.role,
+          interests: profile.interests,
+          age: profile.age,
+          location: profile.location
         }));
         setBuddies(transformedBuddies);
+      } else {
+        setBuddies([]);
       }
-    } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar buddies';
-      setBuddiesError(errorMessage);
-      addToast('Erro ao carregar buddies', 'error');
+    } catch (error) {
+      console.error('Error loading buddies:', error);
+      setBuddiesError('Erro ao carregar buddies');
     } finally {
       setLoadingBuddies(false);
     }
   };
-  
+
   // Subscribe to conversation messages
   const subscribeToConversationMessages = async (conversationId: string) => {
     if (!conversationId) return;
-    
+
     try {
       // Load existing messages first
       setLoadingMessages(true);
       const { data, error } = await fetchMessages(conversationId);
-      
+
       if (error) {
         console.error('Error loading messages:', error);
         addToast('Erro ao carregar mensagens', 'error');
       } else {
         setMessages(data || []);
       }
-      
+
       // Subscribe to new messages
       const subscription = subscribeToMessages(conversationId, (newMessage) => {
         setMessages(prev => [...prev, newMessage]);
       });
-      
+
       setMessageSubscription(subscription);
     } catch (error: any) {
       console.error('Error in subscribeToConversationMessages:', error);
@@ -293,53 +297,53 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       setLoadingMessages(false);
     }
   };
-  
+
   // Handlers
   const handleAccordionToggle = (accordion: string) => {
     setActiveAccordion(activeAccordion === accordion ? '' : accordion);
   };
-  
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || isSending || !selectedBuddy) return;
-    
+
     // Check if online before sending
     if (!isOnline) {
       addToast('Você está offline. Mensagem será enviada quando a conexão for restaurada.', 'info');
       return;
     }
-    
+
     setIsSending(true);
-    
+
     try {
       // Create conversation if it doesn't exist
       let conversationId = `buddy_${selectedBuddy.id}`;
-      
+
       const { data: messageData, error } = await sendMessage({
         conversationId,
         content: messageText
       });
-      
+
       if (error) {
         console.error('Error sending message:', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
         addToast(errorMessage, 'error');
         return;
       }
-      
+
       if (messageData) {
         setMessages(prev => [...prev, messageData]);
       }
-      
+
       // Update buddy's last activity
-      setBuddies(prev => prev.map(buddy => 
-        buddy.id === selectedBuddy.id 
+      setBuddies(prev => prev.map(buddy =>
+        buddy.id === selectedBuddy.id
           ? { ...buddy, lastMessage: messageText, lastActivity: new Date().toISOString() }
           : buddy
       ));
-      
+
       setMessageText('');
-      
+
     } catch (error: any) {
       console.error('Error in handleSendMessage:', error);
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
@@ -348,7 +352,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       setIsSending(false);
     }
   };
-  
+
   // Radar functions
   const handleRadarUserClick = (radarUser: any) => {
     const buddy = buddies.find(b => b.id === radarUser.id);
@@ -361,7 +365,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const handleViewToggle = (view: 'radar' | 'chat') => {
     setCurrentView(view);
   };
-  
+
   const handleAddBuddy = (newUser: any) => {
     const newBuddy: Buddy = {
       id: newUser.id,
@@ -372,22 +376,25 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       isOnline: true,
       unreadCount: 0,
       plan: newUser.plan,
-      role: newUser.role
+      role: newUser.role,
+      interests: newUser.interests,
+      age: newUser.age,
+      location: newUser.location
     };
-    
+
     setBuddies(prev => [newBuddy, ...prev]);
     setNewUsers(prev => prev.filter(user => user.id !== newUser.id));
     addToast(`${newUser.full_name || newUser.username} adicionado aos buddies!`, 'success');
   };
-  
+
   const handleSelectBuddy = (buddy: Buddy) => {
     setSelectedBuddy(buddy);
     // Clear unread count
-    setBuddies(prev => prev.map(b => 
+    setBuddies(prev => prev.map(b =>
       b.id === buddy.id ? { ...b, unreadCount: 0 } : b
     ));
   };
-  
+
   const handleSearch = async () => {
     try {
       const filters = {
@@ -396,9 +403,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         location: locationFilter || undefined,
         interests: interestsFilter ? [interestsFilter] : undefined
       };
-      
+
       const { data, error } = await searchUsers(searchQuery, filters);
-      
+
       if (error) {
         console.error('Error in search:', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro na pesquisa';
@@ -413,11 +420,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       addToast(errorMessage, 'error');
     }
   };
-  
+
   const handleJoinRoom = async (room: ChatRoomType) => {
     try {
       const { data, error } = await joinChatRoom(room.id);
-      
+
       if (error) {
         console.error('Error joining room:', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
@@ -431,33 +438,33 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       addToast(errorMessage, 'error');
     }
   };
-  
+
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) return 'Agora';
     if (diffInHours < 24) return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     if (diffInHours < 48) return 'Ontem';
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
   };
-  
+
   // Filtered data
-  const filteredBuddies = buddies.filter(buddy => 
+  const filteredBuddies = buddies.filter(buddy =>
     buddy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     buddy.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
   const filteredNewUsers = newUsers.filter(user => {
     if (ageFilter && user.age !== parseInt(ageFilter)) return false;
     if (locationFilter && !user.location?.toLowerCase().includes(locationFilter.toLowerCase())) return false;
-    if (interestsFilter && !user.interests?.some(interest => 
+    if (interestsFilter && !user.interests?.some((interest: string) =>
       interest.toLowerCase().includes(interestsFilter.toLowerCase())
     )) return false;
     return true;
   });
-  
+
   return (
     <div className="h-screen flex bg-light-bg dark:bg-dark-bg">
       {/* Initial Loading Overlay */}
@@ -469,7 +476,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           </div>
         </div>
       )}
-      
+
       {/* Left Panel - Buddies */}
       <div className="w-80 bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex flex-col">
         {/* Header */}
@@ -488,7 +495,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
           </div>
         </div>
-        
+
         {/* Buddies List */}
         <div className="flex-1 overflow-y-auto">
           {loadingBuddies ? (
@@ -496,7 +503,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           ) : buddiesError ? (
             <div className="p-6 text-center text-red-500 dark:text-red-400">
               <p className="text-sm">{buddiesError}</p>
-              <button 
+              <button
                 onClick={loadBuddies}
                 className="mt-2 text-primary hover:text-primary/80 text-sm underline"
               >
@@ -512,16 +519,15 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
               <div
                 key={buddy.id}
                 onClick={() => handleSelectBuddy(buddy)}
-                className={`flex items-center gap-3 p-4 cursor-pointer border-b border-light-border dark:border-dark-border transition-colors ${
-                  selectedBuddy?.id === buddy.id
-                    ? 'bg-primary/10 border-l-4 border-l-primary'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                }`}
+                className={`flex items-center gap-3 p-4 cursor-pointer border-b border-light-border dark:border-dark-border transition-colors ${selectedBuddy?.id === buddy.id
+                  ? 'bg-primary/10 border-l-4 border-l-primary'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  }`}
               >
-                <Avatar 
-                  src={buddy.avatarUrl} 
-                  alt={buddy.name} 
-                  size="md" 
+                <Avatar
+                  src={buddy.avatarUrl || ''}
+                  alt={buddy.name}
+                  size="md"
                   userId={buddy.id}
                   showStatus={true}
                 />
@@ -531,10 +537,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                       <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
                         {buddy.name}
                       </h3>
-                      {(buddy.plan === 'pro' || buddy.plan === 'premium') && 
+                      {(buddy.plan === 'pro' || buddy.plan === 'premium') &&
                         <VerifiedBadgeIcon plan={buddy.plan} className="h-3 w-3 flex-shrink-0" />
                       }
-                      {buddy.role && ['admin', 'moderator'].includes(buddy.role) && 
+                      {buddy.role && ['admin', 'moderator'].includes(buddy.role) &&
                         <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />
                       }
                     </div>
@@ -556,7 +562,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           )}
         </div>
       </div>
-      
+
       {/* Middle Panel - Chat/Radar */}
       <div className="flex-1 flex flex-col">
         {/* View Toggle Header */}
@@ -568,21 +574,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => handleViewToggle('radar')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  currentView === 'radar'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${currentView === 'radar'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 🎯 Radar
               </button>
               <button
                 onClick={() => handleViewToggle('chat')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  currentView === 'chat'
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${currentView === 'chat'
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
               >
                 💬 Chat
               </button>
@@ -607,9 +611,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 {/* Chat Header */}
                 <div className="p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar 
-                      src={selectedBuddy.avatarUrl} 
-                      alt={selectedBuddy.name} 
+                    <Avatar
+                      src={selectedBuddy.avatarUrl || ''}
+                      alt={selectedBuddy.name}
                       size="md"
                       userId={selectedBuddy.id}
                       showStatus={true}
@@ -619,10 +623,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                         <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
                           {selectedBuddy.name}
                         </h3>
-                        {(selectedBuddy.plan === 'pro' || selectedBuddy.plan === 'premium') && 
+                        {(selectedBuddy.plan === 'pro' || selectedBuddy.plan === 'premium') &&
                           <VerifiedBadgeIcon plan={selectedBuddy.plan} className="h-3 w-3 flex-shrink-0" />
                         }
-                        {selectedBuddy.role && ['admin', 'moderator'].includes(selectedBuddy.role) && 
+                        {selectedBuddy.role && ['admin', 'moderator'].includes(selectedBuddy.role) &&
                           <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />
                         }
                       </div>
@@ -634,18 +638,16 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                       </p>
                     </div>
                   </div>
-                  
+
                   {/* Network Status Indicator */}
-                  <div className={`flex items-center gap-1 text-xs ${
-                    isOnline ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      isOnline ? 'bg-green-500' : 'bg-red-500'
-                    }`}></div>
+                  <div className={`flex items-center gap-1 text-xs ${isOnline ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                    <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
                     {isOnline ? 'Conectado' : 'Offline'}
                   </div>
                 </div>
-                
+
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
                   {loadingMessages ? (
@@ -659,21 +661,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                     messages.map((message) => {
                       const isSentByMe = message.sender_id === session?.user?.id;
                       const isTemp = message.id.startsWith('temp_');
-                      
+
                       return (
                         <div key={message.id} className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}>
                           <div
-                            className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                              isSentByMe
-                                ? 'bg-primary text-white rounded-br-none'
-                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
-                            } ${isTemp ? 'opacity-60' : ''}`}
+                            className={`max-w-[70%] rounded-2xl px-4 py-2 ${isSentByMe
+                              ? 'bg-primary text-white rounded-br-none'
+                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
+                              } ${isTemp ? 'opacity-60' : ''}`}
                           >
                             <p className="break-words text-sm">{message.content}</p>
                             <p
-                              className={`text-xs mt-1 ${
-                                isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                              }`}
+                              className={`text-xs mt-1 ${isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                                }`}
                             >
                               {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
                             </p>
@@ -684,7 +684,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                   )}
                   <div ref={messagesEndRef} />
                 </div>
-                
+
                 {/* Message Input */}
                 <div className="p-4 border-t border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
                   {!isOnline && (
@@ -730,23 +730,22 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           </>
         )}
       </div>
-      
+
       {/* Right Panel - Accordion */}
       <div className="w-80 bg-light-card dark:bg-dark-card border-l border-light-border dark:border-dark-border flex flex-col">
         {/* Accordion: Search */}
         <div className="border-b border-light-border dark:border-dark-border">
           <button
             onClick={() => handleAccordionToggle('search')}
-            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${
-              activeAccordion === 'search' 
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-            }`}
+            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'search'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              }`}
           >
             <span className="font-semibold">🔍 PESQUISAR</span>
             <ChevronDownIcon className={`transition-transform ${activeAccordion === 'search' ? 'rotate-180' : ''}`} />
           </button>
-          
+
           {activeAccordion === 'search' && (
             <div className="p-4 space-y-3 bg-white dark:bg-gray-800">
               <select
@@ -760,7 +759,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 <option value="36-45">36-45</option>
                 <option value="46+">46+</option>
               </select>
-              
+
               <select
                 value={genderFilter}
                 onChange={(e) => setGenderFilter(e.target.value)}
@@ -771,7 +770,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 <option value="female">Feminino</option>
                 <option value="other">Outro</option>
               </select>
-              
+
               <input
                 type="text"
                 placeholder="Localização"
@@ -779,7 +778,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              
+
               <input
                 type="text"
                 placeholder="Interesses"
@@ -787,7 +786,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 onChange={(e) => setInterestsFilter(e.target.value)}
                 className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              
+
               <button
                 onClick={handleSearch}
                 className="w-full bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
@@ -797,21 +796,20 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
           )}
         </div>
-        
+
         {/* Accordion: Chat Rooms */}
         <div className="border-b border-light-border dark:border-dark-border">
           <button
             onClick={() => handleAccordionToggle('rooms')}
-            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${
-              activeAccordion === 'rooms' 
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-            }`}
+            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'rooms'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              }`}
           >
             <span className="font-semibold">🚀 SALAS DE CHAT</span>
             <ChevronDownIcon className={`transition-transform ${activeAccordion === 'rooms' ? 'rotate-180' : ''}`} />
           </button>
-          
+
           {activeAccordion === 'rooms' && (
             <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
               {loadingRooms ? (
@@ -819,7 +817,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
               ) : roomsError ? (
                 <div className="text-center text-red-500 dark:text-red-400 py-4">
                   <p className="text-sm">{roomsError}</p>
-                  <button 
+                  <button
                     onClick={loadChatRooms}
                     className="mt-2 text-primary hover:text-primary/80 text-sm underline"
                   >
@@ -852,7 +850,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                       <span className="text-xs text-green-500">
                         {room.participant_count} online
                       </span>
-                      <button 
+                      <button
                         onClick={() => handleJoinRoom(room)}
                         className="text-xs bg-primary hover:bg-primary/90 text-white px-2 py-1 rounded transition-colors"
                       >
@@ -865,21 +863,20 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
           )}
         </div>
-        
+
         {/* Accordion: New Users */}
         <div className="border-b border-light-border dark:border-dark-border">
           <button
             onClick={() => handleAccordionToggle('newusers')}
-            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${
-              activeAccordion === 'newusers' 
-                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-            }`}
+            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'newusers'
+              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+              : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              }`}
           >
             <span className="font-semibold">👥 NOVOS USUÁRIOS</span>
             <ChevronDownIcon className={`transition-transform ${activeAccordion === 'newusers' ? 'rotate-180' : ''}`} />
           </button>
-          
+
           {activeAccordion === 'newusers' && (
             <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
               {filteredNewUsers.length === 0 ? (
@@ -894,10 +891,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <Avatar 
-                          src={user.avatarUrl} 
-                          alt={user.name} 
-                          size="sm" 
+                        <Avatar
+                          src={user.avatarUrl || ''}
+                          alt={user.name}
+                          size="sm"
                           userId={user.id}
                           showStatus={true}
                         />
@@ -906,10 +903,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                             <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
                               {user.name}
                             </h4>
-                            {(user.plan === 'pro' || user.plan === 'premium') && 
+                            {(user.plan === 'pro' || user.plan === 'premium') &&
                               <VerifiedBadgeIcon plan={user.plan} className="h-3 w-3 flex-shrink-0" />
                             }
-                            {user.role && ['admin', 'moderator'].includes(user.role) && 
+                            {user.role && ['admin', 'moderator'].includes(user.role) &&
                               <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />
                             }
                           </div>

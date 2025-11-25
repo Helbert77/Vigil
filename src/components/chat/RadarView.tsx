@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface User {
   id: string;
   name: string;
+  username?: string;
+  avatarUrl?: string;
   mood?: string;
+  location?: string;
+  interests?: string[];
+  age?: number;
 }
 
-interface RadarUser {
-  id: string;
-  name: string;
-  mood: string;
-  color: string;
-  position: { top: string; left: string };
+interface RadarUser extends User {
+  similarity_score?: number;
+  position?: { x: number; y: number };
 }
 
 interface RadarViewProps {
@@ -22,207 +24,139 @@ interface RadarViewProps {
 
 const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode }) => {
   const [radarUsers, setRadarUsers] = useState<RadarUser[]>([]);
-
-  const colors = [
-    '#0066cc', // odigo-blue
-    '#ff6600', // odigo-orange  
-    '#00cc66', // odigo-green
-    '#ff3366', // odigo-red
-    '#8338ec', // odigo-purple
-    '#ffcc00', // odigo-yellow
-    '#3399ff', // odigo-lightblue
-  ];
-
-  const positions = [
-    { top: '10%', left: '60%' },
-    { top: '25%', left: '80%' },
-    { top: '50%', left: '85%' },
-    { top: '75%', left: '70%' },
-    { top: '85%', left: '40%' },
-    { top: '70%', left: '15%' },
-    { top: '40%', left: '10%' },
-    { top: '15%', left: '25%' }
-  ];
+  const [hoveredUser, setHoveredUser] = useState<string | null>(null);
 
   useEffect(() => {
-    const mappedUsers: RadarUser[] = users.slice(0, 8).map((user, index) => ({
-      id: user.id,
-      name: user.name,
-      mood: user.mood || 'Online',
-      color: colors[index % colors.length],
-      position: positions[index % positions.length]
-    }));
+    // Calculate positions based on similarity (mocked if not present) or random distribution
+    const mappedUsers = users.slice(0, 20).map((user, index) => {
+      // Mock similarity score if not present (0.1 to 0.9)
+      const similarity = (user as any).similarity_score || Math.random() * 0.8 + 0.1;
+
+      // Calculate angle: distribute users around the circle
+      // Add some randomness to angle to avoid perfect lines
+      const angle = (index / Math.min(users.length, 20)) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
+
+      // Radius is inverse to similarity (more similar = closer to center)
+      // Max radius is 45% (leaving 5% padding)
+      const radius = (1 - similarity) * 45;
+
+      // Convert polar to cartesian (center is 50, 50)
+      const x = 50 + radius * Math.cos(angle);
+      const y = 50 + radius * Math.sin(angle);
+
+      return {
+        ...user,
+        similarity_score: similarity,
+        position: { x, y }
+      };
+    });
     setRadarUsers(mappedUsers);
   }, [users]);
 
-  const handleUserClick = (radarUser: RadarUser) => {
-    const originalUser = users.find(u => u.id === radarUser.id);
-    if (originalUser) {
-      onUserClick(originalUser);
-    }
-  };
-
   return (
-    <div className={`radar-view ${isDarkMode ? 'dark' : ''}`}>
-      <style>{`
-        .radar-view {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background: var(--bg-chat, #f8fafc);
-          padding: 20px;
-          overflow: auto;
-        }
+    <div className={`w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="relative w-full max-w-[500px] aspect-square">
+        {/* Radar Circles */}
+        {[20, 40, 60, 80, 100].map((size) => (
+          <div
+            key={size}
+            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 ${isDarkMode ? 'border-blue-500/20' : 'border-blue-500/30'
+              }`}
+            style={{
+              width: `${size}%`,
+              height: `${size}%`,
+            }}
+          />
+        ))}
 
-        .radar-view.dark {
-          background: var(--bg-chat-dark, #1e293b);
-        }
+        {/* Sweep Line */}
+        <div className="absolute top-1/2 left-1/2 w-1/2 h-0.5 bg-gradient-to-r from-orange-500 to-transparent origin-left animate-[spin_4s_linear_infinite]" />
 
-        .radar-container {
-          position: relative;
-          width: 100%;
-          max-width: 500px;
-          aspect-ratio: 1;
-          margin-bottom: 20px;
-        }
+        {/* Center Dot (You) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-orange-500 rounded-full shadow-lg shadow-orange-500/50 animate-pulse z-10" />
 
-        .radar-circle {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          border-radius: 50%;
-          border: 2px solid var(--odigo-blue, #0066cc);
-          opacity: 0.5;
-        }
-
-        .radar-circle:nth-child(1) { width: 20%; height: 20%; }
-        .radar-circle:nth-child(2) { width: 40%; height: 40%; }
-        .radar-circle:nth-child(3) { width: 60%; height: 60%; }
-        .radar-circle:nth-child(4) { width: 80%; height: 80%; }
-        .radar-circle:nth-child(5) { width: 100%; height: 100%; }
-
-        .radar-line {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 50%;
-          height: 2px;
-          background: linear-gradient(90deg, var(--odigo-orange, #ff6600), transparent);
-          transform-origin: left center;
-          animation: radarSweep 4s linear infinite;
-        }
-
-        @keyframes radarSweep {
-          from { transform: translate(0, -50%) rotate(0deg); }
-          to { transform: translate(0, -50%) rotate(360deg); }
-        }
-
-        .radar-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 5%;
-          height: 5%;
-          min-width: 20px;
-          min-height: 20px;
-          background: var(--odigo-orange, #ff6600);
-          border-radius: 50%;
-          box-shadow: 0 0 20px var(--odigo-orange, #ff6600);
-        }
-
-        .radar-user {
-          position: absolute;
-          width: 10%;
-          height: 10%;
-          min-width: 40px;
-          min-height: 40px;
-          border-radius: 50%;
-          border: 3px solid var(--bg-secondary, #ffffff);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 16px;
-          color: white;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .radar-user:hover {
-          transform: scale(1.3);
-          z-index: 10;
-        }
-
-        .radar-info {
-          background: var(--bg-secondary, #ffffff);
-          padding: 20px 30px;
-          border-radius: 16px;
-          border: 3px solid var(--odigo-blue, #0066cc);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-          text-align: center;
-          max-width: 500px;
-          width: 100%;
-        }
-
-        .radar-view.dark .radar-info {
-          background: var(--bg-secondary-dark, #334155);
-          border-color: var(--odigo-blue, #0066cc);
-        }
-
-        .radar-info h3 {
-          font-family: 'Orbitron', sans-serif;
-          color: var(--odigo-blue, #0066cc);
-          font-size: 20px;
-          margin-bottom: 8px;
-        }
-
-        .radar-info p {
-          color: var(--text-secondary, #64748b);
-          font-size: 14px;
-        }
-
-        .radar-view.dark .radar-info p {
-          color: var(--text-secondary-dark, #94a3b8);
-        }
-      `}</style>
-
-      <div className="radar-container">
-        <div className="radar-circle"></div>
-        <div className="radar-circle"></div>
-        <div className="radar-circle"></div>
-        <div className="radar-circle"></div>
-        <div className="radar-circle"></div>
-        <div className="radar-line"></div>
-        <div className="radar-center"></div>
-        
-        <div id="radarUsers">
-          {radarUsers.map((user) => (
-            <div
-              key={user.id}
-              className="radar-user"
-              style={{
-                top: user.position.top,
-                left: user.position.left,
-                backgroundColor: user.color
-              }}
-              title={`${user.name} - ${user.mood}`}
-              onClick={() => handleUserClick(user)}
-            >
-              {user.name.charAt(0)}
+        {/* User Dots */}
+        {radarUsers.map((user) => (
+          <div
+            key={user.id}
+            className="absolute -ml-5 -mt-5 cursor-pointer group z-20"
+            style={{
+              left: `${user.position?.x}%`,
+              top: `${user.position?.y}%`,
+              transition: 'all 0.5s ease-out'
+            }}
+            onClick={() => onUserClick(user)}
+            onMouseEnter={() => setHoveredUser(user.id)}
+            onMouseLeave={() => setHoveredUser(null)}
+          >
+            {/* User Avatar/Dot */}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-transform duration-300 ${hoveredUser === user.id ? 'scale-125 ring-2 ring-white z-30' : 'scale-100'
+              } ${isDarkMode ? 'bg-gradient-to-br from-blue-600 to-indigo-600' : 'bg-gradient-to-br from-blue-500 to-indigo-500'
+              }`}>
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                user.name.charAt(0).toUpperCase()
+              )}
             </div>
-          ))}
-        </div>
+
+            {/* Hover Card */}
+            <div className={`absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 w-64 pointer-events-none transition-all duration-300 origin-left z-40 ${hoveredUser === user.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              }`}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-gray-900 dark:text-white truncate">{user.name}</h3>
+                <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                  {Math.round((user.similarity_score || 0) * 100)}% Match
+                </span>
+              </div>
+
+              {user.location && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  📍 {user.location}
+                </p>
+              )}
+
+              {user.age && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  🎂 {user.age} years old
+                </p>
+              )}
+
+              {user.interests && user.interests.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {user.interests.slice(0, 3).map((interest, i) => (
+                    <span key={i} className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                      {interest}
+                    </span>
+                  ))}
+                  {user.interests.length > 3 && (
+                    <span className="text-[10px] text-gray-500 dark:text-gray-500 px-1">
+                      +{user.interests.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-3 text-xs text-center text-blue-500 font-semibold">
+                Click to chat
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="radar-info">
-        <h3>🎯 Discovering People</h3>
-        <p>Scanning for users with similar interests nearby...</p>
+      <div className={`mt-8 rounded-2xl shadow-lg p-6 max-w-md text-center border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+        }`}>
+        <h3 className="font-orbitron text-xl font-bold text-blue-500 mb-2">
+          🎯 Radar Discovery
+        </h3>
+        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          Scanning for people nearby with similar interests...
+          <br />
+          <span className="text-xs opacity-75 mt-1 block">
+            {users.length} users found in your area
+          </span>
+        </p>
       </div>
     </div>
   );
