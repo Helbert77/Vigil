@@ -104,11 +104,20 @@ serve(async (req: Request) => {
     const updateData: any = {};
     if (name !== undefined) updateData.name = name.trim();
     if (description !== undefined) updateData.description = description?.trim() || null;
-    if (category !== undefined) updateData.category = category;
     if (is_public !== undefined) updateData.is_public = is_public;
     if (max_participants !== undefined) updateData.max_participants = max_participants;
-    if (is_hot !== undefined) updateData.is_hot = is_hot;
-    if (is_new !== undefined) updateData.is_new = is_new;
+    
+    // If category is being updated, also update is_hot and is_new
+    if (category !== undefined) {
+      updateData.category = category;
+      updateData.is_hot = category === 'hot';
+      updateData.is_new = category === 'new';
+    } else {
+      // If category is not being updated, allow manual is_hot/is_new updates
+      if (is_hot !== undefined) updateData.is_hot = is_hot;
+      if (is_new !== undefined) updateData.is_new = is_new;
+    }
+    
     updateData.updated_at = new Date().toISOString();
 
     // 7. Update the chat room

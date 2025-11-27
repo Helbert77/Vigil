@@ -116,13 +116,11 @@ export interface ChatRoom {
   name: string;
   description?: string;
   category: string;
-  is_public: boolean;
-  max_participants: number;
-  created_by: string;
+  is_public?: boolean;
+  created_by?: string;
   created_at: string;
   updated_at: string;
-  participant_count: number;
-  users_online: number; // Count of users active in last 5 minutes
+  users_online: number; // Count of users online (updated by triggers)
   is_hot: boolean;
   is_new: boolean;
   creator?: {
@@ -286,6 +284,13 @@ export const deleteMessage = async (messageId: string) => {
 // Fetch user's conversations
 export const fetchConversations = async (userId: string) => {
   try {
+    // Check if table exists first
+    const tableExists = await checkTableExists('chat_participants');
+    if (!tableExists) {
+      console.log('[fetchConversations] chat_participants table does not exist, returning empty array');
+      return { data: [], error: null };
+    }
+
     // First get conversation IDs where user is participant
     const { data: participantData, error: participantError } = await supabase
       .from('chat_participants')
@@ -414,8 +419,7 @@ export const fetchChatRooms = async (category?: string) => {
     let query = supabase
       .from('chat_rooms')
       .select('*')
-      .eq('is_public', true)
-      .order('participant_count', { ascending: false });
+      .order('users_online', { ascending: false });
 
     if (category) {
       query = query.eq('category', category);
@@ -428,7 +432,7 @@ export const fetchChatRooms = async (category?: string) => {
       return { data: null, error };
     }
 
-    // Fetch creator info and online users count for each room
+    // Fetch creator info for each room
     if (data && data.length > 0) {
       const creatorIds = data.filter(r => r.created_by).map(r => r.created_by);
       if (creatorIds.length > 0) {
@@ -446,19 +450,8 @@ export const fetchChatRooms = async (category?: string) => {
           });
         }
       }
-
-      // Calculate online users for each room (active in last 5 minutes)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       
-      for (const room of data) {
-        const { count } = await supabase
-          .from('chat_room_participants')
-          .select('*', { count: 'exact', head: true })
-          .eq('room_id', room.id)
-          .gte('last_activity', fiveMinutesAgo);
-        
-        room.users_online = count || 0;
-      }
+      // users_online já vem do banco de dados, atualizado automaticamente pelos triggers
     }
 
     return { data, error: null };
@@ -479,7 +472,7 @@ export const joinChatRoom = async (roomId: string) => {
     // Check if room exists and has space
     const { data: room, error: roomError } = await supabase
       .from('chat_rooms')
-      .select('participant_count, max_participants')
+      .select('users_online')
       .eq('id', roomId)
       .single();
 
@@ -488,43 +481,50 @@ export const joinChatRoom = async (roomId: string) => {
       return { data: null, error: roomError };
     }
 
-    if (room.participant_count >= room.max_participants) {
-      return { data: null, error: { message: 'Sala cheia' } };
-    }
+    // Note: Removed max_participants check as it's not in the schema
 
     // Check if user is already a participant
-    const { data: existingParticipant } = await supabase
+    const { data: existingParticipant, error: checkError } = await supabase
       .from('chat_room_participants')
       .select('id')
       .eq('room_id', roomId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 error
+
+    // If user is already a participant, return success immediately
+    if (existingParticipant) {
+      return { data: { roomId }, error: null };
+    }
+
+    // If check returned an error (but not a "not found" error), log it but continue
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.warn('[joinChatRoom] Error checking existing participant, but continuing:', checkError);
+    }
 
     // If not a participant, add them
-    if (!existingParticipant) {
-      const { error: participantError } = await supabase
-        .from('chat_room_participants')
-        .insert({
-          room_id: roomId,
-          user_id: user.id,
-          joined_at: new Date().toISOString(),
-          last_activity: new Date().toISOString()
-        });
+    // O trigger increment_room_count_on_join irá automaticamente incrementar users_online
+    const { error: participantError } = await supabase
+      .from('chat_room_participants')
+      .insert({
+        room_id: roomId,
+        user_id: user.id,
+        joined_at: new Date().toISOString(),
+        last_activity: new Date().toISOString()
+      });
 
-      if (participantError) {
-        handleApiError(participantError, 'joinChatRoom - add participant', { roomId, userId: user.id });
-        return { data: null, error: participantError };
+    if (participantError) {
+      // If error is duplicate key (user already in room), treat as success
+      // This can happen due to race conditions or RLS issues
+      if (participantError.code === '23505' || 
+          participantError.message?.includes('duplicate key') ||
+          participantError.message?.includes('unique constraint') ||
+          participantError.message?.includes('chat_room_participants_room_id_user_id_key')) {
+        // User is already a participant (race condition or RLS issue), return success
+        return { data: { roomId }, error: null };
       }
-
-      // Increment participant count
-      const { error: incrementError } = await supabase
-        .from('chat_rooms')
-        .update({ participant_count: room.participant_count + 1 })
-        .eq('id', roomId);
-
-      if (incrementError) {
-        handleApiError(incrementError, 'joinChatRoom - increment count', { roomId });
-      }
+      
+      handleApiError(participantError, 'joinChatRoom - add participant', { roomId, userId: user.id });
+      return { data: null, error: participantError };
     }
 
     return { data: { roomId }, error: null };
@@ -550,33 +550,42 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
     }
 
     // Fetch sender info for all messages
-    const userIds = [...new Set((data || []).map((msg: any) => msg.user_id))];
+    const userIds = [...new Set((data || []).map((msg: any) => msg.user_id).filter((id: string) => id))];
     let senderMap = new Map();
 
     if (userIds.length > 0) {
       try {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, full_name')
+          .select('id, username, avatar_url, first_name, last_name')
           .in('id', userIds);
 
         if (profilesError) {
-          console.warn('Error fetching profiles for messages:', profilesError);
+          console.warn('[fetchRoomMessages] Error fetching profiles for messages:', profilesError);
         }
 
-        if (profiles) {
+        if (profiles && profiles.length > 0) {
           profiles.forEach(profile => {
             senderMap.set(profile.id, profile);
           });
         }
       } catch (err) {
-        console.error('Exception fetching profiles:', err);
+        console.error('[fetchRoomMessages] Exception fetching profiles:', err);
       }
     }
 
     // Format messages to match ChatMessage interface
     const formattedMessages = (data || []).map((msg: any) => {
       const sender = senderMap.get(msg.user_id);
+      
+      // Build full_name from first_name and last_name (matching the profiles table structure)
+      let fullName = 'Usuário';
+      if (sender) {
+        const firstName = sender.first_name || '';
+        const lastName = sender.last_name || '';
+        fullName = `${firstName} ${lastName}`.trim() || sender.username || 'Usuário';
+      }
+      
       return {
         id: msg.id,
         conversation_id: roomId,
@@ -585,7 +594,12 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
         created_at: msg.created_at,
         is_read: false,
         is_deleted: false,
-        sender: sender || null
+        sender: sender ? {
+          id: sender.id,
+          username: sender.username || 'Usuário',
+          avatar_url: sender.avatar_url,
+          full_name: fullName
+        } : null
       };
     });
 
@@ -643,11 +657,23 @@ export const sendRoomMessage = async (roomId: string, content: string) => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url, full_name')
+        .select('id, username, avatar_url, first_name, last_name')
         .eq('id', user.id)
         .single();
       
-      sender = profile;
+      if (profile) {
+        // Build full_name from first_name and last_name
+        const firstName = profile.first_name || '';
+        const lastName = profile.last_name || '';
+        const fullName = `${firstName} ${lastName}`.trim() || profile.username || 'Usuário';
+        
+        sender = {
+          id: profile.id,
+          username: profile.username || 'Usuário',
+          avatar_url: profile.avatar_url,
+          full_name: fullName
+        };
+      }
     } catch (e) {
       console.warn('Could not fetch profile for sent message, using metadata');
     }
@@ -657,7 +683,7 @@ export const sendRoomMessage = async (roomId: string, content: string) => {
       sender = {
         id: user.id,
         username: user.user_metadata?.username || user.email?.split('@')[0] || 'Usuário',
-        full_name: user.user_metadata?.full_name,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.username || user.email?.split('@')[0] || 'Usuário',
         avatar_url: user.user_metadata?.avatar_url
       };
     }
@@ -704,11 +730,23 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
         if (msgError || !messageData) return;
 
         // Fetch sender info
-        const { data: sender } = await supabase
+        const { data: sender, error: senderError } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url, full_name')
+          .select('id, username, avatar_url, first_name, last_name')
           .eq('id', messageData.user_id)
           .single();
+
+        if (senderError) {
+          console.warn('[subscribeToRoomMessages] Error fetching sender profile:', senderError);
+        }
+
+        // Build full_name from first_name and last_name (matching the profiles table structure)
+        let fullName = 'Usuário';
+        if (sender) {
+          const firstName = sender.first_name || '';
+          const lastName = sender.last_name || '';
+          fullName = `${firstName} ${lastName}`.trim() || sender.username || 'Usuário';
+        }
 
         const formattedMessage = {
           id: messageData.id,
@@ -718,7 +756,12 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
           created_at: messageData.created_at,
           is_read: false,
           is_deleted: false,
-          sender: sender || null
+          sender: sender ? {
+            id: sender.id,
+            username: sender.username || 'Usuário',
+            avatar_url: sender.avatar_url,
+            full_name: fullName
+          } : null
         };
         callback(formattedMessage);
       }
@@ -737,6 +780,7 @@ export const leaveChatRoom = async (roomId: string) => {
     }
 
     // Remove user from chat_room_participants
+    // O trigger decrement_room_count_on_leave irá automaticamente decrementar users_online
     const { error: participantError } = await supabase
       .from('chat_room_participants')
       .delete()
@@ -746,26 +790,6 @@ export const leaveChatRoom = async (roomId: string) => {
     if (participantError) {
       handleApiError(participantError, 'leaveChatRoom - remove participant', { roomId, userId: user.id });
       return { data: null, error: participantError };
-    }
-
-    // Decrement participant count
-    const { data: room, error: roomError } = await supabase
-      .from('chat_rooms')
-      .select('participant_count')
-      .eq('id', roomId)
-      .single();
-
-    if (roomError) {
-      handleApiError(roomError, 'leaveChatRoom - get room data', { roomId });
-    } else {
-      const { error: decrementError } = await supabase
-        .from('chat_rooms')
-        .update({ participant_count: Math.max(0, room.participant_count - 1) })
-        .eq('id', roomId);
-
-      if (decrementError) {
-        handleApiError(decrementError, 'leaveChatRoom - decrement count', { roomId });
-      }
     }
 
     return { data: { success: true }, error: null };
@@ -928,6 +952,26 @@ export const subscribeToRoomParticipants = (roomId: string, callback: () => void
       },
       () => {
         callback();
+      }
+    )
+    .subscribe();
+
+  return channel;
+};
+
+// Subscribe to chat rooms table changes for real-time user count updates
+export const subscribeToChatRooms = (callback: (payload: any) => void) => {
+  const channel = supabase
+    .channel('chat_rooms_updates')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_rooms'
+      },
+      (payload) => {
+        callback(payload);
       }
     )
     .subscribe();

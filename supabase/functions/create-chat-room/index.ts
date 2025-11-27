@@ -69,18 +69,23 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 5. Create the chat room
+    // 5. Determine is_hot and is_new based on category
+    const categoryValue = category || 'normal';
+    const isHot = categoryValue === 'hot';
+    const isNew = categoryValue === 'new';
+
+    // 6. Create the chat room
     const roomData: any = {
       name: name.trim(),
       description: description?.trim() || null,
-      category: category || 'normal',
+      category: categoryValue,
       is_public: is_public !== undefined ? is_public : true,
       max_participants: max_participants || 100,
       created_by: user.id,
       participant_count: 0,
       users_online: 0,
-      is_hot: false,
-      is_new: true
+      is_hot: isHot,
+      is_new: isNew
     };
 
     const { data: newRoom, error: createError } = await supabaseAdmin
@@ -97,7 +102,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // Fetch creator info separately if needed
+    // 7. Fetch creator info separately if needed
     let creatorInfo = null;
     if (newRoom.created_by) {
       const { data: creator } = await supabaseAdmin
@@ -108,7 +113,7 @@ serve(async (req: Request) => {
       creatorInfo = creator;
     }
 
-    // 6. Return success response
+    // 8. Return success response
     const responseRoom = {
       ...newRoom,
       creator: creatorInfo

@@ -7,6 +7,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useToast } from '@/hooks/useToast';
 import RadarView from '@/src/components/chat/RadarView';
+import { ChevronLeftIcon } from '@/components/icons/ChevronLeftIcon';
 import {
   fetchChatRooms,
   fetchNewUsers,
@@ -25,7 +26,7 @@ import {
   fetchRoomMessages,
   sendRoomMessage,
   subscribeToRoomMessages,
-  subscribeToRoomParticipants,
+  subscribeToChatRooms,
   ChatRoom as ChatRoomType,
   ChatMessage as ChatMessageType,
   subscribeToMessages,
@@ -37,7 +38,10 @@ import * as api from '@/src/services/api';
 const SearchIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 const PlusIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="M5 12h14"></path><path d="M12 5v14"></path></Icon>;
 const ChevronDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m6 9 6 6 6-6"></path></Icon>;
-const FireIcon = ({ className = "h-4 w-4 text-orange-500" }: { className?: string }) => <Icon className={className}><path d="M12 2c2.4 2.4 3.6 5.6 3.6 8.4 0 3.6-2.4 6-6 6s-6-2.4-6-6c0-2.8 1.2-6 3.6-8.4z"></path><path d="M12 12c2.4 2.4 3.6 5.6 3.6 8.4 0 3.6-2.4 6-6 6s-6-2.4-6-6c0-2.8 1.2-6 3.6-8.4z"></path></Icon>;
+const ChevronRightIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m9 18 6-6-6-6"></path></Icon>;
+const FireIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
+  <span className={className} role="img" aria-label="Hot">🔥</span>
+);
 const NewIcon = ({ className = "h-4 w-4 text-green-500" }: { className?: string }) => <Icon className={className}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></Icon>;
 const SendIcon = () => <Icon className="h-6 w-6"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></Icon>;
 const EditIcon = ({ className = "h-4 w-4" }: { className?: string }) => <Icon className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></Icon>;
@@ -74,13 +78,37 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const { session } = useSession();
   const { addToast } = useToast();
 
+  // Estilos para barras de rolagem finas e discretas
+  const scrollbarStyles = `
+    .thin-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .thin-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .thin-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.3);
+      border-radius: 3px;
+    }
+    .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+    .dark .thin-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(75, 85, 99, 0.4);
+    }
+    .dark .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(75, 85, 99, 0.6);
+    }
+  `;
+
   // State
   const [selectedBuddy, setSelectedBuddy] = useState<Buddy | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomType | null>(null);
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeAccordion, setActiveAccordion] = useState<string>('search');
+  const [activeAccordion, setActiveAccordion] = useState<string>('');
   const [currentView, setCurrentView] = useState<'radar' | 'chat' | 'room'>('radar');
 
   // Filters
@@ -88,6 +116,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [genderFilter, setGenderFilter] = useState<string>('');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [interestsFilter, setInterestsFilter] = useState<string>('');
+  const [roomCategoryFilter, setRoomCategoryFilter] = useState<string>('');
 
   // Data states
   const [chatRooms, setChatRooms] = useState<ChatRoomType[]>([]);
@@ -111,9 +140,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
   // Real-time subscription
   const [messageSubscription, setMessageSubscription] = useState<RealtimeChannel | null>(null);
-  const [participantSubscription, setParticipantSubscription] = useState<RealtimeChannel | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Sidebar collapse states
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
 
   // Activity tracking refs
   const lastActivityTimeRef = useRef<number>(Date.now());
@@ -210,7 +242,37 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     };
 
     loadInitialData();
+
+    // Subscribe to chat_rooms table updates for real-time user count
+    const roomsSubscription = subscribeToChatRooms((payload: any) => {
+      // Update the room in the list with new users_online count
+      if (payload.new && payload.new.id) {
+        setChatRooms(prev => prev.map(room => 
+          room.id === payload.new.id 
+            ? { ...room, users_online: payload.new.users_online }
+            : room
+        ));
+
+        // Also update selectedRoom if it's the one that changed
+        if (selectedRoom && selectedRoom.id === payload.new.id) {
+          setSelectedRoom(prev => prev ? { ...prev, users_online: payload.new.users_online } : null);
+        }
+      }
+    });
+
+    return () => {
+      if (roomsSubscription) {
+        roomsSubscription.unsubscribe();
+      }
+    };
   }, []);
+
+  // Reload rooms when category filter changes
+  useEffect(() => {
+    if (!isInitializing) {
+      loadChatRooms();
+    }
+  }, [roomCategoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Subscribe to messages when conversation is selected
   useEffect(() => {
@@ -230,33 +292,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   useEffect(() => {
     if (selectedRoom && session?.user?.id) {
       subscribeToRoomMessagesHandler(selectedRoom.id);
-      
-      // Subscribe to participant changes for real-time count updates
-      const participantSub = subscribeToRoomParticipants(selectedRoom.id, () => {
-        // Reload chat rooms to get updated counts
-        loadChatRooms();
-        
-        // Update the selected room data
-        fetchChatRooms().then(({ data }) => {
-          if (data) {
-            const updatedRoom = data.find(r => r.id === selectedRoom.id);
-            if (updatedRoom) {
-              setSelectedRoom(updatedRoom);
-            }
-          }
-        });
-      });
-      setParticipantSubscription(participantSub);
     }
 
     return () => {
       if (messageSubscription) {
         messageSubscription.unsubscribe();
         setMessageSubscription(null);
-      }
-      if (participantSubscription) {
-        participantSubscription.unsubscribe();
-        setParticipantSubscription(null);
       }
     };
   }, [selectedRoom?.id, session?.user?.id]);
@@ -424,7 +465,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       setLoadingRooms(true);
       setRoomsError(null);
 
-      const { data, error } = await fetchChatRooms();
+      const { data, error } = await fetchChatRooms(roomCategoryFilter || undefined);
 
       if (error) {
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
@@ -568,7 +609,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
   // Handlers
   const handleAccordionToggle = (accordion: string) => {
-    setActiveAccordion(activeAccordion === accordion ? '' : accordion);
+    if (accordion === 'rooms') {
+      // Quando abrir 'rooms', fecha os outros e abre 'rooms'
+      setActiveAccordion(activeAccordion === 'rooms' ? '' : 'rooms');
+    } else {
+      // Para outras abas, sempre fecha 'rooms' se estiver aberto e abre a aba clicada
+      setActiveAccordion(activeAccordion === accordion ? '' : accordion);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -729,33 +776,80 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const isInRoom = joinedRoomIds.has(room.id);
       
       if (isInRoom) {
-        // User is already in room, so leave it
-        await handleLeaveRoom(room);
+        // User is already in room, DON'T leave - this was the bug!
+        // Just show a message
+        addToast(`Você já está na sala ${room.name}`, 'info');
         return;
       }
 
+      // Join the room (user can be in multiple rooms)
       const { data, error } = await joinChatRoom(room.id);
 
       if (error) {
+        // Check if error is duplicate key (user already in room)
+        const isDuplicateError = 
+          (typeof error === 'object' && error.code === '23505') ||
+          (typeof error === 'object' && error.message && (
+            error.message.includes('duplicate key') ||
+            error.message.includes('unique constraint') ||
+            error.message.includes('chat_room_participants_room_id_user_id_key')
+          ));
+
+        if (isDuplicateError) {
+          // User is already in room, treat as success
+          addToast(`Você já está na sala ${room.name}`, 'info');
+          setJoinedRoomIds(prev => new Set([...prev, room.id]));
+          return;
+        }
+
         console.error('Error joining room:', error);
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
+        const errorMessage = error instanceof Error ? error.message : (typeof error === 'object' && error.message) ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
         addToast(errorMessage, 'error');
       } else {
         addToast(`Entrou na sala ${room.name}`, 'success');
         setJoinedRoomIds(prev => new Set([...prev, room.id]));
-        setSelectedRoom(room);
+        
+        // Atualizar room com contador incrementado otimisticamente
+        const updatedRoom = {
+          ...room,
+          users_online: (room.users_online || 0) + 1
+        };
+        setSelectedRoom(updatedRoom);
+        
+        // Atualizar lista de salas também
+        setChatRooms(prev => prev.map(r => 
+          r.id === room.id 
+            ? { ...r, users_online: (r.users_online || 0) + 1 }
+            : r
+        ));
+        
         setSelectedBuddy(null);
         setCurrentView('room');
         const now = Date.now();
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
-        loadChatRooms(); // Reload rooms to update participant count
       }
     } catch (error: any) {
       console.error('Error in handleJoinRoom:', error);
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
       addToast(errorMessage, 'error');
     }
+  };
+
+  // Nova função apenas para trocar de visualização entre salas (sem entrar/sair)
+  const handleSwitchToRoom = (room: ChatRoomType) => {
+    if (!joinedRoomIds.has(room.id)) {
+      // Se não está na sala, não pode visualizar
+      addToast('Entre na sala primeiro', 'warning');
+      return;
+    }
+    
+    setSelectedRoom(room);
+    setSelectedBuddy(null);
+    setCurrentView('room');
+    const now = Date.now();
+    lastActivityTimeRef.current = now;
+    setUserActivityStatus('online');
   };
 
   const handleLeaveRoom = async (room: ChatRoomType) => {
@@ -774,6 +868,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           return newSet;
         });
         
+        // Atualizar contador otimisticamente
+        setChatRooms(prev => prev.map(r => 
+          r.id === room.id 
+            ? { ...r, users_online: Math.max((r.users_online || 0) - 1, 0) }
+            : r
+        ));
+        
         // If leaving the currently selected room, go back to radar view
         if (selectedRoom?.id === room.id) {
           setSelectedRoom(null);
@@ -785,8 +886,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             setMessageSubscription(null);
           }
         }
-        
-        loadChatRooms(); // Reload rooms to update participant count
       }
     } catch (error: any) {
       console.error('Error in handleLeaveRoom:', error);
@@ -995,8 +1094,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   });
 
   return (
-    <div className="h-screen flex bg-light-bg dark:bg-dark-bg">
-      {/* Initial Loading Overlay */}
+    <>
+      <style>{scrollbarStyles}</style>
+      <div className="h-screen flex bg-light-bg dark:bg-dark-bg">
+        {/* Initial Loading Overlay */}
       {isInitializing && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
@@ -1007,9 +1108,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       )}
 
       {/* Left Panel - Buddies */}
-      <div className="w-80 bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex flex-col">
+      <div className={`relative transition-all duration-300 ${isLeftSidebarCollapsed ? 'w-16' : 'w-80'} bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex flex-col`}>
+        {/* Collapse Button */}
+        <button
+          onClick={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
+          className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label={isLeftSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+        >
+          <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isLeftSidebarCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
         {/* Header */}
-        <div className="p-4 border-b border-light-border dark:border-dark-border">
+        {!isLeftSidebarCollapsed && (
+          <div className="p-4 border-b border-light-border dark:border-dark-border">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Buddies</h2>
           <div className="relative mt-3">
             <input
@@ -1024,9 +1135,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Buddies List */}
-        <div className="flex-1 overflow-y-auto">
+        {!isLeftSidebarCollapsed && (
+          <div className="flex-1 overflow-y-auto">
           {loadingBuddies ? (
             <LoadingSpinner />
           ) : buddiesError ? (
@@ -1089,7 +1202,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
               </div>
             ))
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Middle Panel - Chat/Radar */}
@@ -1212,7 +1326,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                   if (isSentByMe) {
                     senderName = user.full_name || user.username || 'Eu';
                   } else if (message.sender) {
+                    // Prioritize full_name, then username, then fallback
                     senderName = message.sender.full_name || message.sender.username || 'Usuário';
+                  } else if (message.sender_id) {
+                    // If sender object is missing but we have sender_id, show a placeholder
+                    // In a real scenario, we could fetch the profile here, but for now use a generic name
+                    senderName = 'Usuário';
+                    console.warn(`[ChatPage] Message ${message.id} missing sender object for sender_id: ${message.sender_id}`);
                   }
 
                   return (
@@ -1444,9 +1564,20 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       </div>
 
       {/* Right Panel - Accordion */}
-      <div className="w-80 bg-light-card dark:bg-dark-card border-l border-light-border dark:border-dark-border flex flex-col">
+      <div className={`relative transition-all duration-300 ${isRightSidebarCollapsed ? 'w-16' : 'w-80'} bg-light-card dark:bg-dark-card border-l border-light-border dark:border-dark-border flex flex-col`}>
+        {/* Collapse Button */}
+        <button
+          onClick={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
+          className="absolute top-5 -left-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label={isRightSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+        >
+          <ChevronRightIcon className={`h-5 w-5 transition-transform duration-300 ${isRightSidebarCollapsed ? 'rotate-180' : ''}`} />
+        </button>
+
         {/* Accordion: Search */}
-        <div className="border-b border-light-border dark:border-dark-border">
+        {!isRightSidebarCollapsed && (
+          <>
+          <div className={`border-b border-light-border dark:border-dark-border ${activeAccordion === 'rooms' ? 'order-2' : 'order-1'}`}>
           <button
             onClick={() => handleAccordionToggle('search')}
             className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'search'
@@ -1510,7 +1641,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         </div>
 
         {/* Accordion: Chat Rooms */}
-        <div className="border-b border-light-border dark:border-dark-border">
+        <div className={`border-b border-light-border dark:border-dark-border ${activeAccordion === 'rooms' ? 'order-1 flex-1 flex flex-col' : 'order-2'}`}>
           <button
             onClick={() => handleAccordionToggle('rooms')}
             className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'rooms'
@@ -1518,23 +1649,45 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
               : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
               }`}
           >
-            <span className="font-semibold">🚀 SALAS DE CHAT</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">🚀 SALAS DE CHAT</span>
+              {joinedRoomIds.size > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-green-500 text-white text-xs font-bold">
+                  {joinedRoomIds.size}
+                </span>
+              )}
+            </div>
             <ChevronDownIcon className={`transition-transform ${activeAccordion === 'rooms' ? 'rotate-180' : ''}`} />
           </button>
 
           {activeAccordion === 'rooms' && (
-            <div className="p-4 space-y-3">
-              <button
-                onClick={() => {
-                  setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
-                  setShowCreateRoomModal(true);
-                }}
-                className="w-full bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Criar Nova Sala
-              </button>
-              <div className="max-h-64 overflow-y-auto space-y-3">
+            <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+                    setShowCreateRoomModal(true);
+                  }}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Criar Nova Sala
+                </button>
+                <select
+                  value={roomCategoryFilter}
+                  onChange={(e) => {
+                    setRoomCategoryFilter(e.target.value);
+                  }}
+                  className="bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary flex-shrink-0"
+                  title="Filtrar por categoria"
+                >
+                  <option value="">Todas</option>
+                  <option value="normal">Normal</option>
+                  <option value="hot">Hot</option>
+                  <option value="new">Nova</option>
+                </select>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3 thin-scrollbar min-h-0">
                 {loadingRooms ? (
                   <LoadingSpinner />
                 ) : roomsError ? (
@@ -1555,10 +1708,28 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                   chatRooms.map((room) => (
                     <div
                       key={room.id}
-                      className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-light-border dark:border-dark-border hover:shadow-md transition-all"
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        selectedRoom?.id === room.id
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600 shadow-lg'
+                          : joinedRoomIds.has(room.id)
+                          ? 'bg-white dark:bg-gray-800 border-blue-500 dark:border-blue-600 hover:shadow-md'
+                          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-md'
+                      }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-sm text-gray-900 dark:text-white truncate flex-1">
+                        <h4 
+                          onClick={() => {
+                            if (joinedRoomIds.has(room.id)) {
+                              handleSwitchToRoom(room);
+                            }
+                          }}
+                          className={`font-semibold text-sm truncate flex-1 ${
+                            joinedRoomIds.has(room.id)
+                              ? 'text-primary dark:text-blue-400 cursor-pointer hover:underline'
+                              : 'text-gray-900 dark:text-white'
+                          }`}
+                          title={joinedRoomIds.has(room.id) ? 'Clique para visualizar' : room.name}
+                        >
                           {room.name}
                         </h4>
                         <div className="flex items-center gap-1">
@@ -1594,22 +1765,39 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                         {room.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-green-500">
-                          {room.users_online || 0} online
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleJoinRoom(room);
-                          }}
-                          className={`text-xs px-2 py-1 rounded transition-colors ${
-                            joinedRoomIds.has(room.id)
-                              ? 'bg-red-500 hover:bg-red-600 text-white'
-                              : 'bg-primary hover:bg-primary/90 text-white'
-                          }`}
-                        >
-                          {joinedRoomIds.has(room.id) ? 'Sair' : 'Entrar'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-green-500">
+                            {room.users_online || 0} online
+                          </span>
+                          {joinedRoomIds.has(room.id) && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                              ✓ Participando
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          {joinedRoomIds.has(room.id) ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLeaveRoom(room);
+                              }}
+                              className="text-xs px-2 py-1 rounded transition-colors bg-red-500 hover:bg-red-600 text-white"
+                            >
+                              Sair
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleJoinRoom(room);
+                              }}
+                              className="text-xs px-2 py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white"
+                            >
+                              Entrar
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1620,7 +1808,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         </div>
 
         {/* Accordion: New Users */}
-        <div className="border-b border-light-border dark:border-dark-border">
+        <div className={`border-b border-light-border dark:border-dark-border ${activeAccordion === 'rooms' ? 'order-3 mt-auto' : 'order-3'}`}>
           <button
             onClick={() => handleAccordionToggle('newusers')}
             className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'newusers'
@@ -1633,7 +1821,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           </button>
 
           {activeAccordion === 'newusers' && (
-            <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
+            <div className="p-4 space-y-3 max-h-64 overflow-y-auto thin-scrollbar">
               {loadingNewUsers ? (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-4">
                   <LoadingSpinner />
@@ -1692,6 +1880,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Create Room Modal */}
@@ -1950,5 +2140,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         </div>
       )}
     </div>
+    </>
   );
 }
