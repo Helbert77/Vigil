@@ -8,6 +8,7 @@ import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useToast } from '@/hooks/useToast';
 import RadarView from '@/src/components/chat/RadarView';
 import { ChevronLeftIcon } from '@/components/icons/ChevronLeftIcon';
+import { supabase } from '@/integrations/supabase/client';
 import {
   fetchChatRooms,
   fetchNewUsers,
@@ -27,6 +28,8 @@ import {
   sendRoomMessage,
   subscribeToRoomMessages,
   subscribeToChatRooms,
+  fetchRoomParticipants,
+  subscribeToRoomParticipants,
   ChatRoom as ChatRoomType,
   ChatMessage as ChatMessageType,
   subscribeToMessages,
@@ -109,7 +112,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeAccordion, setActiveAccordion] = useState<string>('');
-  const [currentView, setCurrentView] = useState<'radar' | 'chat' | 'room'>('radar');
+  const [currentView, setCurrentView] = useState<'radar' | 'room'>('radar');
 
   // Filters
   const [ageFilter, setAgeFilter] = useState<string>('');
@@ -125,6 +128,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [joinedRoomIds, setJoinedRoomIds] = useState<Set<string>>(new Set());
   const [userActivityStatus, setUserActivityStatus] = useState<'online' | 'away' | 'offline'>('online');
+  
+  // Room participants state
+  const [roomParticipants, setRoomParticipants] = useState<User[]>([]);
+  const [participantsCount, setParticipantsCount] = useState(0);
+  const [roomsOnlineCount, setRoomsOnlineCount] = useState<Map<string, number>>(new Map());
 
   // Loading states
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -146,6 +154,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   // Sidebar collapse states
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
+  
+  // Mobile view state
+  const [mobileView, setMobileView] = useState<'left' | 'center' | 'right'>('center');
 
   // Activity tracking refs
   const lastActivityTimeRef = useRef<number>(Date.now());
@@ -171,11 +182,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(false); // Flag para controlar quando fazer scroll
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Effects
+  // Auto-scroll ONLY when user sends a message, never when entering room or loading messages
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (shouldScrollRef.current && messagesEndRef.current) {
+      // Small delay to ensure message is rendered
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+        shouldScrollRef.current = false; // Reset flag after scrolling
+      }, 100);
     }
   }, [messages]);
 
@@ -243,26 +262,81 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
     loadInitialData();
 
-    // Subscribe to chat_rooms table updates for real-time user count
+    // Subscribe to chat_rooms table updates
     const roomsSubscription = subscribeToChatRooms((payload: any) => {
-      // Update the room in the list with new users_online count
       if (payload.new && payload.new.id) {
         setChatRooms(prev => prev.map(room => 
           room.id === payload.new.id 
-            ? { ...room, users_online: payload.new.users_online }
+            ? { ...room, ...payload.new }
             : room
         ));
 
         // Also update selectedRoom if it's the one that changed
         if (selectedRoom && selectedRoom.id === payload.new.id) {
-          setSelectedRoom(prev => prev ? { ...prev, users_online: payload.new.users_online } : null);
+          setSelectedRoom(prev => prev ? { ...prev, ...payload.new } : null);
         }
       }
     });
 
+    // Subscribe to all rooms participants changes to update online counts
+    const allRoomsParticipantsSubscription = supabase
+      .channel('all_room_participants')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_room_participants'
+        },
+        async (payload) => {
+          console.log('[ChatPage] 🔥 Evento de participante:', {
+            event: payload.eventType,
+            new: payload.new,
+            old: payload.old
+          });
+
+          // When any participant joins or leaves, update the count for that room
+          const roomId = payload.new?.room_id || payload.old?.room_id;
+          const userId = payload.new?.user_id || payload.old?.user_id;
+          
+          if (roomId) {
+            const { data: participants } = await fetchRoomParticipants(roomId);
+            setRoomsOnlineCount(prev => {
+              const newMap = new Map(prev);
+              newMap.set(roomId, participants?.length || 0);
+              return newMap;
+            });
+
+            // Check if the current user was removed from a room
+            if (payload.eventType === 'DELETE' && userId === session?.user?.id) {
+              console.log('[ChatPage] ⚠️ Usuário atual foi removido da sala:', roomId);
+              
+              // Remove room from joinedRoomIds
+              setJoinedRoomIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(roomId);
+                return newSet;
+              });
+
+              // If it's the currently selected room, go back to radar
+              if (selectedRoom?.id === roomId) {
+                setSelectedRoom(null);
+                setCurrentView('radar');
+                setMessages([]);
+                addToast('Você foi removido da sala por inatividade', 'warning');
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       if (roomsSubscription) {
         roomsSubscription.unsubscribe();
+      }
+      if (allRoomsParticipantsSubscription) {
+        supabase.removeChannel(allRoomsParticipantsSubscription);
       }
     };
   }, []);
@@ -274,9 +348,95 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   }, [roomCategoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Periodic sync to ensure joinedRoomIds is accurate
+  useEffect(() => {
+    const syncJoinedRooms = async () => {
+      if (!session?.user?.id) return;
+      
+      const joinedRooms = await getUserJoinedRooms();
+      const joinedSet = new Set(joinedRooms);
+      
+      // Check if there are differences
+      const currentIds = Array.from(joinedRoomIds);
+      const hasChanges = currentIds.some(id => !joinedSet.has(id)) || 
+                         joinedRooms.some(id => !joinedRoomIds.has(id));
+      
+      if (hasChanges) {
+        console.log('[ChatPage] 🔄 Sincronizando salas participadas:', {
+          antes: currentIds,
+          depois: joinedRooms
+        });
+        setJoinedRoomIds(joinedSet);
+        
+        // If currently in a room that user is no longer part of, exit
+        if (selectedRoom && !joinedSet.has(selectedRoom.id)) {
+          console.log('[ChatPage] ⚠️ Sala atual não está mais nas salas participadas');
+          setSelectedRoom(null);
+          setCurrentView('radar');
+          setMessages([]);
+          addToast('Você foi removido da sala por inatividade', 'warning');
+        }
+      }
+    };
+
+    // Sync every 30 seconds
+    const syncInterval = setInterval(syncJoinedRooms, 30000);
+    
+    // Initial sync
+    syncJoinedRooms();
+
+    return () => clearInterval(syncInterval);
+  }, [session?.user?.id, joinedRoomIds, selectedRoom]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load and subscribe to room participants
+  useEffect(() => {
+    if (!selectedRoom?.id || !session?.user?.id) {
+      setRoomParticipants([]);
+      setParticipantsCount(0);
+      return;
+    }
+
+    console.log('[ChatPage] 🎯 Carregando participantes para sala:', selectedRoom.id);
+
+    const loadParticipants = async () => {
+      const { data } = await fetchRoomParticipants(selectedRoom.id);
+      if (data) {
+        console.log('[ChatPage] ✅ Participantes carregados:', data.length);
+        setRoomParticipants(data);
+        setParticipantsCount(data.length);
+      }
+    };
+
+    loadParticipants();
+
+    const subscription = subscribeToRoomParticipants(selectedRoom.id, (participants, count) => {
+      console.log('[ChatPage] 🔄 Callback recebido! Atualizando com', count, 'participantes');
+      setRoomParticipants(participants);
+      setParticipantsCount(count);
+      
+      // Update the online count for this room in the rooms list
+      setRoomsOnlineCount(prev => {
+        const newMap = new Map(prev);
+        newMap.set(selectedRoom.id, count);
+        return newMap;
+      });
+    });
+
+    return () => {
+      console.log('[ChatPage] 🧹 Limpando subscription');
+      subscription.unsubscribe();
+    };
+  }, [selectedRoom?.id, session?.user?.id]);
+
   // Subscribe to messages when conversation is selected
   useEffect(() => {
     if (selectedBuddy && session?.user?.id) {
+      // Reset scroll flag when entering a new conversation - don't auto-scroll
+      shouldScrollRef.current = false;
+      // Scroll to top when entering conversation
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = 0;
+      }
       subscribeToConversationMessages(selectedBuddy.id);
     }
 
@@ -291,6 +451,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   // Subscribe to room messages when room is selected
   useEffect(() => {
     if (selectedRoom && session?.user?.id) {
+      // Reset scroll flag when entering a new room - don't auto-scroll
+      shouldScrollRef.current = false;
+      // Scroll to top when entering room
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = 0;
+      }
       subscribeToRoomMessagesHandler(selectedRoom.id);
     }
 
@@ -321,51 +487,24 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
 
     // Reset activity time when entering a room
-    const now = Date.now();
-    lastActivityTimeRef.current = now;
+    lastActivityTimeRef.current = Date.now();
     setUserActivityStatus('online');
 
-    const currentRoomId = selectedRoom.id;
-
-    // Start checking activity immediately
+    // Check activity status every 30 seconds
     activityIntervalRef.current = setInterval(() => {
       const now = Date.now();
-      const timeSinceActivity = now - lastActivityTimeRef.current;
+      const timeSinceLastActivity = now - lastActivityTimeRef.current;
       
-      // Update activity in database every 30 seconds if user is active
-      if (timeSinceActivity < 30000) {
-        updateRoomActivity(currentRoomId).catch(console.error);
-      }
-
-      // Update status based on inactivity
-      if (timeSinceActivity < 180000) { // Less than 3 minutes
-        setUserActivityStatus('online');
-      } else if (timeSinceActivity < 300000) { // Between 3 and 5 minutes
+      // 3 minutes = 180000ms - set to "away"
+      if (timeSinceLastActivity >= 180000 && timeSinceLastActivity < 300000) {
         setUserActivityStatus('away');
-      } else {
-        // More than 5 minutes - remove from room
+      }
+      // 5 minutes = 300000ms - leave room automatically
+      else if (timeSinceLastActivity >= 300000) {
         setUserActivityStatus('offline');
-        if (activityIntervalRef.current) {
-          clearInterval(activityIntervalRef.current);
-          activityIntervalRef.current = null;
-        }
-        // Leave room by calling leaveChatRoom directly
-        leaveChatRoom(currentRoomId).then(() => {
-          setJoinedRoomIds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(currentRoomId);
-            return newSet;
-          });
-          setSelectedRoom(null);
-          setCurrentView('radar');
-          setMessages([]);
-          if (messageSubscription) {
-            messageSubscription.unsubscribe();
-            setMessageSubscription(null);
-          }
-          addToast('Você foi desconectado por inatividade', 'info');
-          loadChatRooms();
-        }).catch(console.error);
+        // Leave the room automatically
+        handleLeaveRoom(selectedRoom);
+        addToast('Você foi removido da sala por inatividade', 'info');
       }
     }, 30000); // Check every 30 seconds
 
@@ -423,41 +562,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     };
   }, [selectedRoom?.id]);
 
-  // Cleanup on page unload (but not on refresh)
+  // Cleanup on page unload - DISABLED to keep users in rooms
+  // Users will only leave when they explicitly click "Sair"
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Mark that page is unloading (not just refreshing)
-      // Browser will handle this - we just set a flag
       isPageUnloadingRef.current = true;
     };
 
-    const handleVisibilityChange = () => {
-      // When page becomes hidden (user navigates away), leave all rooms
-      if (document.hidden && !isPageUnloadingRef.current) {
-        // Get current joined rooms from the ref to avoid dependency
-        const currentJoinedRooms = Array.from(joinedRoomIds);
-        currentJoinedRooms.forEach(roomId => {
-          leaveChatRoom(roomId).catch(console.error);
-        });
-      }
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Cleanup on component unmount - leave all joined rooms only if not refreshing
-      if (!isPageUnloadingRef.current && joinedRoomIds.size > 0) {
-        const currentJoinedRooms = Array.from(joinedRoomIds);
-        currentJoinedRooms.forEach(roomId => {
-          leaveChatRoom(roomId).catch(console.error);
-        });
-      }
     };
-  }, [joinedRoomIds]); // Only depend on joinedRoomIds
+  }, []);
 
   // Load chat rooms
   const loadChatRooms = async () => {
@@ -473,6 +590,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         addToast('Erro ao carregar salas de chat', 'error');
       } else {
         setChatRooms(data || []);
+        // Load online count for each room
+        await loadRoomsOnlineCount(data || []);
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
@@ -481,6 +600,18 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     } finally {
       setLoadingRooms(false);
     }
+  };
+
+  // Load online count for all rooms
+  const loadRoomsOnlineCount = async (rooms: ChatRoomType[]) => {
+    const countMap = new Map<string, number>();
+    
+    for (const room of rooms) {
+      const { data } = await fetchRoomParticipants(room.id);
+      countMap.set(room.id, data?.length || 0);
+    }
+    
+    setRoomsOnlineCount(countMap);
   };
 
   // Load new users (suggestions from main app)
@@ -588,6 +719,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
       // Subscribe to new messages
       const subscription = subscribeToMessages(conversationId, (newMessage) => {
+        // Only scroll if user sent this message (flag is set)
+        // Don't scroll for messages from other users
+        const isFromCurrentUser = newMessage.sender_id === session?.user?.id;
+        if (!isFromCurrentUser) {
+          shouldScrollRef.current = false; // Ensure we don't scroll for other users' messages
+        }
+        
         setMessages(prev => {
           // Check if message already exists to prevent duplicates
           const messageExists = prev.some(msg => msg.id === newMessage.id);
@@ -647,6 +785,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         setUserActivityStatus('online');
         await updateRoomActivity(selectedRoom.id);
 
+        // Set flag to scroll to bottom when message is received via subscription
+        shouldScrollRef.current = true;
+
         // Don't add message manually here - let the realtime subscription handle it
         // This prevents duplicate messages
         setMessageText('');
@@ -683,6 +824,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
       if (messageData) {
         setMessages(prev => [...prev, messageData]);
+        // Set flag to scroll to bottom when user sends message
+        shouldScrollRef.current = true;
       }
 
       // Update buddy's last activity
@@ -708,11 +851,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     const buddy = buddies.find(b => b.id === radarUser.id);
     if (buddy) {
       setSelectedBuddy(buddy);
-      setCurrentView('chat');
+      // Chat view removida - manter no radar
     }
   };
 
-  const handleViewToggle = (view: 'radar' | 'chat') => {
+  const handleViewToggle = (view: 'radar') => {
     setCurrentView(view);
   };
 
@@ -737,7 +880,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const handleSelectBuddy = (buddy: Buddy) => {
     setSelectedBuddy(buddy);
     setSelectedRoom(null);
-    setCurrentView('chat');
+    // Chat view removida - manter no radar
     // Clear unread count
     setBuddies(prev => prev.map(b =>
       b.id === buddy.id ? { ...b, unreadCount: 0 } : b
@@ -809,25 +952,24 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         addToast(`Entrou na sala ${room.name}`, 'success');
         setJoinedRoomIds(prev => new Set([...prev, room.id]));
         
-        // Atualizar room com contador incrementado otimisticamente
         const updatedRoom = {
-          ...room,
-          users_online: (room.users_online || 0) + 1
+          ...room
         };
         setSelectedRoom(updatedRoom);
-        
-        // Atualizar lista de salas também
-        setChatRooms(prev => prev.map(r => 
-          r.id === room.id 
-            ? { ...r, users_online: (r.users_online || 0) + 1 }
-            : r
-        ));
         
         setSelectedBuddy(null);
         setCurrentView('room');
         const now = Date.now();
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
+        
+        // Update online count for this room
+        const { data: participants } = await fetchRoomParticipants(room.id);
+        setRoomsOnlineCount(prev => {
+          const newMap = new Map(prev);
+          newMap.set(room.id, participants?.length || 0);
+          return newMap;
+        });
       }
     } catch (error: any) {
       console.error('Error in handleJoinRoom:', error);
@@ -868,12 +1010,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           return newSet;
         });
         
-        // Atualizar contador otimisticamente
-        setChatRooms(prev => prev.map(r => 
-          r.id === room.id 
-            ? { ...r, users_online: Math.max((r.users_online || 0) - 1, 0) }
-            : r
-        ));
+        // Update online count for this room
+        const { data: participants } = await fetchRoomParticipants(room.id);
+        setRoomsOnlineCount(prev => {
+          const newMap = new Map(prev);
+          newMap.set(room.id, participants?.length || 0);
+          return newMap;
+        });
         
         // If leaving the currently selected room, go back to radar view
         if (selectedRoom?.id === room.id) {
@@ -912,6 +1055,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
       // Subscribe to new messages
       const subscription = subscribeToRoomMessages(roomId, (newMessage) => {
+        // Only scroll if user sent this message (flag is set)
+        // Don't scroll for messages from other users
+        const isFromCurrentUser = newMessage.sender_id === session?.user?.id;
+        if (!isFromCurrentUser) {
+          shouldScrollRef.current = false; // Ensure we don't scroll for other users' messages
+        }
+        
         setMessages(prev => {
           // Check if message already exists to prevent duplicates
           const messageExists = prev.some(msg => msg.id === newMessage.id);
@@ -1096,23 +1246,65 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   return (
     <>
       <style>{scrollbarStyles}</style>
-      <div className="h-screen flex bg-light-bg dark:bg-dark-bg">
+      <div className="h-screen flex flex-col md:flex-row bg-light-bg dark:bg-dark-bg overflow-hidden">
         {/* Initial Loading Overlay */}
       {isInitializing && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-900 dark:text-white">Carregando chat...</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 text-center mx-4">
+            <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-primary mx-auto mb-3 md:mb-4"></div>
+            <p className="text-sm md:text-base text-gray-900 dark:text-white">Carregando chat...</p>
           </div>
         </div>
       )}
 
+      {/* Mobile Navigation Bar - Only visible on mobile */}
+      <div className="md:hidden bg-light-card dark:bg-dark-card border-b border-light-border dark:border-dark-border p-2 flex justify-around items-center">
+        <button
+          onClick={() => setMobileView('left')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-colors ${
+            mobileView === 'left'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+          }`}
+        >
+          👥 Buddies
+        </button>
+        <button
+          onClick={() => setMobileView('center')}
+          className={`flex-1 py-2 px-3 mx-1 rounded-lg text-xs font-semibold transition-colors ${
+            mobileView === 'center'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+          }`}
+        >
+          💬 Chat
+        </button>
+        <button
+          onClick={() => setMobileView('right')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-colors ${
+            mobileView === 'right'
+              ? 'bg-primary text-white'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+          }`}
+        >
+          🚀 Salas
+        </button>
+      </div>
+
       {/* Left Panel - Buddies */}
-      <div className={`relative transition-all duration-300 ${isLeftSidebarCollapsed ? 'w-16' : 'w-80'} bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border flex flex-col`}>
-        {/* Collapse Button */}
+      <div className={`
+        ${mobileView === 'left' ? 'flex' : 'hidden'} md:flex
+        relative transition-all duration-300 
+        ${isLeftSidebarCollapsed ? 'md:w-16' : 'md:w-64 lg:w-80'} 
+        w-full md:max-w-sm
+        bg-light-card dark:bg-dark-card 
+        md:border-r border-light-border dark:border-dark-border 
+        flex-col
+      `}>
+        {/* Collapse Button - Hidden on mobile */}
         <button
           onClick={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
-          className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="hidden md:block absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label={isLeftSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isLeftSidebarCollapsed ? 'rotate-180' : ''}`} />
@@ -1120,48 +1312,98 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
         {/* Header */}
         {!isLeftSidebarCollapsed && (
-          <div className="p-4 border-b border-light-border dark:border-dark-border">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Buddies</h2>
-          <div className="relative mt-3">
+          <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Buddies</h2>
+          <div className="relative mt-2 md:mt-3">
             <input
               type="text"
               placeholder="Buscar buddies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-1.5 md:py-2 pl-9 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-              <SearchIcon />
+            <div className="absolute inset-y-0 left-0 pl-2.5 md:pl-3 flex items-center pointer-events-none text-gray-400">
+              <SearchIcon className="h-4 w-4 md:h-5 md:w-5" />
             </div>
           </div>
         </div>
         )}
 
-        {/* Buddies List */}
+        {/* Participants List (when in room) or Buddies List */}
         {!isLeftSidebarCollapsed && (
           <div className="flex-1 overflow-y-auto">
-          {loadingBuddies ? (
-            <LoadingSpinner />
-          ) : buddiesError ? (
-            <div className="p-6 text-center text-red-500 dark:text-red-400">
-              <p className="text-sm">{buddiesError}</p>
-              <button
-                onClick={loadBuddies}
-                className="mt-2 text-primary hover:text-primary/80 text-sm underline"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          ) : filteredBuddies.length === 0 ? (
-            <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-              <p>Nenhum buddy encontrado</p>
-            </div>
+          {selectedRoom ? (
+            // Show room participants
+            <>
+              <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-gray-50 dark:bg-gray-800/50">
+                <h3 className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white">
+                  👥 Participantes Online ({participantsCount})
+                </h3>
+              </div>
+              {roomParticipants.length === 0 ? (
+                <div className="p-4 md:p-6 text-center text-gray-500 dark:text-gray-400">
+                  <p className="text-xs md:text-sm">Nenhum participante na sala</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-light-border dark:divide-dark-border">
+                  {roomParticipants.map((participant) => (
+                    <div key={participant.id} className="p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <Avatar
+                          src={participant.avatarUrl || ''}
+                          alt={participant.name}
+                          size="sm"
+                          userId={participant.id}
+                          showStatus={true}
+                          className="md:w-10 md:h-10"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <h3 className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white truncate">
+                              {participant.name}
+                            </h3>
+                            {(participant.plan === 'pro' || participant.plan === 'premium') &&
+                              <VerifiedBadgeIcon plan={participant.plan} className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
+                            }
+                            {participant.role && ['admin', 'moderator'].includes(participant.role) &&
+                              <ModeratorBadgeIcon className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
+                            }
+                          </div>
+                          <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 truncate">
+                            @{participant.username}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
-            filteredBuddies.map((buddy) => (
+            // Show buddies list
+            <>
+              {loadingBuddies ? (
+                <LoadingSpinner />
+              ) : buddiesError ? (
+                <div className="p-6 text-center text-red-500 dark:text-red-400">
+                  <p className="text-sm">{buddiesError}</p>
+                  <button
+                    onClick={loadBuddies}
+                    className="mt-2 text-primary hover:text-primary/80 text-sm underline"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : filteredBuddies.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                  <p>Nenhum buddy encontrado</p>
+                </div>
+              ) : (
+                filteredBuddies.map((buddy) => (
               <div
                 key={buddy.id}
                 onClick={() => handleSelectBuddy(buddy)}
-                className={`flex items-center gap-3 p-4 cursor-pointer border-b border-light-border dark:border-dark-border transition-colors ${selectedBuddy?.id === buddy.id
+                className={`flex items-center gap-2 md:gap-3 p-3 md:p-4 cursor-pointer border-b border-light-border dark:border-dark-border transition-colors ${selectedBuddy?.id === buddy.id
                   ? 'bg-primary/10 border-l-4 border-l-primary'
                   : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   }`}
@@ -1169,54 +1411,60 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 <Avatar
                   src={buddy.avatarUrl || ''}
                   alt={buddy.name}
-                  size="md"
+                  size="sm"
                   userId={buddy.id}
                   showStatus={true}
+                  className="md:w-10 md:h-10"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-0.5 md:mb-1">
                     <div className="flex items-center gap-1">
-                      <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                      <h3 className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white truncate">
                         {buddy.name}
                       </h3>
                       {(buddy.plan === 'pro' || buddy.plan === 'premium') &&
-                        <VerifiedBadgeIcon plan={buddy.plan} className="h-3 w-3 flex-shrink-0" />
+                        <VerifiedBadgeIcon plan={buddy.plan} className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
                       }
                       {buddy.role && ['admin', 'moderator'].includes(buddy.role) &&
-                        <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />
+                        <ModeratorBadgeIcon className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
                       }
                     </div>
                     {buddy.unreadCount > 0 && (
-                      <span className="bg-primary text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                      <span className="bg-primary text-white text-[10px] md:text-xs rounded-full px-1.5 md:px-2 py-0.5 md:py-1 min-w-[18px] md:min-w-[20px] text-center">
                         {buddy.unreadCount}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                  <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 truncate">
                     {buddy.lastMessage || 'Sem mensagens'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
+                  <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500">
                     {formatTimestamp(buddy.lastActivity)}
                   </p>
                 </div>
               </div>
             ))
+              )}
+            </>
           )}
           </div>
         )}
       </div>
 
       {/* Middle Panel - Chat/Radar */}
-      <div className="flex-1 flex flex-col">
+      <div className={`
+        ${mobileView === 'center' ? 'flex' : 'hidden'} md:flex
+        flex-1 flex-col min-w-0
+      `}>
         {/* View Toggle Header */}
-        <div className="p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-lg text-gray-900 dark:text-white">
+        <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-bold text-sm md:text-base lg:text-lg text-gray-900 dark:text-white truncate">
               {currentView === 'radar' ? 'RADAR VIEW' : 
                currentView === 'room' && selectedRoom ? `Sala: ${selectedRoom.name}` :
-               selectedBuddy ? `Chat with ${selectedBuddy.name}` : 'CHAT'}
+               selectedBuddy ? `Chat: ${selectedBuddy.name}` : 'CHAT'}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2 flex-shrink-0">
               {currentView === 'room' && selectedRoom && (
                 <button
                   onClick={() => {
@@ -1224,28 +1472,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                     setCurrentView('radar');
                     setMessages([]);
                   }}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
-                  ← Voltar
+                  ← <span className="hidden sm:inline">Voltar</span>
                 </button>
               )}
               <button
                 onClick={() => handleViewToggle('radar')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${currentView === 'radar'
+                className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors ${currentView === 'radar'
                   ? 'bg-primary text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
               >
-                🎯 Radar
-              </button>
-              <button
-                onClick={() => handleViewToggle('chat')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${currentView === 'chat'
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-              >
-                💬 Chat
+                🎯 <span className="hidden sm:inline">Radar</span>
               </button>
             </div>
           </div>
@@ -1264,52 +1503,54 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         {currentView === 'room' && selectedRoom && (
           <>
             {/* Room Header */}
-            <div className="p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+            <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm md:text-base flex-shrink-0">
                   {selectedRoom.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1">
-                    <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                    <h3 className="font-bold text-xs md:text-sm text-gray-900 dark:text-white truncate">
                       {selectedRoom.name}
                     </h3>
-                    {selectedRoom.is_hot && <FireIcon className="h-4 w-4" />}
-                    {selectedRoom.is_new && <NewIcon className="h-4 w-4" />}
+                    {selectedRoom.is_hot && <FireIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    {selectedRoom.is_new && <NewIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                     {selectedRoom.description || 'Sala de bate-papo'}
                   </p>
                 </div>
               </div>
 
               {/* User Activity Status */}
-              <div className={`flex items-center gap-1 text-xs font-medium ${
+              <div className={`flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs font-medium flex-shrink-0 ${
                 userActivityStatus === 'online' 
                   ? 'text-green-600 dark:text-green-400'
                   : userActivityStatus === 'away'
                   ? 'text-yellow-600 dark:text-yellow-400'
                   : 'text-gray-600 dark:text-gray-400'
               }`}>
-                <div className={`w-2 h-2 rounded-full ${
+                <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${
                   userActivityStatus === 'online' 
                     ? 'bg-green-500'
                     : userActivityStatus === 'away'
                     ? 'bg-yellow-500'
                     : 'bg-gray-500'
                 }`} />
-                {userActivityStatus === 'online' ? 'Conectado' : userActivityStatus === 'away' ? 'Ausente' : 'Offline'}
+                <span className="hidden sm:inline">
+                  {userActivityStatus === 'online' ? 'Conectado' : userActivityStatus === 'away' ? 'Ausente' : 'Offline'}
+                </span>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 dark:bg-gray-900/30">
               {loadingMessages ? (
                 <LoadingSpinner />
               ) : messages.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  <p className="text-sm">Nenhuma mensagem ainda</p>
-                  <p className="text-xs mt-1">Seja o primeiro a escrever!</p>
+                <div className="text-center text-gray-500 dark:text-gray-400 py-6 md:py-8">
+                  <p className="text-xs md:text-sm">Nenhuma mensagem ainda</p>
+                  <p className="text-[10px] md:text-xs mt-1">Seja o primeiro a escrever!</p>
                 </div>
               ) : (
                 messages.map((message, index) => {
@@ -1339,9 +1580,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                     <div key={message.id}>
                       {/* Date separator */}
                       {showDateSeparator && (
-                        <div className="flex items-center justify-center my-4">
-                          <div className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full">
-                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center justify-center my-3 md:my-4">
+                          <div className="bg-gray-200 dark:bg-gray-700 px-2 md:px-3 py-0.5 md:py-1 rounded-full">
+                            <span className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400">
                               {new Date(message.created_at).toLocaleDateString('pt-BR', { 
                                 weekday: 'long', 
                                 day: 'numeric', 
@@ -1354,19 +1595,19 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                       )}
                       
                       <div className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} mb-1`}>
-                        <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${isSentByMe
+                        <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3 md:px-4 py-2 ${isSentByMe
                           ? 'bg-primary text-white rounded-br-none'
                           : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
                           } ${isTemp ? 'opacity-60' : ''}`}>
                           {/* Show sender name above message for messages from others */}
                           {!isSentByMe && (
-                            <p className="text-xs font-semibold mb-1 text-gray-600 dark:text-gray-300">
+                            <p className="text-[10px] md:text-xs font-semibold mb-0.5 md:mb-1 text-gray-600 dark:text-gray-300">
                               {senderName}
                             </p>
                           )}
-                          <p className="break-words text-sm">{message.content}</p>
+                          <p className="break-words text-xs md:text-sm">{message.content}</p>
                           <p
-                            className={`text-xs mt-1 ${isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
+                            className={`text-[10px] md:text-xs mt-0.5 md:mt-1 ${isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                               }`}
                           >
                             {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
@@ -1381,28 +1622,28 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
+            <div className="p-3 md:p-4 border-t border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
               {!isOnline && (
-                <div className="mb-3 p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-xs text-center">
+                <div className="mb-2 md:mb-3 p-1.5 md:p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-[10px] md:text-xs text-center">
                   ⚠️ Você está offline. As mensagens serão enviadas quando a conexão for restaurada.
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2 md:gap-3">
                 <input
                   type="text"
                   placeholder={isOnline ? "Digite uma mensagem..." : "Offline - conexão necessária"}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   disabled={isSending || !isOnline}
-                  className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-3 px-5 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-2 md:py-3 px-3 md:px-5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={!messageText.trim() || isSending || !isOnline}
-                  className="bg-primary hover:bg-primary/90 p-3 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  className="bg-primary hover:bg-primary/90 p-2 md:p-3 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   {isSending ? (
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 md:h-6 md:w-6 border-b-2 border-white"></div>
                   ) : (
                     <SendIcon />
                   )}
@@ -1412,163 +1653,22 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           </>
         )}
 
-        {/* Chat View */}
-        {currentView === 'chat' && (
-          <>
-            {selectedBuddy ? (
-              <>
-                {/* Chat Header */}
-                <div className="p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      src={selectedBuddy.avatarUrl || ''}
-                      alt={selectedBuddy.name}
-                      size="md"
-                      userId={selectedBuddy.id}
-                      showStatus={true}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
-                          {selectedBuddy.name}
-                        </h3>
-                        {(selectedBuddy.plan === 'pro' || selectedBuddy.plan === 'premium') &&
-                          <VerifiedBadgeIcon plan={selectedBuddy.plan} className="h-3 w-3 flex-shrink-0" />
-                        }
-                        {selectedBuddy.role && ['admin', 'moderator'].includes(selectedBuddy.role) &&
-                          <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />
-                        }
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        @{selectedBuddy.username}
-                      </p>
-                      <p className="text-xs text-green-500">
-                        {selectedBuddy.isOnline ? 'Online' : `Últ. vez ${formatTimestamp(selectedBuddy.lastActivity)}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Network Status Indicator */}
-                  <div className={`flex items-center gap-1 text-xs ${isOnline ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                    <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                    {isOnline ? 'Conectado' : 'Offline'}
-                  </div>
-                </div>
-
-                {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
-                  {loadingMessages ? (
-                    <LoadingSpinner />
-                  ) : messages.length === 0 ? (
-                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                      <p className="text-sm">Nenhuma mensagem ainda</p>
-                      <p className="text-xs mt-1">Comece a conversa!</p>
-                    </div>
-                  ) : (
-                    messages.map((message, index) => {
-                      const isSentByMe = message.sender_id === session?.user?.id;
-                      const isTemp = message.id.startsWith('temp_');
-                      
-                      // Check if we should show date separator
-                      const prevMessage = index > 0 ? messages[index - 1] : null;
-                      const showDateSeparator = !prevMessage || 
-                        new Date(message.created_at).toDateString() !== new Date(prevMessage.created_at).toDateString();
-
-                      return (
-                        <div key={message.id}>
-                          {/* Date separator */}
-                          {showDateSeparator && (
-                            <div className="flex items-center justify-center my-4">
-                              <div className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full">
-                                <span className="text-xs text-gray-600 dark:text-gray-400">
-                                  {new Date(message.created_at).toLocaleDateString('pt-BR', { 
-                                    weekday: 'long', 
-                                    day: 'numeric', 
-                                    month: 'long',
-                                    year: new Date(message.created_at).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} mb-1`}>
-                            <div
-                              className={`max-w-[70%] rounded-2xl px-4 py-2 ${isSentByMe
-                                ? 'bg-primary text-white rounded-br-none'
-                                : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
-                                } ${isTemp ? 'opacity-60' : ''}`}
-                            >
-                              <p className="break-words text-sm">{message.content}</p>
-                              <p
-                                className={`text-xs mt-1 ${isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                                  }`}
-                              >
-                                {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
-                  {!isOnline && (
-                    <div className="mb-3 p-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-lg text-xs text-center">
-                      ⚠️ Você está offline. As mensagens serão enviadas quando a conexão for restaurada.
-                    </div>
-                  )}
-                  <form onSubmit={handleSendMessage} className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      placeholder={isOnline ? "Digite uma mensagem..." : "Offline - conexão necessária"}
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      disabled={isSending || !isOnline}
-                      className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-3 px-5 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!messageText.trim() || isSending || !isOnline}
-                      className="bg-primary hover:bg-primary/90 p-3 rounded-full text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                    >
-                      {isSending ? (
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      ) : (
-                        <SendIcon />
-                      )}
-                    </button>
-                  </form>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-center p-8">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Chat Vigil
-                  </h2>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Selecione um buddy para começar a conversar ou explore as salas de chat
-                  </p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       {/* Right Panel - Accordion */}
-      <div className={`relative transition-all duration-300 ${isRightSidebarCollapsed ? 'w-16' : 'w-80'} bg-light-card dark:bg-dark-card border-l border-light-border dark:border-dark-border flex flex-col`}>
-        {/* Collapse Button */}
+      <div className={`
+        ${mobileView === 'right' ? 'flex' : 'hidden'} md:flex
+        relative transition-all duration-300 
+        ${isRightSidebarCollapsed ? 'md:w-16' : 'md:w-64 lg:w-80'} 
+        w-full md:max-w-sm
+        bg-light-card dark:bg-dark-card 
+        md:border-l border-light-border dark:border-dark-border 
+        flex-col
+      `}>
+        {/* Collapse Button - Hidden on mobile */}
         <button
           onClick={() => setIsRightSidebarCollapsed(!isRightSidebarCollapsed)}
-          className="absolute top-5 -left-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="hidden md:block absolute top-5 -left-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           aria-label={isRightSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           <ChevronRightIcon className={`h-5 w-5 transition-transform duration-300 ${isRightSidebarCollapsed ? 'rotate-180' : ''}`} />
@@ -1708,7 +1808,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                   chatRooms.map((room) => (
                     <div
                       key={room.id}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`p-2 md:p-3 rounded-lg border-2 transition-all ${
                         selectedRoom?.id === room.id
                           ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600 shadow-lg'
                           : joinedRoomIds.has(room.id)
@@ -1721,9 +1821,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                           onClick={() => {
                             if (joinedRoomIds.has(room.id)) {
                               handleSwitchToRoom(room);
+                              setMobileView('center'); // Switch to center view on mobile
                             }
                           }}
-                          className={`font-semibold text-sm truncate flex-1 ${
+                          className={`font-semibold text-xs md:text-sm truncate flex-1 ${
                             joinedRoomIds.has(room.id)
                               ? 'text-primary dark:text-blue-400 cursor-pointer hover:underline'
                               : 'text-gray-900 dark:text-white'
@@ -1732,11 +1833,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                         >
                           {room.name}
                         </h4>
-                        <div className="flex items-center gap-1">
-                          {room.is_hot && <span title="HOT"><FireIcon /></span>}
-                          {room.is_new && <span title="NEW"><NewIcon /></span>}
+                        <div className="flex items-center gap-0.5 md:gap-1">
+                          {room.is_hot && <span title="HOT"><FireIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
+                          {room.is_new && <span title="NEW"><NewIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
                           {canManageRoom(room) && (
-                            <div className="flex items-center gap-1 ml-2">
+                            <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1745,7 +1846,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                                 className="text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
                                 title="Editar sala"
                               >
-                                <EditIcon className="h-4 w-4" />
+                                <EditIcon className="h-3 w-3 md:h-4 md:w-4" />
                               </button>
                               <button
                                 onClick={(e) => {
@@ -1755,34 +1856,34 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                                 className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
                                 title="Excluir sala"
                               >
-                                <TrashIcon className="h-4 w-4" />
+                                <TrashIcon className="h-3 w-3 md:h-4 md:w-4" />
                               </button>
                             </div>
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 truncate">
+                      <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 mb-1.5 md:mb-2 truncate">
                         {room.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-green-500">
-                            {room.users_online || 0} online
+                        <div className="flex items-center gap-1 md:gap-2 flex-wrap">
+                          <span className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 font-medium">
+                            {roomsOnlineCount.get(room.id) || 0} online
                           </span>
                           {joinedRoomIds.has(room.id) && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
+                            <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
                               ✓ Participando
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-shrink-0">
                           {joinedRoomIds.has(room.id) ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleLeaveRoom(room);
                               }}
-                              className="text-xs px-2 py-1 rounded transition-colors bg-red-500 hover:bg-red-600 text-white"
+                              className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-red-500 hover:bg-red-600 text-white font-medium"
                             >
                               Sair
                             </button>
@@ -1792,7 +1893,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                                 e.stopPropagation();
                                 handleJoinRoom(room);
                               }}
-                              className="text-xs px-2 py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white"
+                              className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
                             >
                               Entrar
                             </button>

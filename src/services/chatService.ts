@@ -120,7 +120,6 @@ export interface ChatRoom {
   created_by?: string;
   created_at: string;
   updated_at: string;
-  users_online: number; // Count of users online (updated by triggers)
   is_hot: boolean;
   is_new: boolean;
   creator?: {
@@ -419,7 +418,7 @@ export const fetchChatRooms = async (category?: string) => {
     let query = supabase
       .from('chat_rooms')
       .select('*')
-      .order('users_online', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (category) {
       query = query.eq('category', category);
@@ -451,7 +450,6 @@ export const fetchChatRooms = async (category?: string) => {
         }
       }
       
-      // users_online já vem do banco de dados, atualizado automaticamente pelos triggers
     }
 
     return { data, error: null };
@@ -469,10 +467,10 @@ export const joinChatRoom = async (roomId: string) => {
       throw new Error('Usuário não autenticado');
     }
 
-    // Check if room exists and has space
+    // Check if room exists
     const { data: room, error: roomError } = await supabase
       .from('chat_rooms')
-      .select('users_online')
+      .select('id')
       .eq('id', roomId)
       .single();
 
@@ -496,34 +494,19 @@ export const joinChatRoom = async (roomId: string) => {
       return { data: { roomId }, error: null };
     }
 
-    // If check returned an error (but not a "not found" error), log it but continue
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.warn('[joinChatRoom] Error checking existing participant, but continuing:', checkError);
-    }
-
-    // If not a participant, add them
-    // O trigger increment_room_count_on_join irá automaticamente incrementar users_online
     const { error: participantError } = await supabase
       .from('chat_room_participants')
       .insert({
         room_id: roomId,
         user_id: user.id,
-        joined_at: new Date().toISOString(),
-        last_activity: new Date().toISOString()
+        joined_at: new Date().toISOString()
       });
 
     if (participantError) {
-      // If error is duplicate key (user already in room), treat as success
-      // This can happen due to race conditions or RLS issues
-      if (participantError.code === '23505' || 
-          participantError.message?.includes('duplicate key') ||
-          participantError.message?.includes('unique constraint') ||
-          participantError.message?.includes('chat_room_participants_room_id_user_id_key')) {
-        // User is already a participant (race condition or RLS issue), return success
+      if (participantError.code === '23505') {
         return { data: { roomId }, error: null };
       }
-      
-      handleApiError(participantError, 'joinChatRoom - add participant', { roomId, userId: user.id });
+      handleApiError(participantError, 'joinChatRoom', { roomId });
       return { data: null, error: participantError };
     }
 
@@ -780,7 +763,6 @@ export const leaveChatRoom = async (roomId: string) => {
     }
 
     // Remove user from chat_room_participants
-    // O trigger decrement_room_count_on_leave irá automaticamente decrementar users_online
     const { error: participantError } = await supabase
       .from('chat_room_participants')
       .delete()
@@ -938,8 +920,68 @@ export const subscribeToConversations = (userId: string, callback: (conversation
   return channel;
 };
 
-// Subscribe to chat room participant changes for real-time updates
-export const subscribeToRoomParticipants = (roomId: string, callback: () => void) => {
+// Fetch room participants with profiles
+export const fetchRoomParticipants = async (roomId: string) => {
+  try {
+    const { data: participantsData, error: participantsError } = await supabase
+      .from('chat_room_participants')
+      .select('user_id')
+      .eq('room_id', roomId);
+
+    if (participantsError) {
+      handleApiError(participantsError, 'fetchRoomParticipants', { roomId });
+      return { data: [], error: participantsError };
+    }
+
+    if (!participantsData || participantsData.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const userIds = participantsData.map(p => p.user_id);
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, first_name, last_name, bio, followers_count, following_count, plan, role')
+      .in('id', userIds);
+
+    if (profilesError) {
+      handleApiError(profilesError, 'fetchRoomParticipants', { roomId });
+      return { data: [], error: profilesError };
+    }
+
+    const participants: User[] = (profilesData || []).map(profile => {
+      const firstName = profile.first_name || '';
+      const lastName = profile.last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim() || profile.username;
+      
+      return {
+        id: profile.id,
+        name: fullName,
+        username: profile.username,
+        avatarUrl: profile.avatar_url || `https://picsum.photos/seed/${profile.id}/100/100`,
+        bio: profile.bio,
+        followersCount: profile.followers_count || 0,
+        followingCount: profile.following_count || 0,
+        plan: profile.plan || 'free',
+        role: profile.role || 'user',
+        joinDate: '',
+        createdAt: '',
+      };
+    });
+
+    return { data: participants, error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchRoomParticipants', { roomId });
+    return { data: [], error };
+  }
+};
+
+// Subscribe to room participants changes for real-time updates
+export const subscribeToRoomParticipants = (
+  roomId: string,
+  callback: (participants: User[], count: number) => void
+) => {
+  console.log('[subscribeToRoomParticipants] 🔔 Criando subscription para sala:', roomId);
+  
   const channel = supabase
     .channel(`room_participants:${roomId}`)
     .on(
@@ -950,13 +992,30 @@ export const subscribeToRoomParticipants = (roomId: string, callback: () => void
         table: 'chat_room_participants',
         filter: `room_id=eq.${roomId}`
       },
-      () => {
-        callback();
+      async (payload) => {
+        console.log('[subscribeToRoomParticipants] 🔥 EVENTO RECEBIDO:', {
+          event: payload.eventType,
+          roomId,
+          new: payload.new,
+          old: payload.old
+        });
+        
+        // Refetch participants when changes occur
+        const { data } = await fetchRoomParticipants(roomId);
+        console.log('[subscribeToRoomParticipants] 📊 Atualizando com', data?.length, 'participantes');
+        callback(data || [], data?.length || 0);
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('[subscribeToRoomParticipants] 📡 Status da subscription:', status);
+    });
 
-  return channel;
+  return {
+    unsubscribe: () => {
+      console.log('[subscribeToRoomParticipants] ❌ Cancelando subscription para sala:', roomId);
+      supabase.removeChannel(channel);
+    }
+  };
 };
 
 // Subscribe to chat rooms table changes for real-time user count updates
