@@ -234,7 +234,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser, blockedUsers, o
     <>
       <div>
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Configurações</h1>
         </div>
         <div className="space-y-8">
           <Card>

@@ -122,6 +122,7 @@ export interface ChatRoom {
   updated_at: string;
   is_hot: boolean;
   is_new: boolean;
+  unread_count?: number;
   creator?: {
     id: string;
     username: string;
@@ -1270,6 +1271,62 @@ export const deleteChatRoom = async (roomId: string) => {
   }
 };
 
+
+// Update last read timestamp for a room
+export const updateRoomLastRead = async (roomId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { error } = await supabase
+      .from('chat_room_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('room_id', roomId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      handleApiError(error, 'updateRoomLastRead', { roomId, userId: user.id });
+      return { data: null, error };
+    }
+
+    return { data: { success: true }, error: null };
+  } catch (error) {
+    handleApiError(error, 'updateRoomLastRead', { roomId });
+    return { data: null, error };
+  }
+};
+
+// Fetch unread counts for all joined rooms
+export const fetchRoomUnreadCounts = async (roomIds: string[]) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || roomIds.length === 0) {
+      return { data: {}, error: null };
+    }
+
+    // Buscar contadores para cada sala
+    const counts: Record<string, number> = {};
+
+    for (const roomId of roomIds) {
+      const { data, error } = await supabase
+        .rpc('get_room_unread_count', {
+          p_room_id: roomId,
+          p_user_id: user.id
+        });
+
+      if (!error && data !== null) {
+        counts[roomId] = data;
+      }
+    }
+
+    return { data: counts, error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchRoomUnreadCounts', { roomIds });
+    return { data: {}, error };
+  }
+};
 
 // Export types
 export type { RealtimeChannel };

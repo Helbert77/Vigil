@@ -135,9 +135,9 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      paused: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-      ended: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+      active: 'bg-green-900 text-green-200',
+      paused: 'bg-yellow-900 text-yellow-200',
+      ended: 'bg-gray-700 text-gray-300'
     };
 
     const labels = {
@@ -395,12 +395,12 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                     onClick={() => setAdToPause({ id: ad.id, status: ad.status })}
                     disabled={ad.status === 'ended' || (ad.status === 'paused' && ad.approval_status !== 'approved')}
                     className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${ad.status === 'ended'
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                      ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
                       : ad.status === 'paused' && ad.approval_status !== 'approved'
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
                         : ad.status === 'active'
-                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800'
-                          : 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800'
+                          ? 'bg-yellow-900 text-yellow-200 hover:bg-yellow-800'
+                          : 'bg-green-900 text-green-200 hover:bg-green-800'
                       }`}
                     title={ad.status === 'paused' && ad.approval_status !== 'approved' ? 'Aguardando aprovação da moderação' : ''}
                   >

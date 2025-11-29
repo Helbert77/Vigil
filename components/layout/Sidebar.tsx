@@ -79,30 +79,12 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
   }, []);
 
   return (
-    <div className={`flex flex-col h-full w-full ${isCollapsed ? 'items-center' : ''} 
+    <div className={`flex flex-col h-full w-full bg-light-card dark:bg-dark-card ${isCollapsed ? 'items-center' : ''}
       ${/* Mobile styles */ ''}
       md:sticky md:top-20 md:h-[calc(100vh-6rem)]
       ${/* Mobile full height */ ''}
       h-[calc(100vh-4rem)] overflow-hidden
     `}>
-      {/* Mobile header with user info */}
-      <div className="md:hidden p-4 border-b border-light-border dark:border-dark-border">
-        {user && (
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
-              {user.username.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {user.username}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                @{user.username}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto sidebar-scrollable p-2 md:p-0">

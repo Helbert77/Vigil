@@ -193,6 +193,47 @@
   scrollbar-width: none;
 }
 
+/* Scrollbar específico para sidebar mobile - estreito e discreto */
+@media (max-width: 768px) {
+  .sidebar-scrollable {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar {
+    width: 4px;
+    display: block;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 2px;
+    transition: background-color 0.2s ease;
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 163, 175, 0.5);
+  }
+
+  .sidebar-scrollable::-webkit-scrollbar-thumb:active {
+    background: rgba(156, 163, 175, 0.7);
+  }
+
+  /* Impedir scroll da página quando sidebar mobile estiver aberto */
+  body.sidebar-mobile-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+}
+
 /* Media queries para dispositivos móveis - Layout Flexbox responsivo */
 @media (max-width: 768px) {
   /* Reposiciona o botão flutuante de suporte para evitar sobreposição com a barra inferior */

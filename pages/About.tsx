@@ -5,7 +5,7 @@ import { LogoIcon } from '../components/icons/LogoIcon'; // Importar o LogoIcon 
 const About: React.FC = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Sobre o Vigil</h1>
+      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">Sobre o Vigil</h1>
       <Card>
         <div className="text-center p-4">
           <LogoIcon className="h-24 w-24 mx-auto mb-4" />

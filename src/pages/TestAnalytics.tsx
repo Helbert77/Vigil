@@ -8,7 +8,7 @@ const TestAnalytics: React.FC = () => {
       <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
         <div className="container mx-auto py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Teste de Analytics em Tempo Real
             </h1>
             <p className="text-gray-600 dark:text-gray-400">

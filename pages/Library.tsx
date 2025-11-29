@@ -43,7 +43,7 @@ const Library: React.FC<LibraryProps> = ({
   onIncrementView,
   onIncrementDownload
 }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid-large');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,7 +142,7 @@ const Library: React.FC<LibraryProps> = ({
           minHeight: '60px'
         }}
       >
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
+        <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
         
         {/* Botão Adicionar Item - Visível apenas para Premium e Admin */}
         {userCanAddItems && (

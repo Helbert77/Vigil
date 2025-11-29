@@ -63,7 +63,7 @@ const UpdatePassword = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center text-gray-900">
+        <h1 className="text-xl md:text-2xl font-bold text-center text-gray-900">
           Atualizar Senha
         </h1>
         {error && <p className="text-red-500">{error}</p>}

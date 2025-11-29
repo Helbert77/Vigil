@@ -39,7 +39,7 @@ const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityI
     <>
       <div>
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Comunidades</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Comunidades</h1>
           <button
             onClick={handleOpenCreateModal} // Usar o novo manipulador
             className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors

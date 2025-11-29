@@ -166,7 +166,7 @@ const UpdatePassword: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-light-card dark:bg-dark-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Redefinir Senha</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">Redefinir Senha</h1>
           <p className="text-gray-600 dark:text-gray-400">Crie uma nova senha segura para sua conta.</p>
         </div>
 

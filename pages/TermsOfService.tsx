@@ -7,7 +7,7 @@ const FileTextIcon = () => <Icon className="h-16 w-16 text-primary mx-auto mb-4"
 const TermsOfService: React.FC = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Termos de Serviço</h1>
+      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">Termos de Serviço</h1>
       <Card>
         <div className="text-center p-4">
           <FileTextIcon />

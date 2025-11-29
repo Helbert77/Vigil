@@ -7,7 +7,7 @@ const AlertTriangleIcon = () => <Icon className="h-16 w-16 text-red-500 mx-auto 
 const Disclaimer: React.FC = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Termos de Responsabilidade</h1>
+      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">Termos de Responsabilidade</h1>
       <Card>
         <div className="text-center p-4">
           <AlertTriangleIcon />

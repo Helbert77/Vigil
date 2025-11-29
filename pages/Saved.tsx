@@ -59,7 +59,7 @@ const Saved: React.FC<SavedProps> = ({ posts, savedPostIds, onUpdatePost, onTogg
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Saved Items</h1>
+      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">Saved Items</h1>
       {allSavedItems.length > 0 ? (
         <div className="space-y-4">
           {allSavedItems.map((item, index) => {

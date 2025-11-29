@@ -223,6 +223,67 @@ const App: React.FC = () => {
     previousUserRef.current = appUser;
   }, [appUser]);
 
+  // Manage body class when mobile sidebar is open/closed
+  useEffect(() => {
+    if (isMobileSidebarOpen) {
+      document.body.classList.add('sidebar-mobile-open');
+    } else {
+      document.body.classList.remove('sidebar-mobile-open');
+    }
+
+    return () => {
+      document.body.classList.remove('sidebar-mobile-open');
+    };
+  }, [isMobileSidebarOpen]);
+
+  // Handle keyboard scroll when mobile sidebar is active
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isMobileSidebarOpen) return;
+
+      // Find the sidebar scrollable element
+      const sidebarScrollable = document.querySelector('.sidebar-scrollable') as HTMLElement;
+      if (!sidebarScrollable) return;
+
+      const scrollAmount = 50; // pixels to scroll
+
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault();
+          sidebarScrollable.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          sidebarScrollable.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          sidebarScrollable.scrollBy({ top: -sidebarScrollable.clientHeight * 0.8, behavior: 'smooth' });
+          break;
+        case 'PageDown':
+          event.preventDefault();
+          sidebarScrollable.scrollBy({ top: sidebarScrollable.clientHeight * 0.8, behavior: 'smooth' });
+          break;
+        case 'Home':
+          event.preventDefault();
+          sidebarScrollable.scrollTo({ top: 0, behavior: 'smooth' });
+          break;
+        case 'End':
+          event.preventDefault();
+          sidebarScrollable.scrollTo({ top: sidebarScrollable.scrollHeight, behavior: 'smooth' });
+          break;
+      }
+    };
+
+    if (isMobileSidebarOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMobileSidebarOpen]);
+
   const refetchActiveMembers = React.useCallback(async (communityId: string) => {
     try {
       const { data, error } = await api.fetchActiveMembers(communityId);
@@ -1043,7 +1104,7 @@ const App: React.FC = () => {
           */
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
             {/* Mobile Sidebar */}
-            <aside className={`fixed top-16 left-0 w-64 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed top-16 left-0 w-64 h-full border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
               <Sidebar
                 user={appUser}
                 currentPage={currentPage}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface User {
   id: string;
@@ -25,6 +25,8 @@ interface RadarViewProps {
 const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode }) => {
   const [radarUsers, setRadarUsers] = useState<RadarUser[]>([]);
   const [hoveredUser, setHoveredUser] = useState<string | null>(null);
+  const [radarSize, setRadarSize] = useState<number>(500);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Calculate positions based on similarity (mocked if not present) or random distribution
@@ -53,9 +55,55 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
     setRadarUsers(mappedUsers);
   }, [users]);
 
+  useEffect(() => {
+    // Calcular tamanho do radar garantindo formato circular - 95% do container pai
+    const calculateRadarSize = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        // Considerar padding do container
+        const paddingVertical = 32; // 2rem top + 2rem bottom
+        const paddingHorizontal = 32; // 2rem left + 2rem right
+
+        const availableWidth = containerWidth - paddingHorizontal;
+        const availableHeight = containerHeight - paddingVertical;
+
+        // Usar o menor valor para manter formato circular
+        const size = Math.min(availableWidth, availableHeight);
+        const radarSize95Percent = size * 0.95; // 95% do container pai
+
+        setRadarSize(Math.max(200, radarSize95Percent)); // Mínimo reduzido para 200px
+      }
+    };
+
+    calculateRadarSize();
+
+    // Usar ResizeObserver para monitorar mudanças no container
+    let resizeObserver: ResizeObserver | null = null;
+    if (containerRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(calculateRadarSize);
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Fallback para window resize
+    window.addEventListener('resize', calculateRadarSize);
+
+    return () => {
+      window.removeEventListener('resize', calculateRadarSize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, []);
+
   return (
-    <div className={`w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="relative w-full max-w-[500px] aspect-square">
+    <div ref={containerRef} className={`w-full h-full flex flex-col items-center justify-center p-2 md:p-4 overflow-y-auto overflow-x-hidden min-h-0 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <div className="relative flex-shrink-0" style={{
+        width: `${radarSize}px`,
+        height: `${radarSize}px`
+      }}>
         {/* Radar Circles */}
         {[20, 40, 60, 80, 100].map((size) => (
           <div
@@ -79,7 +127,7 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
         {radarUsers.map((user) => (
           <div
             key={user.id}
-            className="absolute -ml-5 -mt-5 cursor-pointer group z-20"
+            className="absolute -ml-4 md:-ml-5 -mt-4 md:-mt-5 cursor-pointer group z-20"
             style={{
               left: `${user.position?.x}%`,
               top: `${user.position?.y}%`,
@@ -90,7 +138,7 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
             onMouseLeave={() => setHoveredUser(null)}
           >
             {/* User Avatar/Dot */}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-transform duration-300 ${hoveredUser === user.id ? 'scale-125 ring-2 ring-white z-30' : 'scale-100'
+            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs md:text-sm shadow-lg transition-transform duration-300 ${hoveredUser === user.id ? 'scale-125 ring-2 ring-white z-30' : 'scale-100'
               } ${isDarkMode ? 'bg-gradient-to-br from-blue-600 to-indigo-600' : 'bg-gradient-to-br from-blue-500 to-indigo-500'
               }`}>
               {user.avatarUrl ? (
@@ -101,62 +149,48 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
             </div>
 
             {/* Hover Card */}
-            <div className={`absolute left-full ml-3 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-4 w-64 pointer-events-none transition-all duration-300 origin-left z-40 ${hoveredUser === user.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            <div className={`absolute left-full md:left-full right-auto md:right-auto ml-2 md:ml-3 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-2 md:p-4 w-48 md:w-64 max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-8rem)] pointer-events-none transition-all duration-300 origin-left z-40 ${hoveredUser === user.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
               }`}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-gray-900 dark:text-white truncate">{user.name}</h3>
-                <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full">
+              <div className="flex items-center justify-between mb-1 md:mb-2 gap-1">
+                <h3 className="font-bold text-[10px] md:text-sm text-gray-900 dark:text-white truncate">{user.name}</h3>
+                <span className="text-[9px] md:text-xs font-mono bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
                   {Math.round((user.similarity_score || 0) * 100)}% Match
                 </span>
               </div>
 
               {user.location && (
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
                   📍 {user.location}
                 </p>
               )}
 
               {user.age && (
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1 flex items-center gap-1">
+                <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
                   🎂 {user.age} years old
                 </p>
               )}
 
               {user.interests && user.interests.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div className="flex flex-wrap gap-0.5 md:gap-1 mt-1 md:mt-2">
                   {user.interests.slice(0, 3).map((interest, i) => (
-                    <span key={i} className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                    <span key={i} className="text-[8px] md:text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 md:px-2 py-0.5 rounded-full">
                       {interest}
                     </span>
                   ))}
                   {user.interests.length > 3 && (
-                    <span className="text-[10px] text-gray-500 dark:text-gray-500 px-1">
+                    <span className="text-[8px] md:text-[10px] text-gray-500 dark:text-gray-500 px-1">
                       +{user.interests.length - 3}
                     </span>
                   )}
                 </div>
               )}
 
-              <div className="mt-3 text-xs text-center text-blue-500 font-semibold">
+              <div className="mt-1.5 md:mt-3 text-[9px] md:text-xs text-center text-blue-500 font-semibold">
                 Click to chat
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      <div className={`mt-8 rounded-2xl shadow-lg p-6 max-w-md text-center border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
-        }`}>
-        <h3 className="font-orbitron text-xl font-bold text-blue-500 mb-2">
-          🎯 Radar Discovery
-        </h3>
-        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Scanning for people nearby with similar interests...
-          <br />
-          <span className="text-xs opacity-75 mt-1 block">
-            {users.length} users found in your area
-          </span>
-        </p>
       </div>
     </div>
   );

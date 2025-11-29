@@ -262,7 +262,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   return (
     <div className="py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto text-center mb-12">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+        <h1 className="text-xl md:text-3xl font-bold mb-4 text-gray-900 dark:text-white">
           Escolha o quanto de verdade você quer enxergar
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
@@ -305,7 +305,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             onClick={() => setBillingCycle('annually')}
             className={`px-6 py-1 rounded-full text-sm font-semibold transition-all duration-200 flex items-center flex-1 justify-center
               ${billingCycle === 'annually'
-                ? 'bg-dark-bg dark:bg-gray-800 text-primary dark:text-blue-400 shadow-md'
+                ? 'bg-blue-100 text-blue-700 shadow-md'
                 : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
@@ -315,7 +315,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             onClick={() => setBillingCycle('monthly')}
             className={`px-6 py-1 rounded-full text-sm font-semibold transition-all duration-200 flex items-center flex-1 justify-center
               ${billingCycle === 'monthly'
-                ? 'bg-dark-bg dark:bg-gray-800 text-primary dark:text-blue-400 shadow-md'
+                ? 'bg-blue-100 text-blue-700 shadow-md'
                 : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
