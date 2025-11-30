@@ -179,12 +179,57 @@ export const useConversations = (appUser: User | null) => {
             fetchConversations();
           }
         })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' },
+        (payload) => {
+          if (!initialLoadComplete.current) {
+            return;
+          }
+
+          const deletedMessage = payload.old;
+          
+          // Remove a mensagem deletada da conversa
+          setConversations(prevConvos => {
+            return prevConvos.map(convo => {
+              if (convo.id === deletedMessage.conversation_id) {
+                const updatedMessages = convo.messages.filter(m => m.id !== deletedMessage.id);
+                return { ...convo, messages: updatedMessages };
+              }
+              return convo;
+            });
+          });
+        })
+      .subscribe();
+
+    // Subscription separada para detectar quando conversas são deletadas
+    const conversationsChannel = supabase.channel('public:conversations')
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'conversations' },
+        (payload) => {
+          if (!initialLoadComplete.current) {
+            return;
+          }
+
+          const deletedConversationId = payload.old.id;
+          
+          // Remove a conversa deletada da lista
+          setConversations(prevConvos => {
+            const filtered = prevConvos.filter(c => c.id !== deletedConversationId);
+            
+            // Recalcula contador de mensagens não lidas
+            const newUnreadCount = calculateUnreadCount(filtered, appUser.id);
+            setUnreadMessagesCount(newUnreadCount);
+            
+            return filtered;
+          });
+          
+          addToast('Uma conversa foi apagada', 'info');
+        })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(conversationsChannel);
     };
-  }, [appUser, fetchConversations]);
+  }, [appUser, fetchConversations, calculateUnreadCount, addToast]);
 
   const handleSendMessage = useCallback(async ({ conversationId, targetUserId, text }: { conversationId?: string, targetUserId?: string, text: string }): Promise<string | undefined> => {
     if (!appUser) {

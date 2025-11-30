@@ -1082,6 +1082,23 @@ const App: React.FC = () => {
           />
         )}
 
+        {/* Mobile Sidebar - Renderizado sempre para todas as páginas */}
+        <aside className={`fixed top-16 left-0 w-64 h-full border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <Sidebar
+            user={appUser}
+            currentPage={currentPage}
+            setCurrentPage={(page) => {
+              handleNavigation(page);
+              setIsMobileSidebarOpen(false);
+            }}
+            unreadNotificationsCount={unreadNotificationsCount}
+            unreadMessagesCount={unreadMessagesCount}
+            isCollapsed={false}
+            pendingModerationCount={pendingModerationCount}
+            pendingAppealsCount={pendingAppealsCount}
+            pendingAdsCount={pendingAdsCount}
+          />
+        </aside>
 
         {/*
           ============================================================================
@@ -1103,24 +1120,6 @@ const App: React.FC = () => {
             ============================================================================
           */
           <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
-            {/* Mobile Sidebar */}
-            <aside className={`fixed top-16 left-0 w-64 h-full border-r border-light-border dark:border-dark-border z-50 transform transition-transform duration-300 md:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-              <Sidebar
-                user={appUser}
-                currentPage={currentPage}
-                setCurrentPage={(page) => {
-                  handleNavigation(page);
-                  setIsMobileSidebarOpen(false);
-                }}
-                unreadNotificationsCount={unreadNotificationsCount}
-                unreadMessagesCount={unreadMessagesCount}
-                isCollapsed={false}
-                pendingModerationCount={pendingModerationCount}
-                pendingAppealsCount={pendingAppealsCount}
-                pendingAdsCount={pendingAdsCount}
-              />
-            </aside>
-
             {/* Desktop Sidebar */}
             <aside className={`hidden md:block relative transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-1' : 'md:col-span-3 lg:col-span-2'}`}>
               <Sidebar
@@ -1196,12 +1195,15 @@ const App: React.FC = () => {
           />
         )}
 
-        <MobileBottomNav
-          currentPage={currentPage}
-          onNavigate={(p) => handleNavigation(p)}
-          unreadNotificationsCount={unreadNotificationsCount}
-          unreadMessagesCount={unreadMessagesCount}
-        />
+        {/* Mobile Bottom Navigation - Apenas na página Home/Feed e quando sidebar não estiver aberto */}
+        {currentPage === 'Home' && !isMobileSidebarOpen && (
+          <MobileBottomNav
+            currentPage={currentPage}
+            onNavigate={(p) => handleNavigation(p)}
+            unreadNotificationsCount={unreadNotificationsCount}
+            unreadMessagesCount={unreadMessagesCount}
+          />
+        )}
       </div>
     </UsersProvider>
   );

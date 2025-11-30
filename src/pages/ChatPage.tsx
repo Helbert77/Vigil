@@ -99,6 +99,61 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     .dark .thin-scrollbar::-webkit-scrollbar-thumb:hover {
       background: rgba(75, 85, 99, 0.6);
     }
+
+    /* Mobile scroll improvements */
+    .mobile-scroll {
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
+      /* Ensure the element can scroll */
+      overflow-y: auto;
+      overflow-x: hidden;
+      /* Prevent rubber band effect on iOS */
+      overscroll-behavior-y: contain;
+    }
+
+    /* Ensure proper height calculation on mobile */
+    @supports (-webkit-touch-callout: none) {
+      .mobile-scroll {
+        /* iOS specific optimizations */
+        -webkit-overflow-scrolling: touch;
+        transform: translateZ(0);
+        /* Additional iOS scroll fixes */
+        -webkit-transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
+    }
+
+    /* Android specific fixes */
+    @supports not (-webkit-touch-callout: none) {
+      .mobile-scroll {
+        /* Prevent overscroll on Android */
+        overscroll-behavior: none;
+      }
+    }
+
+    /* Additional mobile scroll fixes for chat containers */
+    .chat-messages-scroll {
+      /* Force hardware acceleration for better scroll performance */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      /* Ensure touch events are handled properly */
+      touch-action: pan-y pinch-zoom;
+      /* Prevent text selection during scroll */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    /* Re-enable text selection for message content */
+    .chat-messages-scroll * {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
   `;
 
   // State
@@ -107,6 +162,41 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // State for mobile scroll fixes
+  const [containerHeight, setContainerHeight] = useState('calc(100vh - 200px)');
+
+  // Calculate dynamic height for mobile scroll container
+  useEffect(() => {
+    const calculateHeight = () => {
+      if (typeof window !== 'undefined') {
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 80; // Approximate header height
+        const inputHeight = 80; // Approximate input area height
+        const totalFixed = headerHeight + inputHeight;
+        const availableHeight = viewportHeight - totalFixed;
+
+        // Ensure minimum height for usability
+        const finalHeight = Math.max(availableHeight, 300);
+        setContainerHeight(`${finalHeight}px`);
+      }
+    };
+
+    calculateHeight();
+
+    // Recalculate on resize and orientation change
+    const handleResize = () => {
+      setTimeout(calculateHeight, 100); // Small delay for mobile browsers
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
   const [activeAccordion, setActiveAccordion] = useState<string>('');
   const [currentView, setCurrentView] = useState<'radar' | 'room'>('radar');
 
@@ -125,7 +215,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [participantsCount, setParticipantsCount] = useState(0);
   const [roomsOnlineCount, setRoomsOnlineCount] = useState<Map<string, number>>(new Map());
   const [roomUnreadCounts, setRoomUnreadCounts] = useState<Map<string, number>>(new Map());
-  const [shouldAutoScrollToBottom, setShouldAutoScrollToBottom] = useState(false);
 
   // Loading states
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -193,60 +282,14 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   }, [messages]);
 
-  // Scroll instantâneo para o final quando mensagens são carregadas em sala sem unread
+  // Scroll instantâneo ao carregar mensagens - SEM animação, igual à página Messages
   useEffect(() => {
-    if (currentView === 'room' && selectedRoom && messages.length > 0 && !loadingMessages) {
-      const hasUnreadMessages = roomUnreadCounts.get(selectedRoom.id) > 0;
-      
-      if (!hasUnreadMessages) {
-        // Scroll instantâneo no mesmo ciclo de renderização - múltiplas tentativas
-        const scrollToBottom = () => {
-          if (messagesContainerRef.current) {
-            const container = messagesContainerRef.current;
-            const targetScroll = container.scrollHeight;
-            container.scrollTop = targetScroll;
-            
-            // Se não foi para o final, tentar novamente no próximo frame
-            if (container.scrollTop < targetScroll - container.clientHeight - 5) {
-              requestAnimationFrame(scrollToBottom);
-            }
-          }
-        };
-        
-        // Primeira tentativa imediata
-        scrollToBottom();
-        // Segunda tentativa no próximo frame
-        requestAnimationFrame(scrollToBottom);
-      }
+    if (currentView === 'room' && selectedRoom && messages.length > 0 && !loadingMessages && messagesContainerRef.current) {
+      // Scroll direto sem delays ou animações - igual à página Messages
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages.length, loadingMessages, currentView, selectedRoom]);
 
-  // Reset auto-scroll flag when leaving room or changing view
-  useEffect(() => {
-    if (!selectedRoom || currentView !== 'room') {
-      setShouldAutoScrollToBottom(false);
-    }
-  }, [selectedRoom, currentView]);
-
-  // Auto-scroll to bottom when entering a room without unread messages
-  // Este useEffect é um fallback caso o scroll no subscribeToRoomMessagesHandler não funcione
-  useEffect(() => {
-    if (shouldAutoScrollToBottom && !loadingMessages && messages.length > 0 && currentView === 'room' && selectedRoom) {
-      // Usar requestAnimationFrame para garantir que o DOM foi renderizado
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (messagesContainerRef.current && currentView === 'room' && selectedRoom) {
-            const container = messagesContainerRef.current;
-            container.scrollTop = container.scrollHeight;
-            setShouldAutoScrollToBottom(false); // Reset flag after scrolling
-          } else if (messagesEndRef.current && currentView === 'room' && selectedRoom) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            setShouldAutoScrollToBottom(false); // Reset flag after scrolling
-          }
-        }, 400); // Delay maior para garantir renderização completa em todos os modos de tela
-      });
-    }
-  }, [loadingMessages, messages.length, shouldAutoScrollToBottom, currentView, selectedRoom]);
 
   // Fechar menu de opções ao clicar fora
   useEffect(() => {
@@ -1058,9 +1101,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           ...room
         };
         setSelectedRoom(updatedRoom);
-        
+
         setSelectedBuddy(null);
         setCurrentView('room');
+
+        // Switch to center view on mobile when entering a room
+        setMobileView('center');
         const now = Date.now();
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
@@ -1105,8 +1151,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       return newMap;
     });
 
-    // Se não há mensagens não lidas, marcar para fazer scroll automático após carregar mensagens
-    setShouldAutoScrollToBottom(!hasUnreadMessages);
+    // Scroll automático é feito diretamente no useEffect de messages
   };
 
   const handleLeaveRoom = async (room: ChatRoomType) => {
@@ -1530,7 +1575,13 @@ Recarregue esta página após ativar.`);
   return (
     <>
       <style>{scrollbarStyles}</style>
-      <div className="h-screen max-h-screen flex flex-col md:flex-row bg-light-bg dark:bg-dark-bg overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
+      <div
+        className="h-screen max-h-screen flex flex-col md:flex-row bg-light-bg dark:bg-dark-bg overflow-hidden"
+        style={{
+          height: 'calc(100dvh - 80px)', // Use dynamic viewport height for better mobile support
+          minHeight: 'calc(100vh - 80px)' // Fallback for browsers that don't support dvh
+        }}
+      >
         {/* Initial Loading Overlay */}
       {isInitializing && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1561,7 +1612,7 @@ Recarregue esta página após ativar.`);
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
           }`}
         >
-          💬 Chat
+          🎯 Radar
         </button>
         <button
           onClick={() => setMobileView('right')}
@@ -1651,7 +1702,8 @@ Recarregue esta página após ativar.`);
                       👥 Participantes Online ({participantsCount})
                     </h3>
                   </div>
-                  <div className="flex-shrink-0">
+                  {/* Botão Radar removido no mobile */}
+                  <div className="hidden md:flex flex-shrink-0">
                     <button
                       onClick={() => handleViewToggle('radar')}
                       className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors ${currentView === 'radar'
@@ -1816,7 +1868,7 @@ Recarregue esta página após ativar.`);
 
         {/* Room View */}
         {currentView === 'room' && selectedRoom && (
-          <div className="flex flex-col h-full min-h-0">
+          <div className="flex flex-col h-full min-h-0" style={{ height: '100%' }}>
             {/* Room Header */}
             <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between gap-2 flex-shrink-0">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
@@ -1838,7 +1890,7 @@ Recarregue esta página após ativar.`);
               </div>
 
               {/* User Activity Status and Options Menu */}
-              <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center gap-3 md:gap-4">
                 {/* Status Badge */}
                 <div className={`flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs font-medium flex-shrink-0 ${
                   userActivityStatus === 'online' 
@@ -1854,7 +1906,7 @@ Recarregue esta página após ativar.`);
                       ? 'bg-yellow-500'
                       : 'bg-gray-500'
                   }`} />
-                  <span className="hidden sm:inline">
+                  <span className="inline">
                     {userActivityStatus === 'online' ? 'Conectado' : userActivityStatus === 'away' ? 'Ausente' : 'Offline'}
                   </span>
                 </div>
@@ -1888,7 +1940,25 @@ Recarregue esta página após ativar.`);
             </div>
 
             {/* Messages Area */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 dark:bg-gray-900/30 min-h-0">
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto mobile-scroll chat-messages-scroll p-3 md:p-4 space-y-3 md:space-y-4 bg-gray-50 dark:bg-gray-900/30 min-h-0"
+              style={{
+                touchAction: 'pan-y',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+                // Altura dinâmica calculada para mobile
+                height: containerHeight,
+                minHeight: '200px',
+                maxHeight: containerHeight,
+                // Melhorar performance do scroll
+                willChange: 'scroll-position',
+                // Garantir que o elemento possa receber eventos de toque
+                position: 'relative',
+                // FORÇAR scroll instantâneo sem animação
+                scrollBehavior: 'auto'
+              }}
+            >
               {loadingMessages ? (
                 <LoadingSpinner />
               ) : messages.length === 0 ? (

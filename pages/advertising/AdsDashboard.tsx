@@ -67,7 +67,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
       {/* Header */}
       <div className="flex flex-wrap gap-4 justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             Analytics de Anúncios
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -147,24 +147,24 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           </div>
 
           {/* Métricas Detalhadas */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Curtidas</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
+            <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Curtidas</p>
+              <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
                 {aggregatedMetrics?.total_likes?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
 
-            <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Compartilhamentos</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Compartilhamentos</p>
+              <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
                 {aggregatedMetrics?.total_shares?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
 
-            <div className="bg-light-card dark:bg-dark-card p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Salvamentos</p>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Salvamentos</p>
+              <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
                 {aggregatedMetrics?.total_saves?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>

@@ -166,18 +166,18 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-wrap gap-2 md:gap-4 justify-between items-center">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             Aprovar Anúncios
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-0.5 md:mt-1">
             {ads.length} anúncio{ads.length !== 1 ? 's' : ''} aguardando aprovação
           </p>
         </div>
         <button
           onClick={fetchPendingAds}
-          className="bg-primary hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+          className="bg-primary hover:bg-gray-600 text-white font-medium px-3 md:px-6 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-base whitespace-nowrap flex-shrink-0"
           disabled={isLoading}
         >
           {isLoading ? 'Carregando...' : 'Atualizar'}
@@ -200,7 +200,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
           {ads.map((ad) => (
             <div
               key={ad.id}
@@ -211,31 +211,31 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                 <img
                   src={ad.image_url}
                   alt={ad.title}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-32 md:h-48 object-cover"
                 />
               )}
               {ad.video_url && !ad.image_url && (
                 <video
                   src={ad.video_url}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-32 md:h-48 object-cover"
                   controls
                 />
               )}
 
               {/* Conteúdo */}
-              <div className="p-4 space-y-3">
+              <div className="p-3 md:p-4 space-y-2 md:space-y-3">
                 {/* Título */}
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
                   {ad.title}
                 </h3>
 
                 {/* Badge de Tipo de Pagamento */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1 md:gap-2">
                   {getPaymentTypeBadge(ad)}
                 </div>
 
                 {/* Descrição */}
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
                   {ad.description}
                 </p>
 
@@ -245,18 +245,18 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                     <img
                       src={ad.advertiser_avatar}
                       alt={ad.advertiser_name}
-                      className="w-8 h-8 rounded-full"
+                      className="w-6 h-6 md:w-8 md:h-8 rounded-full"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-primary text-white flex items-center justify-center text-[10px] md:text-xs font-bold">
                       {ad.advertiser_name[0].toUpperCase()}
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">
                       {ad.advertiser_name}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
                       {new Date(ad.created_at).toLocaleDateString('pt-BR', {
                         day: '2-digit',
                         month: 'short',
@@ -273,7 +273,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                     href={ad.link_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline block truncate"
+                    className="text-[10px] md:text-xs text-blue-600 dark:text-blue-400 hover:underline block truncate"
                   >
                     🔗 {ad.link_url}
                   </a>
@@ -286,7 +286,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                       setSelectedAd(ad);
                       setShowApproveModal(true);
                     }}
-                    className="flex-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium px-4 py-2 rounded-lg transition-colors"
+                    className="flex-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-sm"
                   >
                     ✓ Aprovar
                   </button>
@@ -295,7 +295,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                       setSelectedAd(ad);
                       setShowRejectModal(true);
                     }}
-                    className="flex-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800 font-medium px-4 py-2 rounded-lg transition-colors"
+                    className="flex-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800 font-medium px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-sm"
                   >
                     ✗ Rejeitar
                   </button>

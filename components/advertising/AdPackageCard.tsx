@@ -167,7 +167,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
 
       {/* Informação adicional */}
       <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400">
-        Custo por impressão: {formatPrice(pkg.price / pkg.impressions)}
+        Custo por 1.000 impressões (CPM): {formatPrice((pkg.price / pkg.impressions) * 1000)}
       </p>
     </div>
   );

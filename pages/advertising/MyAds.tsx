@@ -156,40 +156,39 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap gap-4 justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="flex flex-wrap gap-2 md:gap-4 justify-between items-center">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
             Meus Anúncios
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Gerencie todos os seus anúncios
           </p>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
-              /* Mobile adjustments: smaller size */
-              md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
+          className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors text-sm md:text-base whitespace-nowrap flex-shrink-0"
         >
           Criar Anúncio
         </button>
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-2">
+      <div className="flex gap-1 md:gap-2">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'all'
+          className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${filter === 'all'
             ? 'bg-primary text-white'
             : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
         >
-          Todos ({allAdsCount})
+          <span className="hidden sm:inline">Todos ({allAdsCount})</span>
+          <span className="sm:hidden">Todos ({allAdsCount})</span>
         </button>
         <button
           onClick={() => setFilter('active')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'active'
+          className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${filter === 'active'
             ? 'bg-primary text-white'
             : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
@@ -198,7 +197,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
         </button>
         <button
           onClick={() => setFilter('paused')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'paused'
+          className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${filter === 'paused'
             ? 'bg-primary text-white'
             : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
@@ -207,7 +206,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
         </button>
         <button
           onClick={() => setFilter('ended')}
-          className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'ended'
+          className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${filter === 'ended'
             ? 'bg-primary text-white'
             : 'bg-light-card dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
@@ -264,7 +263,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-6">
           {ads.map((ad) => (
             <div
               key={ad.id}
@@ -275,27 +274,27 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                 <img
                   src={ad.image_url}
                   alt={ad.title}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-32 md:h-48 object-cover"
                 />
               )}
               {ad.video_url && !ad.image_url && (
                 <video
                   src={ad.video_url}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-32 md:h-48 object-cover"
                   controls
                 />
               )}
 
               {/* Conteúdo */}
-              <div className="p-4 space-y-3">
+              <div className="p-3 md:p-4 space-y-2 md:space-y-3">
                 {/* Título e Status */}
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white">
                         {ad.title}
                       </h3>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 md:gap-2">
                         {getStatusBadge(ad.status)}
                         <AdActionsMenu
                           ad={ad}
@@ -309,12 +308,12 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                 </div>
 
                 {/* Descrição */}
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                   {ad.description}
                 </p>
 
                 {/* Métricas */}
-                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-1">
                     <EyeIcon />
                     <span>{ad.views_count || 0}</span>
@@ -394,7 +393,7 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                   <button
                     onClick={() => setAdToPause({ id: ad.id, status: ad.status })}
                     disabled={ad.status === 'ended' || (ad.status === 'paused' && ad.approval_status !== 'approved')}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${ad.status === 'ended'
+                    className={`flex-1 px-2 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-colors text-xs md:text-sm ${ad.status === 'ended'
                       ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
                       : ad.status === 'paused' && ad.approval_status !== 'approved'
                         ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
