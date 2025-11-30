@@ -17,17 +17,7 @@ const handleApiError = (error: any, operation: string, context?: any) => {
   };
 
   // Log different error types appropriately (following existing pattern)
-  if (error?.code === 'PGRST205') {
-    console.warn(`[${timestamp}] Table not found in ${operation}:`, errorInfo);
-  } else if (error?.code === 'PGRST116') {
-    console.warn(`[${timestamp}] Column not found in ${operation}:`, errorInfo);
-  } else if (error?.code === '42703') {
-    console.warn(`[${timestamp}] PostgreSQL column error in ${operation}:`, errorInfo);
-  } else if (error?.message?.includes('JWT')) {
-    console.error(`[${timestamp}] Authentication error in ${operation}:`, errorInfo);
-  } else {
-    console.error(`[${timestamp}] API error in ${operation}:`, errorInfo);
-  }
+  // Logs removidos conforme solicitado
 
   return errorInfo;
 };
@@ -66,7 +56,6 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
 
     return exists;
   } catch (error) {
-    console.debug(`Table existence check failed for ${tableName}:`, error);
     return false;
   }
 };
@@ -287,7 +276,6 @@ export const fetchConversations = async (userId: string) => {
     // Check if table exists first
     const tableExists = await checkTableExists('chat_participants');
     if (!tableExists) {
-      console.log('[fetchConversations] chat_participants table does not exist, returning empty array');
       return { data: [], error: null };
     }
 
@@ -545,7 +533,7 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
           .in('id', userIds);
 
         if (profilesError) {
-          console.warn('[fetchRoomMessages] Error fetching profiles for messages:', profilesError);
+          // Erro ao buscar perfis, continuar sem eles
         }
 
         if (profiles && profiles.length > 0) {
@@ -554,7 +542,7 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
           });
         }
       } catch (err) {
-        console.error('[fetchRoomMessages] Exception fetching profiles:', err);
+        // Erro ao buscar perfis, continuar sem eles
       }
     }
 
@@ -659,7 +647,7 @@ export const sendRoomMessage = async (roomId: string, content: string) => {
         };
       }
     } catch (e) {
-      console.warn('Could not fetch profile for sent message, using metadata');
+      // Erro ao buscar perfil, usar metadata do usuário
     }
 
     // If profile fetch fails, use user metadata
@@ -721,7 +709,7 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
           .single();
 
         if (senderError) {
-          console.warn('[subscribeToRoomMessages] Error fetching sender profile:', senderError);
+          // Erro ao buscar perfil do remetente
         }
 
         // Build full_name from first_name and last_name (matching the profiles table structure)
@@ -981,8 +969,6 @@ export const subscribeToRoomParticipants = (
   roomId: string,
   callback: (participants: User[], count: number) => void
 ) => {
-  console.log('[subscribeToRoomParticipants] 🔔 Criando subscription para sala:', roomId);
-  
   const channel = supabase
     .channel(`room_participants:${roomId}`)
     .on(
@@ -994,26 +980,15 @@ export const subscribeToRoomParticipants = (
         filter: `room_id=eq.${roomId}`
       },
       async (payload) => {
-        console.log('[subscribeToRoomParticipants] 🔥 EVENTO RECEBIDO:', {
-          event: payload.eventType,
-          roomId,
-          new: payload.new,
-          old: payload.old
-        });
-        
         // Refetch participants when changes occur
         const { data } = await fetchRoomParticipants(roomId);
-        console.log('[subscribeToRoomParticipants] 📊 Atualizando com', data?.length, 'participantes');
         callback(data || [], data?.length || 0);
       }
     )
-    .subscribe((status) => {
-      console.log('[subscribeToRoomParticipants] 📡 Status da subscription:', status);
-    });
+    .subscribe();
 
   return {
     unsubscribe: () => {
-      console.log('[subscribeToRoomParticipants] ❌ Cancelando subscription para sala:', roomId);
       supabase.removeChannel(channel);
     }
   };
@@ -1181,19 +1156,42 @@ export const createChatRoom = async (roomData: {
       throw new Error('Usuário não autenticado');
     }
 
-    const { data, error } = await supabase.functions.invoke('create-chat-room', {
+    const response = await supabase.functions.invoke('create-chat-room', {
       body: roomData,
     });
 
+    const { data, error } = response;
+
     if (error) {
+      
+      // Tentar extrair mensagem de erro
+      let errorMessage = 'Erro ao criar sala';
+      if (error && typeof error === 'object') {
+        const errObj = error as any;
+        if (errObj.context?.error?.message) {
+          errorMessage = errObj.context.error.message;
+        } else if (errObj.message) {
+          errorMessage = errObj.message;
+        } else if (errObj.error?.message) {
+          errorMessage = errObj.error.message;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       handleApiError(error, 'createChatRoom', roomData);
-      return { data: null, error };
+      return { data: null, error: new Error(errorMessage) };
     }
 
     if (!data || !data.success) {
       const errorMsg = data?.error || 'Erro ao criar sala';
+      const errorDetails = data?.details || data?.hint || null;
       handleApiError(errorMsg, 'createChatRoom', roomData);
-      return { data: null, error: errorMsg };
+      const errorObj = new Error(errorMsg);
+      if (errorDetails) {
+        (errorObj as any).details = errorDetails;
+      }
+      return { data: null, error: errorObj };
     }
 
     return { data: data.room, error: null };
@@ -1298,7 +1296,7 @@ export const updateRoomLastRead = async (roomId: string) => {
   }
 };
 
-// Fetch unread counts for all joined rooms
+// Fetch unread counts for all joined rooms (OTIMIZADO - uma única chamada RPC)
 export const fetchRoomUnreadCounts = async (roomIds: string[]) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1306,25 +1304,122 @@ export const fetchRoomUnreadCounts = async (roomIds: string[]) => {
       return { data: {}, error: null };
     }
 
-    // Buscar contadores para cada sala
-    const counts: Record<string, number> = {};
+    // Usar função RPC otimizada que processa todas as salas de uma vez
+    const { data, error } = await supabase
+      .rpc('get_multiple_rooms_unread_counts', {
+        p_room_ids: roomIds,
+        p_user_id: user.id
+      });
 
-    for (const roomId of roomIds) {
-      const { data, error } = await supabase
-        .rpc('get_room_unread_count', {
-          p_room_id: roomId,
-          p_user_id: user.id
-        });
-
-      if (!error && data !== null) {
-        counts[roomId] = data;
+    if (error) {
+      // Fallback para método antigo se a nova função não existir
+      const counts: Record<string, number> = {};
+      for (const roomId of roomIds) {
+        const { data: singleData, error: singleError } = await supabase
+          .rpc('get_room_unread_count', {
+            p_room_id: roomId,
+            p_user_id: user.id
+          });
+        if (!singleError && singleData !== null) {
+          counts[roomId] = singleData;
+        }
       }
+      return { data: counts, error: null };
+    }
+
+    // Converter array de resultados para objeto
+    const counts: Record<string, number> = {};
+    if (data && Array.isArray(data)) {
+      data.forEach((item: { room_id: string; unread_count: number }) => {
+        counts[item.room_id] = item.unread_count || 0;
+      });
     }
 
     return { data: counts, error: null };
   } catch (error) {
     handleApiError(error, 'fetchRoomUnreadCounts', { roomIds });
     return { data: {}, error };
+  }
+};
+
+// Fetch participant counts for multiple rooms at once (OTIMIZADO)
+export const fetchRoomsParticipantCounts = async (roomIds: string[]) => {
+  try {
+    if (roomIds.length === 0) {
+      return { data: new Map<string, number>(), error: null };
+    }
+
+    const { data, error } = await supabase
+      .rpc('get_rooms_participant_counts', {
+        p_room_ids: roomIds
+      });
+
+    if (error) {
+      // Fallback: buscar contadores individualmente
+      const countMap = new Map<string, number>();
+      for (const roomId of roomIds) {
+        const { data: participants } = await fetchRoomParticipants(roomId);
+        countMap.set(roomId, participants?.length || 0);
+      }
+      return { data: countMap, error: null };
+    }
+
+    // Converter array de resultados para Map
+    const countMap = new Map<string, number>();
+    if (data && Array.isArray(data)) {
+      data.forEach((item: { room_id: string; participant_count: number }) => {
+        countMap.set(item.room_id, Number(item.participant_count) || 0);
+      });
+    }
+
+    return { data: countMap, error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchRoomsParticipantCounts', { roomIds });
+    return { data: new Map<string, number>(), error };
+  }
+};
+
+// Fetch message counts from last hour for multiple rooms (OTIMIZADO)
+export const fetchRoomsMessageCountsLastHour = async (roomIds: string[]) => {
+  try {
+    if (roomIds.length === 0) {
+      return { data: new Map<string, number>(), error: null };
+    }
+
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    
+    // Buscar contagem de mensagens da última hora para todas as salas de uma vez
+    const { data, error } = await supabase
+      .from('chat_room_messages')
+      .select('room_id')
+      .in('room_id', roomIds)
+      .gte('created_at', oneHourAgo);
+
+    if (error) {
+      handleApiError(error, 'fetchRoomsMessageCountsLastHour', { roomIds });
+      return { data: new Map<string, number>(), error };
+    }
+
+    // Contar mensagens por sala
+    const countMap = new Map<string, number>();
+    if (data && Array.isArray(data)) {
+      data.forEach((msg: { room_id: string }) => {
+        const currentCount = countMap.get(msg.room_id) || 0;
+        countMap.set(msg.room_id, currentCount + 1);
+      });
+    }
+
+    // Garantir que todas as salas tenham entrada (mesmo que seja 0)
+    roomIds.forEach(roomId => {
+      if (!countMap.has(roomId)) {
+        countMap.set(roomId, 0);
+      }
+    });
+
+    return { data: countMap, error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchRoomsMessageCountsLastHour', { roomIds });
+    return { data: new Map<string, number>(), error };
   }
 };
 

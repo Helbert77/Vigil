@@ -33,6 +33,8 @@ import {
   subscribeToMessages,
   updateRoomLastRead,
   fetchRoomUnreadCounts,
+  fetchRoomsParticipantCounts,
+  fetchRoomsMessageCountsLastHour,
   RealtimeChannel
 } from '@/src/services/chatService';
 // Icons
@@ -41,7 +43,47 @@ const ChevronRightIcon = ({ className = "h-5 w-5" }: { className?: string }) => 
 const FireIcon = ({ className = "h-4 w-4" }: { className?: string }) => (
   <span className={className} role="img" aria-label="Hot">🔥</span>
 );
-const NewIcon = ({ className = "h-4 w-4 text-green-500" }: { className?: string }) => <Icon className={className}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></Icon>;
+const NewIcon = ({ className = "h-4 w-4" }: { className?: string }) => {
+  // Cores verde: green-500 = #10b981, green-600 = #059669
+  return (
+    <svg 
+      className={className}
+      viewBox="0 0 24 24" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" 
+        fill="#10b981"
+        className="dark:fill-[#059669]"
+      />
+    </svg>
+  );
+};
+
+// Função para verificar se uma sala ainda é considerada "nova"
+// Uma sala é nova se foi criada há menos de 24 horas
+const isRoomNew = (createdAt: string): boolean => {
+  if (!createdAt) return false;
+  
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const hoursSinceCreation = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+  
+  // Considera nova se foi criada há menos de 24 horas
+  return hoursSinceCreation < 24;
+};
+
+// Função para verificar se uma sala ainda é considerada "hot" (quente)
+// Uma sala é hot se tem mais de 50 mensagens na última hora
+// Esta função recebe o roomId e usa o estado roomsMessageCountsLastHour
+const isRoomHot = (roomId: string, messageCountsMap: Map<string, number>): boolean => {
+  if (!roomId || !messageCountsMap) return false;
+  
+  const messageCount = messageCountsMap.get(roomId) || 0;
+  
+  // Sala é hot se tem mais de 50 mensagens na última hora
+  return messageCount > 50;
+};
 const SendIcon = () => <Icon className="h-6 w-6"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></Icon>;
 const EditIcon = ({ className = "h-4 w-4" }: { className?: string }) => <Icon className={className}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></Icon>;
 const TrashIcon = ({ className = "h-4 w-4" }: { className?: string }) => <Icon className={className}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></Icon>;
@@ -215,6 +257,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [participantsCount, setParticipantsCount] = useState(0);
   const [roomsOnlineCount, setRoomsOnlineCount] = useState<Map<string, number>>(new Map());
   const [roomUnreadCounts, setRoomUnreadCounts] = useState<Map<string, number>>(new Map());
+  const [roomsMessageCountsLastHour, setRoomsMessageCountsLastHour] = useState<Map<string, number>>(new Map());
 
   // Loading states
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -366,6 +409,28 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     loadUnreadCounts();
   }, [joinedRoomIds]);
 
+  // Atualizar contagens de mensagens da última hora periodicamente (a cada 5 minutos)
+  useEffect(() => {
+    const updateMessageCounts = async () => {
+      if (chatRooms.length === 0) return;
+      
+      const roomIds = chatRooms.map(room => room.id);
+      const { data: countMap } = await fetchRoomsMessageCountsLastHour(roomIds);
+      
+      if (countMap) {
+        setRoomsMessageCountsLastHour(countMap);
+      }
+    };
+
+    // Atualizar imediatamente
+    updateMessageCounts();
+
+    // Atualizar a cada 5 minutos
+    const interval = setInterval(updateMessageCounts, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [chatRooms]);
+
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
@@ -380,7 +445,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           loadBuddies()
         ]);
       } catch (error: any) {
-        console.error('Error loading initial data:', error);
         addToast('Erro ao carregar dados iniciais', 'error');
       } finally {
         setIsInitializing(false);
@@ -405,7 +469,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }
     });
 
-    // Subscribe to all rooms participants changes to update online counts
+    // Subscribe to all rooms participants changes to update online counts (OTIMIZADO)
+    // Usa debounce para evitar múltiplas queries quando vários eventos acontecem rapidamente
+    let participantUpdateTimeout: NodeJS.Timeout | null = null;
+    const pendingRoomUpdates = new Set<string>();
+
     const allRoomsParticipantsSubscription = supabase
       .channel('all_room_participants')
       .on(
@@ -415,29 +483,37 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           schema: 'public',
           table: 'chat_room_participants'
         },
-        async (payload) => {
-          console.log('[ChatPage] 🔥 Evento de participante:', {
-            event: payload.eventType,
-            new: payload.new,
-            old: payload.old
-          });
-
-          // When any participant joins or leaves, update the count for that room
+        (payload) => {
           const roomId = payload.new?.room_id || payload.old?.room_id;
           const userId = payload.new?.user_id || payload.old?.user_id;
           
           if (roomId) {
-            const { data: participants } = await fetchRoomParticipants(roomId);
-            setRoomsOnlineCount(prev => {
-              const newMap = new Map(prev);
-              newMap.set(roomId, participants?.length || 0);
-              return newMap;
-            });
+            // Adicionar sala à lista de atualizações pendentes
+            pendingRoomUpdates.add(roomId);
+
+            // Debounce: atualizar contadores após 500ms de inatividade
+            if (participantUpdateTimeout) {
+              clearTimeout(participantUpdateTimeout);
+            }
+
+            participantUpdateTimeout = setTimeout(async () => {
+              // Buscar contadores de todas as salas pendentes de uma vez
+              const roomIdsArray = Array.from(pendingRoomUpdates);
+              if (roomIdsArray.length > 0) {
+                const { data: countMap } = await fetchRoomsParticipantCounts(roomIdsArray);
+                if (countMap) {
+                  setRoomsOnlineCount(prev => {
+                    const newMap = new Map(prev);
+                    countMap.forEach((count, id) => newMap.set(id, count));
+                    return newMap;
+                  });
+                }
+                pendingRoomUpdates.clear();
+              }
+            }, 500);
 
             // Check if the current user was removed from a room
             if (payload.eventType === 'DELETE' && userId === session?.user?.id) {
-              console.log('[ChatPage] ⚠️ Usuário atual foi removido da sala:', roomId);
-              
               // Remove room from joinedRoomIds
               setJoinedRoomIds(prev => {
                 const newSet = new Set(prev);
@@ -459,6 +535,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       .subscribe();
 
     return () => {
+      if (participantUpdateTimeout) {
+        clearTimeout(participantUpdateTimeout);
+      }
       if (roomsSubscription) {
         roomsSubscription.unsubscribe();
       }
@@ -475,7 +554,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   }, [roomCategoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Periodic sync to ensure joinedRoomIds is accurate
+  // Periodic sync to ensure joinedRoomIds is accurate (OTIMIZADO - menos frequente)
   useEffect(() => {
     const syncJoinedRooms = async () => {
       if (!session?.user?.id) return;
@@ -489,15 +568,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                          joinedRooms.some(id => !joinedRoomIds.has(id));
       
       if (hasChanges) {
-        console.log('[ChatPage] 🔄 Sincronizando salas participadas:', {
-          antes: currentIds,
-          depois: joinedRooms
-        });
         setJoinedRoomIds(joinedSet);
         
         // If currently in a room that user is no longer part of, exit
         if (selectedRoom && !joinedSet.has(selectedRoom.id)) {
-          console.log('[ChatPage] ⚠️ Sala atual não está mais nas salas participadas');
           setSelectedRoom(null);
           setCurrentView('radar');
           setMessages([]);
@@ -506,8 +580,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }
     };
 
-    // Sync every 30 seconds
-    const syncInterval = setInterval(syncJoinedRooms, 30000);
+    // Sync every 60 seconds (reduzido de 30 para melhorar performance)
+    const syncInterval = setInterval(syncJoinedRooms, 60000);
     
     // Initial sync
     syncJoinedRooms();
@@ -523,12 +597,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       return;
     }
 
-    console.log('[ChatPage] 🎯 Carregando participantes para sala:', selectedRoom.id);
-
     const loadParticipants = async () => {
       const { data } = await fetchRoomParticipants(selectedRoom.id);
       if (data) {
-        console.log('[ChatPage] ✅ Participantes carregados:', data.length);
         setRoomParticipants(data);
         setParticipantsCount(data.length);
       }
@@ -537,7 +608,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     loadParticipants();
 
     const subscription = subscribeToRoomParticipants(selectedRoom.id, (participants, count) => {
-      console.log('[ChatPage] 🔄 Callback recebido! Atualizando com', count, 'participantes');
       setRoomParticipants(participants);
       setParticipantsCount(count);
       
@@ -550,7 +620,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     });
 
     return () => {
-      console.log('[ChatPage] 🧹 Limpando subscription');
       subscription.unsubscribe();
     };
   }, [selectedRoom?.id, session?.user?.id]);
@@ -607,7 +676,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
     return () => {
       if (currentSubscription) {
-        console.log('[ChatPage] 🧹 Limpando subscription de mensagens');
         currentSubscription.unsubscribe();
         setMessageSubscription(null);
       }
@@ -688,7 +756,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const now = Date.now();
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
-        updateRoomActivity(currentRoomId).catch(console.error);
+        updateRoomActivity(currentRoomId).catch(() => {});
       }, 2000); // Update at most once per 2 seconds
     };
 
@@ -748,16 +816,27 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   };
 
-  // Load online count for all rooms
+  // Load online count for all rooms (OTIMIZADO - uma única query)
   const loadRoomsOnlineCount = async (rooms: ChatRoomType[]) => {
-    const countMap = new Map<string, number>();
-    
-    for (const room of rooms) {
-      const { data } = await fetchRoomParticipants(room.id);
-      countMap.set(room.id, data?.length || 0);
+    if (rooms.length === 0) {
+      setRoomsOnlineCount(new Map());
+      return;
     }
+
+    const roomIds = rooms.map(room => room.id);
+    const { data: countMap, error } = await fetchRoomsParticipantCounts(roomIds);
     
-    setRoomsOnlineCount(countMap);
+    if (!error && countMap) {
+      setRoomsOnlineCount(countMap);
+    } else {
+      // Fallback: usar método antigo se a nova função não estiver disponível
+      const fallbackMap = new Map<string, number>();
+      for (const room of rooms) {
+        const { data } = await fetchRoomParticipants(room.id);
+        fallbackMap.set(room.id, data?.length || 0);
+      }
+      setRoomsOnlineCount(fallbackMap);
+    }
   };
 
   // Load new users (suggestions from main app)
@@ -797,7 +876,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         setBuddies([]);
       }
     } catch (error) {
-      console.error('Error loading buddies:', error);
       setBuddiesError('Erro ao carregar buddies');
     } finally {
       setLoadingBuddies(false);
@@ -814,7 +892,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await fetchMessages(conversationId);
 
       if (error) {
-        console.error('Error loading messages:', error);
         addToast('Erro ao carregar mensagens', 'error');
       } else {
         setMessages(data || []);
@@ -841,7 +918,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
       setMessageSubscription(subscription);
     } catch (error: any) {
-      console.error('Error in subscribeToConversationMessages:', error);
       addToast('Erro ao carregar mensagens', 'error');
     } finally {
       setLoadingMessages(false);
@@ -891,7 +967,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const { data: messageData, error } = await sendRoomMessage(selectedRoom.id, messageText);
 
         if (error) {
-          console.error('Error sending room message:', error);
           const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
           addToast(errorMessage, 'error');
           return;
@@ -902,13 +977,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
         await updateRoomActivity(selectedRoom.id);
-
-        console.log('[ChatPage] 📤 Mensagem enviada:', {
-          messageId: messageData?.id,
-          roomId: selectedRoom.id,
-          content: messageText.substring(0, 50),
-          hasSubscription: !!messageSubscription
-        });
 
         // Set flag to scroll to bottom when message is received via subscription
         shouldScrollRef.current = true;
@@ -929,7 +997,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
           // Se não foi adicionada e não há subscription, adicionar imediatamente
           if (!messageAdded && !messageSubscription) {
-            console.log('[ChatPage] ⚠️ Sem subscription ativa, adicionando mensagem manualmente');
             setMessages(prev => [...prev, messageData]);
             messageAdded = true;
           }
@@ -940,7 +1007,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
               setMessages(prev => {
                 const exists = prev.some(msg => msg.id === messageId);
                 if (!exists) {
-                  console.log('[ChatPage] ⚠️ Timeout: Mensagem não recebida via subscription, adicionando manualmente');
                   return [...prev, messageData];
                 }
                 return prev;
@@ -972,7 +1038,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           }
         }, 100);
       } catch (error: any) {
-        console.error('Error in handleSendMessage (room):', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
         addToast(errorMessage, 'error');
       } finally {
@@ -996,7 +1061,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       });
 
       if (error) {
-        console.error('Error sending message:', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
         addToast(errorMessage, 'error');
         return;
@@ -1025,7 +1089,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }, 100);
 
     } catch (error: any) {
-      console.error('Error in handleSendMessage:', error);
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
       addToast(errorMessage, 'error');
     } finally {
@@ -1090,7 +1153,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           return;
         }
 
-        console.error('Error joining room:', error);
         const errorMessage = error instanceof Error ? error.message : (typeof error === 'object' && error.message) ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
         addToast(errorMessage, 'error');
       } else {
@@ -1120,7 +1182,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         });
       }
     } catch (error: any) {
-      console.error('Error in handleJoinRoom:', error);
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
       addToast(errorMessage, 'error');
     }
@@ -1159,7 +1220,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await leaveChatRoom(room.id);
 
       if (error) {
-        console.error('Error leaving room:', error);
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao sair da sala';
         addToast(errorMessage, 'error');
       } else {
@@ -1191,7 +1251,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         }
       }
     } catch (error: any) {
-      console.error('Error in handleLeaveRoom:', error);
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao sair da sala';
       addToast(errorMessage, 'error');
     }
@@ -1207,7 +1266,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await fetchRoomMessages(roomId);
 
       if (error) {
-        console.error('Error loading room messages:', error);
         addToast('Erro ao carregar mensagens da sala', 'error');
         setLoadingMessages(false);
         return null;
@@ -1218,26 +1276,30 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
       // Unsubscribe from previous subscription if exists
       if (messageSubscription) {
-        console.log('[ChatPage] 🔄 Desinscrevendo de subscription anterior');
         messageSubscription.unsubscribe();
         setMessageSubscription(null);
       }
 
       // Subscribe to new messages
       const subscription = subscribeToRoomMessages(roomId, (newMessage) => {
-        console.log('[ChatPage] 📨 Nova mensagem recebida via subscription:', {
-          messageId: newMessage.id,
-          senderId: newMessage.sender_id,
-          currentUserId: session?.user?.id,
-          content: newMessage.content?.substring(0, 50),
-          isFromCurrentUser: newMessage.sender_id === session?.user?.id
-        });
-
         const isFromCurrentUser = newMessage.sender_id === session?.user?.id;
 
         // Se não é da sala ativa e não é do usuário atual, incrementar contador
         if (selectedRoom?.id !== roomId && !isFromCurrentUser) {
           setRoomUnreadCounts(prev => {
+            const newMap = new Map(prev);
+            const currentCount = newMap.get(roomId) || 0;
+            newMap.set(roomId, currentCount + 1);
+            return newMap;
+          });
+        }
+
+        // Atualizar contagem de mensagens da última hora para esta sala
+        // Verificar se a mensagem foi criada na última hora
+        const messageDate = new Date(newMessage.created_at);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        if (messageDate >= oneHourAgo) {
+          setRoomsMessageCountsLastHour(prev => {
             const newMap = new Map(prev);
             const currentCount = newMap.get(roomId) || 0;
             newMap.set(roomId, currentCount + 1);
@@ -1256,10 +1318,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           // Check if message already exists to prevent duplicates
           const messageExists = prev.some(msg => msg.id === newMessage.id);
           if (messageExists) {
-            console.log('[ChatPage] ⚠️ Mensagem duplicada detectada, ignorando:', newMessage.id);
             return prev;
           }
-          console.log('[ChatPage] ✅ Adicionando mensagem ao estado. Total antes:', prev.length);
           return [...prev, newMessage];
         });
       });
@@ -1268,7 +1328,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       setLoadingMessages(false);
       return subscription;
     } catch (error: any) {
-      console.error('Error in subscribeToRoomMessagesHandler:', error);
       addToast('Erro ao carregar mensagens da sala', 'error');
       setLoadingMessages(false);
       return null;
@@ -1286,7 +1345,17 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await createChatRoom(roomFormData);
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao criar sala';
+        let errorMessage = 'Erro ao criar sala';
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error && typeof error === 'object') {
+          // Tentar extrair mensagem de erro do objeto
+          errorMessage = (error as any).error || (error as any).message || errorMessage;
+        }
+        
         addToast(errorMessage, 'error');
       } else {
         addToast('Sala criada com sucesso!', 'success');
@@ -1348,12 +1417,25 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         addToast('Sala excluída com sucesso!', 'success');
         setShowDeleteRoomModal(false);
         setRoomToDelete(null);
+        
         // Clear selected room if it was deleted
         if (selectedRoom?.id === roomToDelete.id) {
           setSelectedRoom(null);
           setCurrentView('radar');
         }
-        loadChatRooms();
+        
+        // Otimização: remover sala da lista local em vez de recarregar tudo
+        setChatRooms(prev => prev.filter(room => room.id !== roomToDelete.id));
+        setRoomsOnlineCount(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(roomToDelete.id);
+          return newMap;
+        });
+        setJoinedRoomIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(roomToDelete.id);
+          return newSet;
+        });
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao excluir sala';
@@ -1402,15 +1484,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     const isMac = /Mac/.test(userAgent);
     const isWindows = /Win/.test(userAgent);
 
-    console.log('Opening location settings for:', {
-      isIOS,
-      isAndroid,
-      isMobile,
-      isMac,
-      isWindows,
-      userAgent: userAgent.substring(0, 50) + '...'
-    });
-
     if (isMobile) {
       try {
         if (isIOS) {
@@ -1432,7 +1505,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           }
         }
       } catch (error) {
-        console.error('Error opening mobile settings:', error);
         alert('Não foi possível abrir as configurações automaticamente. Procure por "Localização" ou "Privacidade" nas configurações do seu dispositivo.');
       }
     } else {
@@ -1530,7 +1602,6 @@ Depois configure no navegador:
 Recarregue esta página após ativar.`);
         }
       } catch (error) {
-        console.error('Error opening browser settings:', error);
         alert('Não foi possível abrir as configurações automaticamente. Procure por "Localização" ou "Privacidade" nas configurações do seu navegador.');
       }
     }
@@ -1880,8 +1951,8 @@ Recarregue esta página após ativar.`);
                     <h3 className="font-bold text-xs md:text-sm text-gray-900 dark:text-white truncate">
                       {selectedRoom.name}
                     </h3>
-                    {selectedRoom.is_hot && <FireIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
-                    {selectedRoom.is_new && <NewIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    {isRoomHot(selectedRoom.id, roomsMessageCountsLastHour) && <FireIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    {isRoomNew(selectedRoom.created_at) && <NewIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
                   </div>
                   <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                     {selectedRoom.description || 'Sala de bate-papo'}
@@ -1987,7 +2058,6 @@ Recarregue esta página após ativar.`);
                     // If sender object is missing but we have sender_id, show a placeholder
                     // In a real scenario, we could fetch the profile here, but for now use a generic name
                     senderName = 'Usuário';
-                    console.warn(`[ChatPage] Message ${message.id} missing sender object for sender_id: ${message.sender_id}`);
                   }
 
                   return (
@@ -2078,7 +2148,7 @@ Recarregue esta página após ativar.`);
         w-full md:max-w-sm
         bg-light-card dark:bg-dark-card 
         md:border-l border-light-border dark:border-dark-border 
-        flex-col
+        flex-col h-full max-h-full overflow-hidden
       `}>
         {/* Collapse Button - Hidden on mobile */}
         <button
@@ -2119,10 +2189,10 @@ Recarregue esta página após ativar.`);
 
         {/* Accordion: Chat Rooms */}
         {!isRightSidebarCollapsed && (
-        <div className={`border-b border-light-border dark:border-dark-border ${activeAccordion === 'rooms' ? 'order-1 flex-1 flex flex-col' : 'order-2'}`}>
+        <div className={`border-b border-light-border dark:border-dark-border ${activeAccordion === 'rooms' ? 'order-1 flex-1 flex flex-col min-h-0 overflow-hidden' : 'order-2 flex-shrink-0'}`}>
           <button
             onClick={() => handleAccordionToggle('rooms')}
-            className={`w-full p-4 flex items-center justify-between text-left transition-colors ${activeAccordion === 'rooms'
+            className={`w-full p-4 flex items-center justify-between text-left transition-colors flex-shrink-0 ${activeAccordion === 'rooms'
               ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
               : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
               }`}
@@ -2139,7 +2209,7 @@ Recarregue esta página após ativar.`);
           </button>
 
           {activeAccordion === 'rooms' && (
-            <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
+            <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0 overflow-hidden">
               <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => {
@@ -2164,7 +2234,7 @@ Recarregue esta página após ativar.`);
                   <option value="new">Nova</option>
                 </select>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-3 thin-scrollbar min-h-0">
+              <div className="flex-1 overflow-y-auto space-y-3 thin-scrollbar min-h-0 max-h-full">
                 {loadingRooms ? (
                   <LoadingSpinner />
                 ) : roomsError ? (
@@ -2220,8 +2290,8 @@ Recarregue esta página após ativar.`);
                           )}
                         </div>
                         <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
-                          {room.is_hot && <span title="HOT"><FireIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
-                          {room.is_new && <span title="NEW"><NewIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
+                          {isRoomHot(room.id, roomsMessageCountsLastHour) && <span title="HOT"><FireIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
+                          {isRoomNew(room.created_at) && <span title="NEW"><NewIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
                           {canManageRoom(room) && (
                             <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
                               <button
