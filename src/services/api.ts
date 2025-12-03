@@ -518,6 +518,35 @@ export const fetchAllUsers = () => supabase.from('profiles').select('*');
 export const fetchFollowedIds = (userId: string) =>
   supabase.from('followers').select('following_id').eq('follower_id', userId);
 
+export const fetchFollowersWithProfiles = async (userId: string) => {
+  try {
+    // Buscar IDs dos seguidores (pessoas que o usuÃ¡rio segue)
+    const { data: followersData, error: followersError } = await fetchFollowedIds(userId);
+    
+    if (followersError) throw followersError;
+    
+    if (!followersData || followersData.length === 0) {
+      return { data: [], error: null };
+    }
+    
+    // Extrair IDs dos seguidores
+    const followerIds = followersData.map((f: any) => f.following_id);
+    
+    // Buscar perfis completos dos seguidores
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', followerIds);
+    
+    if (profilesError) throw profilesError;
+    
+    return { data: profilesData || [], error: null };
+  } catch (error) {
+    console.error('Error fetching followers with profiles:', error);
+    return { data: null, error };
+  }
+};
+
 export const fetchBlockedIds = (userId: string) =>
   supabase.from('blocked_users').select('blocked_id').eq('blocker_id', userId);
 
@@ -961,13 +990,123 @@ export const fetchTrendingTopics = async () => {
 export const fetchNotifications = (userId: string) =>
   supabase.from('notifications').select(`*, actor:actor_id (*)`).eq('recipient_id', userId).order('created_at', { ascending: false });
 
-export const createNotification = (notification: { recipient_id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message'; post_id?: string; }) =>
+export const createNotification = (notification: { recipient_id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected'; post_id?: string; metadata?: any; }) =>
   supabase.rpc('create_notification_if_enabled', {
     p_recipient_id: notification.recipient_id,
     p_actor_id: notification.actor_id,
     p_type: notification.type,
-    p_post_id: notification.post_id
+    p_post_id: notification.post_id,
+    p_metadata: notification.metadata || null
   });
+
+// Request room access
+export const requestRoomAccess = async (roomId: string): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('request-room-access', {
+      body: { room_id: roomId }
+    });
+    
+    if (error) {
+      handleApiError(error, 'requestRoomAccess');
+      return { data: null, error };
+    }
+    
+    if (data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    return { data: data?.request || null, error: null };
+  } catch (error) {
+    handleApiError(error, 'requestRoomAccess');
+    return { data: null, error };
+  }
+};
+
+// Approve room access request
+export const approveRoomAccess = async (requestId: string): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const response = await supabase.functions.invoke('approve-room-access', {
+      body: { request_id: requestId }
+    });
+    
+    const { data, error } = response;
+    
+    if (error) {
+      handleApiError(error, 'approveRoomAccess');
+      
+      // Try to get error message from data (Supabase puts error body in data even on HTTP errors)
+      let errorMessage = 'Erro ao aprovar pedido de acesso';
+      if (data?.error) {
+        errorMessage = data.error;
+      } else if (data?.message) {
+        errorMessage = data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      return { data: null, error: new Error(errorMessage) };
+    }
+    
+    // Check if the response contains an error (even with status 200)
+    if (data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    // Check if success is false
+    if (data?.success === false && data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    return { data: data || null, error: null };
+  } catch (error) {
+    handleApiError(error, 'approveRoomAccess');
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao aprovar pedido de acesso';
+    return { data: null, error: new Error(errorMessage) };
+  }
+};
+
+// Reject room access request
+export const rejectRoomAccess = async (requestId: string): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const response = await supabase.functions.invoke('reject-room-access', {
+      body: { request_id: requestId }
+    });
+    
+    const { data, error } = response;
+    
+    if (error) {
+      handleApiError(error, 'rejectRoomAccess');
+      
+      // Try to get error message from data (Supabase puts error body in data even on HTTP errors)
+      let errorMessage = 'Erro ao rejeitar pedido de acesso';
+      if (data?.error) {
+        errorMessage = data.error;
+      } else if (data?.message) {
+        errorMessage = data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      return { data: null, error: new Error(errorMessage) };
+    }
+    
+    // Check if the response contains an error (even with status 200)
+    if (data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    // Check if success is false
+    if (data?.success === false && data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    return { data: data || null, error: null };
+  } catch (error) {
+    handleApiError(error, 'rejectRoomAccess');
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao rejeitar pedido de acesso';
+    return { data: null, error: new Error(errorMessage) };
+  }
+};
 
 export const clearAllNotifications = (userId: string) =>
   supabase.from('notifications').delete().eq('recipient_id', userId);
@@ -1000,13 +1139,11 @@ export const sendMessage = async (messageData: { conversationId?: string, target
     });
     
     if (response.error) {
-      console.error('Edge function error:', response.error);
       throw response.error;
     }
     
     return response;
   } catch (error) {
-    console.error('Error in sendMessage API:', error);
     throw error;
   }
 };
@@ -1945,7 +2082,7 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
   }));
 };
 /**
- * Processar reembolso de anúncio rejeitado
+ * Processar reembolso de anï¿½ncio rejeitado
  */
 export const processAdRefund = async (adId: string, userId: string) => {
   const { data, error } = await supabase.functions.invoke('process-ad-refund', {

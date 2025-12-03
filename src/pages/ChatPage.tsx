@@ -35,9 +35,12 @@ import {
   fetchRoomUnreadCounts,
   fetchRoomsParticipantCounts,
   fetchRoomsMessageCountsLastHour,
-  RealtimeChannel
+  RealtimeChannel,
+  fetchUserInvitations,
+  requestRoomAccess
 } from '@/src/services/chatService';
 import { searchUsers, fetchNewUsers } from '@/src/services/chatService';
+import { fetchFollowersWithProfiles } from '@/src/services/api';
 // Icons
 const ChevronDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m6 9 6 6 6-6"></path></Icon>;
 const ChevronRightIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m9 18 6-6-6-6"></path></Icon>;
@@ -250,6 +253,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [buddies, setBuddies] = useState<Buddy[]>([]);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [joinedRoomIds, setJoinedRoomIds] = useState<Set<string>>(new Set());
+  const [userInvitations, setUserInvitations] = useState<Set<string>>(new Set());
+  const [requestingAccessRoomIds, setRequestingAccessRoomIds] = useState<Set<string>>(new Set());
   const [userActivityStatus, setUserActivityStatus] = useState<'online' | 'away' | 'offline'>('online');
   const [showChatOptionsMenu, setShowChatOptionsMenu] = useState(false);
   
@@ -300,7 +305,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [roomFormData, setRoomFormData] = useState({
     name: '',
     description: '',
-    category: 'normal',
     is_public: true,
     max_participants: 100
   });
@@ -309,6 +313,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
+  const [loadingFollowers, setLoadingFollowers] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -395,8 +400,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     return () => observer.disconnect();
   }, []);
 
-  // Load unread counts for joined rooms
+
+  // Load unread counts for joined rooms - OTIMIZADO: adiar até após inicialização
   useEffect(() => {
+    // Não carregar durante inicialização para não bloquear renderização
+    if (isInitializing) return;
+    
     const loadUnreadCounts = async () => {
       if (joinedRoomIds.size === 0) {
         setRoomUnreadCounts(new Map());
@@ -411,14 +420,17 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }
     };
 
-    loadUnreadCounts();
-  }, [joinedRoomIds]);
+    // Adiar um pouco para não competir com carregamento inicial
+    const timeoutId = setTimeout(loadUnreadCounts, 500);
+    return () => clearTimeout(timeoutId);
+  }, [joinedRoomIds, isInitializing]);
 
-  // Atualizar contagens de mensagens da última hora periodicamente (a cada 5 minutos)
+  // Atualizar contagens de mensagens da última hora periodicamente (a cada 5 minutos) - OTIMIZADO
   useEffect(() => {
+    // Não atualizar durante inicialização
+    if (isInitializing || chatRooms.length === 0) return;
+    
     const updateMessageCounts = async () => {
-      if (chatRooms.length === 0) return;
-      
       const roomIds = chatRooms.map(room => room.id);
       const { data: countMap } = await fetchRoomsMessageCountsLastHour(roomIds);
       
@@ -427,28 +439,56 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       }
     };
 
-    // Atualizar imediatamente
-    updateMessageCounts();
+    // Adiar atualização inicial para não competir com carregamento crítico
+    const initialTimeout = setTimeout(updateMessageCounts, 2000);
 
     // Atualizar a cada 5 minutos
     const interval = setInterval(updateMessageCounts, 5 * 60 * 1000);
 
-    return () => clearInterval(interval);
-  }, [chatRooms]);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [chatRooms, isInitializing]);
 
-  // Load initial data
+
+  // Load initial data - OTIMIZADO: todas as chamadas em paralelo
   useEffect(() => {
     const loadInitialData = async () => {
+      if (!session?.user?.id) return;
+      
       try {
         setIsInitializing(true);
-        // Load user's joined rooms
-        const joinedRooms = await getUserJoinedRooms();
+        
+        // Fazer todas as chamadas críticas em paralelo
+        const [joinedRooms, invitationsResult] = await Promise.all([
+          getUserJoinedRooms(),
+          fetchUserInvitations().catch(err => {
+            return { data: null, error: err };
+          })
+        ]);
+        
         setJoinedRoomIds(new Set(joinedRooms));
         
-        await Promise.all([
+        // Processar convites
+        if (invitationsResult.data) {
+          const pendingInvitations = invitationsResult.data.filter((inv: any) => 
+            inv.invitee_id === session.user.id && inv.status === 'pending'
+          );
+          const invitationRoomIds = new Set(pendingInvitations.map((inv: any) => inv.room_id));
+          setUserInvitations(invitationRoomIds);
+        }
+        
+        // Carregar salas e buddies em paralelo (não crítico para renderização inicial)
+        Promise.all([
           loadChatRooms(),
           loadBuddies()
-        ]);
+        ]).catch(() => {
+          // Silently handle errors
+        });
+        
+        // Check if there's a room to open from sessionStorage (e.g., from notification)
+        // This will be handled by the useEffect that watches chatRooms
       } catch (error: any) {
         addToast('Erro ao carregar dados iniciais', 'error');
       } finally {
@@ -559,8 +599,31 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   }, [roomCategoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Check for room to open from sessionStorage when rooms are loaded
+  useEffect(() => {
+    if (chatRooms.length > 0 && session?.user?.id) {
+      const roomIdToOpen = sessionStorage.getItem('chat_room_to_open');
+      if (roomIdToOpen) {
+        const roomToSelect = chatRooms.find(r => r.id === roomIdToOpen);
+        if (roomToSelect) {
+          setSelectedRoom(roomToSelect);
+          setCurrentView('room');
+          // Join the room if not already joined
+          if (!joinedRoomIds.has(roomIdToOpen)) {
+            handleJoinRoom(roomToSelect);
+          }
+          // Clear the sessionStorage
+          sessionStorage.removeItem('chat_room_to_open');
+        }
+      }
+    }
+  }, [chatRooms, session?.user?.id, joinedRoomIds]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Periodic sync to ensure joinedRoomIds is accurate (OTIMIZADO - menos frequente)
   useEffect(() => {
+    // Não sincronizar durante inicialização (já foi feito no loadInitialData)
+    if (isInitializing) return;
+    
     const syncJoinedRooms = async () => {
       if (!session?.user?.id) return;
       
@@ -580,19 +643,16 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           setSelectedRoom(null);
           setCurrentView('radar');
           setMessages([]);
-        addToast('Você foi removido da sala por inatividade', 'info');
+          addToast('Você foi removido da sala por inatividade', 'info');
         }
       }
     };
 
     // Sync every 60 seconds (reduzido de 30 para melhorar performance)
     const syncInterval = setInterval(syncJoinedRooms, 60000);
-    
-    // Initial sync
-    syncJoinedRooms();
 
     return () => clearInterval(syncInterval);
-  }, [session?.user?.id, joinedRoomIds, selectedRoom]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session?.user?.id, joinedRoomIds, selectedRoom, isInitializing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load and subscribe to room participants
   useEffect(() => {
@@ -809,8 +869,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         addToast('Erro ao carregar salas de chat', 'error');
       } else {
         setChatRooms(data || []);
-        // Load online count for each room
-        await loadRoomsOnlineCount(data || []);
+        // Load online count for each room em paralelo (não bloquear renderização)
+        loadRoomsOnlineCount(data || []).catch(() => {
+          // Silently handle errors
+        });
       }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
@@ -1125,6 +1187,48 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     ));
   };
 
+  const handleRequestAccess = async (room: ChatRoomType) => {
+    if (!session?.user?.id) {
+      addToast('Você precisa estar logado para pedir acesso', 'error');
+      return;
+    }
+
+    // Prevent multiple clicks
+    if (requestingAccessRoomIds.has(room.id)) {
+      return;
+    }
+
+    setRequestingAccessRoomIds(prev => new Set([...prev, room.id]));
+
+    try {
+      const { data, error } = await requestRoomAccess(room.id);
+      
+      if (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso';
+        addToast(errorMessage, 'error');
+      } else {
+        addToast('Pedido de acesso enviado com sucesso', 'success');
+        // Reload invitations to update UI
+        const { data: invitationsData } = await fetchUserInvitations();
+        if (invitationsData) {
+          const pendingInvitations = invitationsData.filter((inv: any) => 
+            inv.invitee_id === session.user.id && inv.status === 'pending'
+          );
+          const invitationRoomIds = new Set(pendingInvitations.map((inv: any) => inv.room_id));
+          setUserInvitations(invitationRoomIds);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso à sala';
+      addToast(errorMessage, 'error');
+    } finally {
+      setRequestingAccessRoomIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(room.id);
+        return newSet;
+      });
+    }
+  };
 
   const handleJoinRoom = async (room: ChatRoomType) => {
     try {
@@ -1136,6 +1240,17 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         // Just show a message
         addToast(`Você já está na sala ${room.name}`, 'info');
         return;
+      }
+
+      // For private rooms, verify user has access
+      if (room.is_public === false) {
+        const isCreator = room.created_by === session?.user?.id;
+        const hasInvitation = userInvitations.has(room.id);
+        
+        if (!isCreator && !hasInvitation) {
+          addToast('Você não tem acesso a esta sala privada', 'error');
+          return;
+        }
       }
 
       // Join the room (user can be in multiple rooms)
@@ -1353,6 +1468,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       return;
     }
 
+    // Validar plano para salas privadas
+    if (!roomFormData.is_public && user.plan !== 'pro' && user.plan !== 'premium') {
+      addToast('Apenas usuários Pro ou Premium podem criar salas privadas', 'error');
+      return;
+    }
+
     setIsSubmittingRoom(true);
     try {
       const payload = roomFormData.is_public ? roomFormData : { ...roomFormData, invited_user_ids: selectedInvitees };
@@ -1367,7 +1488,13 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           errorMessage = error;
         } else if (error && typeof error === 'object') {
           // Tentar extrair mensagem de erro do objeto
-          errorMessage = (error as any).error || (error as any).message || errorMessage;
+          const errObj = error as any;
+          errorMessage = errObj.error || errObj.message || errObj.details || errorMessage;
+          
+          // Se for erro de plano, garantir mensagem clara
+          if (errorMessage.includes('Pro') || errorMessage.includes('Premium') || errorMessage.includes('plano')) {
+            errorMessage = 'Apenas usuários Pro ou Premium podem criar salas privadas';
+          }
         }
         
         addToast(errorMessage, 'error');
@@ -1388,49 +1515,64 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   };
 
-  const handleSearchInviteUsers = async () => {
+  const handleSearchInviteUsers = async (isPrivate?: boolean) => {
     try {
-      const query = userSearchQuery.trim();
-      if (!query) {
-        const { data } = await fetchNewUsers(7, 10);
-        const mapped = (data || []).map((u: any) => ({
-          id: u.id,
-          name: u.full_name || u.username || 'Usuário',
-          username: u.username,
-          avatarUrl: u.avatar_url,
-          bio: u.bio,
-          followersCount: u.followers_count || 0,
-          followingCount: u.following_count || 0,
-          plan: u.plan || 'free',
-          role: u.role || 'user',
-          joinDate: '',
-          createdAt: u.created_at || ''
-        }));
-        setAvailableUsers(mapped);
+      // Se o parâmetro isPrivate for false ou undefined, não fazer nada
+      // (isso significa que é sala pública ou não foi especificado)
+      if (isPrivate === false || (isPrivate === undefined && roomFormData.is_public)) {
+        setAvailableUsers([]);
+        setLoadingFollowers(false);
         return;
       }
-
-      const { data, error } = await searchUsers(query);
-      if (error) {
-        addToast('Erro ao buscar usuários', 'error');
+      
+      // Se chegou aqui, é sala privada - buscar apenas seguidores
+      if (!session?.user?.id) {
+        setAvailableUsers([]);
+        setLoadingFollowers(false);
         return;
       }
-      const mapped = (data || []).map((u: any) => ({
+      
+      setLoadingFollowers(true);
+      const { data: followersData, error: followersError } = await fetchFollowersWithProfiles(session.user.id);
+      
+      if (followersError) {
+        addToast('Erro ao buscar seguidores', 'error');
+        setLoadingFollowers(false);
+        return;
+      }
+      
+      // Filtrar por query se houver e excluir o usuário atual
+      const query = userSearchQuery.trim().toLowerCase();
+      let filteredFollowers = (followersData || []).filter((u: any) => u.id !== session.user.id);
+      
+      if (query) {
+        filteredFollowers = filteredFollowers.filter((u: any) => 
+          (u.username?.toLowerCase().includes(query) || 
+           u.first_name?.toLowerCase().includes(query) ||
+           u.last_name?.toLowerCase().includes(query) ||
+           `${u.first_name || ''} ${u.last_name || ''}`.trim().toLowerCase().includes(query))
+        );
+      }
+      
+      const mapped = filteredFollowers.map((u: any) => ({
         id: u.id,
-        name: u.full_name || u.username || 'Usuário',
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Usuário',
         username: u.username,
-        avatarUrl: u.avatar_url,
-        bio: '',
-        followersCount: 0,
-        followingCount: 0,
-        plan: 'free',
-        role: 'user',
+        avatarUrl: u.avatar_url || `https://picsum.photos/seed/${u.id}/100/100`,
+        bio: u.bio || '',
+        followersCount: u.followers_count || 0,
+        followingCount: u.following_count || 0,
+        plan: u.plan || 'free',
+        role: u.role || 'user',
         joinDate: '',
-        createdAt: ''
+        createdAt: u.created_at || ''
       }));
+      
       setAvailableUsers(mapped);
+      setLoadingFollowers(false);
     } catch (e) {
-      addToast('Erro ao buscar usuários', 'error');
+      addToast('Erro ao buscar seguidores', 'error');
+      setLoadingFollowers(false);
     }
   };
 
@@ -1525,7 +1667,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     setRoomFormData({
       name: room.name,
       description: room.description || '',
-      category: room.category || 'normal',
       is_public: room.is_public !== undefined ? room.is_public : true,
       max_participants: room.max_participants || 100
     });
@@ -2249,7 +2390,11 @@ Recarregue esta página após ativar.`);
               <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => {
-                    setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+                    setRoomFormData({ name: '', description: '', is_public: true, max_participants: 100 });
+                    setSelectedInvitees([]);
+                    setUserSearchQuery('');
+                    setAvailableUsers([]);
+                    setLoadingFollowers(false);
                     setShowCreateRoomModal(true);
                   }}
                   className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
@@ -2385,17 +2530,59 @@ Recarregue esta página após ativar.`);
                             >
                               Sair
                             </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleJoinRoom(room);
-                              }}
-                              className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
-                            >
-                              Entrar
-                            </button>
-                          )}
+                          ) : (() => {
+                            // Check if room is private (explicitly check for false, as undefined/null means public)
+                            const isPrivateRoom = room.is_public === false;
+                            const isCreator = room.created_by === session?.user?.id;
+                            const hasInvitation = userInvitations.has(room.id);
+                            
+                            // For private rooms: only show "Entrar" if user is creator or has invitation
+                            // Otherwise show "Pedir acesso"
+                            if (isPrivateRoom) {
+                              if (isCreator || hasInvitation) {
+                                // User has access, show "Entrar"
+                                return (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleJoinRoom(room);
+                                    }}
+                                    className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
+                                  >
+                                    Entrar
+                                  </button>
+                                );
+                              } else {
+                                // User doesn't have access, show "Pedir acesso"
+                                const isRequesting = requestingAccessRoomIds.has(room.id);
+                                return (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRequestAccess(room);
+                                    }}
+                                    disabled={isRequesting}
+                                    className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-yellow-500 hover:bg-yellow-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isRequesting ? 'Enviando...' : 'Pedir acesso'}
+                                  </button>
+                                );
+                              }
+                            }
+                            
+                            // For public rooms, always show "Entrar"
+                            return (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinRoom(room);
+                                }}
+                                className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
+                              >
+                                Entrar
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -2410,21 +2597,28 @@ Recarregue esta página após ativar.`);
 
       {/* Create Room Modal */}
       {showCreateRoomModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
+            {/* Header fixo */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-light-border dark:border-dark-border flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">Criar Nova Sala</h3>
               <button
                 onClick={() => {
                   setShowCreateRoomModal(false);
-                  setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+                  setRoomFormData({ name: '', description: '', is_public: true, max_participants: 100 });
+                  setSelectedInvitees([]);
+                  setUserSearchQuery('');
+                  setAvailableUsers([]);
+                  setLoadingFollowers(false);
                 }}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <XIcon />
               </button>
             </div>
-            <div className="space-y-4">
+            {/* Área de conteúdo com scroll */}
+            <div className="flex-1 overflow-y-auto p-6 pt-4">
+              <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nome da Sala *
@@ -2449,20 +2643,6 @@ Recarregue esta página após ativar.`);
                   placeholder="Digite a descrição da sala"
                   rows={3}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Categoria
-                </label>
-                <select
-                  value={roomFormData.category}
-                  onChange={(e) => setRoomFormData({ ...roomFormData, category: e.target.value })}
-                  className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="hot">Hot</option>
-                  <option value="new">Nova</option>
-                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -2487,7 +2667,14 @@ Recarregue esta página após ativar.`);
                     setRoomFormData({ ...roomFormData, is_public: checked });
                     setShowUserSelector(!checked);
                     if (!checked) {
-                      await handleSearchInviteUsers();
+                      // Carregar seguidores quando sala privada é selecionada
+                      // Passar true para indicar que é privada
+                      await handleSearchInviteUsers(true);
+                    } else {
+                      // Limpar lista e convidados quando voltar para pública
+                      setAvailableUsers([]);
+                      setSelectedInvitees([]);
+                      setUserSearchQuery('');
                     }
                   }}
                   className="mr-2"
@@ -2499,18 +2686,24 @@ Recarregue esta página após ativar.`);
               {!roomFormData.is_public && (
                 <div className="space-y-3 border-t border-light-border dark:border-dark-border pt-3">
                   <div className="text-sm text-gray-700 dark:text-gray-300">
-                    Esta sala será privada. Selecione usuários para enviar convites.
+                    Esta sala será privada. Selecione seguidores para enviar convites.
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={userSearchQuery}
-                      onChange={(e) => setUserSearchQuery(e.target.value)}
-                      placeholder="Buscar usuários pelo username"
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        // Filtrar localmente quando o usuário digita
+                        if (!roomFormData.is_public && session?.user?.id) {
+                          handleSearchInviteUsers(true);
+                        }
+                      }}
+                      placeholder="Buscar seguidores por nome ou username"
                       className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <button
-                      onClick={handleSearchInviteUsers}
+                      onClick={() => handleSearchInviteUsers(true)}
                       className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium"
                     >
                       Buscar
@@ -2530,19 +2723,39 @@ Recarregue esta página após ativar.`);
                       })}
                     </div>
                   )}
-                  <div className="max-h-40 overflow-y-auto divide-y divide-light-border dark:divide-dark-border border border-light-border dark:border-dark-border rounded-lg">
-                    {availableUsers.length === 0 ? (
-                      <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Nenhum usuário encontrado</div>
+                  <div className="max-h-60 overflow-y-auto divide-y divide-light-border dark:divide-dark-border border border-light-border dark:border-dark-border rounded-lg">
+                    {loadingFollowers ? (
+                      <div className="p-3 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span>Carregando seguidores...</span>
+                      </div>
+                    ) : availableUsers.length === 0 ? (
+                      <div className="p-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {userSearchQuery.trim() 
+                          ? 'Nenhum seguidor encontrado com esse termo' 
+                          : 'Você não está seguindo ninguém ainda'}
+                      </div>
                     ) : (
                       availableUsers.map(u => (
-                        <div key={u.id} className="flex items-center justify-between p-2">
-                          <div className="flex items-center gap-2">
-                            <Avatar src={u.avatarUrl} alt={u.username} size="sm" />
-                            <div className="text-sm text-gray-800 dark:text-gray-200">{u.username || u.name}</div>
+                        <div key={u.id} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Avatar src={u.avatarUrl} alt={u.username} size="sm" userId={u.id} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1">
+                                <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{u.name || u.username}</div>
+                                {(u.plan === 'pro' || u.plan === 'premium') && <VerifiedBadgeIcon plan={u.plan} className="h-3 w-3 flex-shrink-0" />}
+                                {u.role && ['admin', 'moderator'].includes(u.role) && <ModeratorBadgeIcon className="h-3 w-3 flex-shrink-0" />}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">@{u.username}</div>
+                            </div>
                           </div>
                           <button
                             onClick={() => toggleInvitee(u.id)}
-                            className={`text-xs px-2 py-1 rounded ${selectedInvitees.includes(u.id) ? 'bg-red-500 text-white' : 'bg-primary text-white'}`}
+                            className={`text-xs px-2 py-1 rounded transition-colors flex-shrink-0 ${
+                              selectedInvitees.includes(u.id) 
+                                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                                : 'bg-primary hover:bg-primary/90 text-white'
+                            }`}
                           >
                             {selectedInvitees.includes(u.id) ? 'Remover' : 'Convidar'}
                           </button>
@@ -2552,24 +2765,30 @@ Recarregue esta página após ativar.`);
                   </div>
                 </div>
               )}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={handleCreateRoom}
-                  disabled={isSubmittingRoom || !roomFormData.name.trim()}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmittingRoom ? 'Criando...' : 'Criar Sala'}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreateRoomModal(false);
-                    setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
-                  }}
-                  className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
               </div>
+            </div>
+            {/* Botões fixos na parte inferior */}
+            <div className="flex gap-3 p-6 pt-4 border-t border-light-border dark:border-dark-border flex-shrink-0">
+              <button
+                onClick={handleCreateRoom}
+                disabled={isSubmittingRoom || !roomFormData.name.trim()}
+                className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmittingRoom ? 'Criando...' : 'Criar Sala'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateRoomModal(false);
+                  setRoomFormData({ name: '', description: '', is_public: true, max_participants: 100 });
+                  setSelectedInvitees([]);
+                  setUserSearchQuery('');
+                  setAvailableUsers([]);
+                  setLoadingFollowers(false);
+                }}
+                className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
@@ -2585,7 +2804,7 @@ Recarregue esta página após ativar.`);
                 onClick={() => {
                   setShowEditRoomModal(false);
                   setRoomToEdit(null);
-                  setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+                  setRoomFormData({ name: '', description: '', is_public: true, max_participants: 100 });
                 }}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
@@ -2617,20 +2836,6 @@ Recarregue esta página após ativar.`);
                   placeholder="Digite a descrição da sala"
                   rows={3}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Categoria
-                </label>
-                <select
-                  value={roomFormData.category}
-                  onChange={(e) => setRoomFormData({ ...roomFormData, category: e.target.value })}
-                  className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="normal">Normal</option>
-                  <option value="hot">Hot</option>
-                  <option value="new">Nova</option>
-                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -2669,7 +2874,7 @@ Recarregue esta página após ativar.`);
                   onClick={() => {
                     setShowEditRoomModal(false);
                     setRoomToEdit(null);
-                    setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+                    setRoomFormData({ name: '', description: '', is_public: true, max_participants: 100 });
                   }}
                   className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
                 >

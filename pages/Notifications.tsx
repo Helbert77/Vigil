@@ -14,6 +14,7 @@ const MessageCircleIcon = () => <Icon className="h-6 w-6 text-blue-500"><path d=
 const UserIcon = () => <Icon className="h-6 w-6 text-green-500"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></Icon>;
 const AtSignIcon = () => <Icon className="h-6 w-6 text-purple-500"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></Icon>;
 const MailIcon = () => <Icon className="h-6 w-6 text-cyan-500"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></Icon>;
+const UsersIcon = () => <Icon className="h-6 w-6 text-indigo-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
 
 const getNotificationText = (notification: Notification): string => {
     switch (notification.type) {
@@ -38,6 +39,18 @@ const getNotificationText = (notification: Notification): string => {
             // Check both snake_case and camelCase just in case
             const reason = notification.metadata?.rejection_reason || notification.metadata?.reason || 'não especificado';
             return `seu anúncio foi rejeitado. Motivo: ${reason}`;
+        case 'chat_room_invitation':
+            const roomName = notification.metadata?.room_name || 'uma sala';
+            return `te convidou para a sala "${roomName}".`;
+        case 'room_access_request':
+            const requestRoomName = notification.metadata?.room_name || 'uma sala';
+            return `solicitou acesso à sala "${requestRoomName}".`;
+        case 'room_access_approved':
+            const approvedRoomName = notification.metadata?.room_name || 'uma sala';
+            return `aprovou seu pedido de acesso à sala "${approvedRoomName}".`;
+        case 'room_access_rejected':
+            const rejectedRoomName = notification.metadata?.room_name || 'uma sala';
+            return `rejeitou seu pedido de acesso à sala "${rejectedRoomName}".`;
         default:
             return '';
     }
@@ -53,6 +66,8 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'follow') return <UserIcon />;
     if (type === 'mention') return <AtSignIcon />;
     if (type === 'message') return <MailIcon />;
+    if (type === 'chat_room_invitation') return <UsersIcon />;
+    if (type === 'room_access_request' || type === 'room_access_approved' || type === 'room_access_rejected') return <UsersIcon />;
     if (type === 'ad_approval_pending') return <AlertCircleIcon />;
     if (type === 'ad_approved') return <CheckCircleIcon />;
     if (type === 'ad_rejected') return <XCircleIcon />;
@@ -69,6 +84,9 @@ interface NotificationItemProps {
     onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
     onNavigateToAdApproval?: () => void;
     onAdRejectedClick?: (adId: string) => void;
+    onJoinChatRoom?: (roomId: string) => void;
+    onApproveRoomAccess?: (requestId: string) => void;
+    onRejectRoomAccess?: (requestId: string) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
@@ -80,7 +98,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     onViewProfile,
     onOpenFollowModal,
     onNavigateToAdApproval,
-    onAdRejectedClick
+    onAdRejectedClick,
+    onJoinChatRoom,
+    onApproveRoomAccess,
+    onRejectRoomAccess
 }) => {
     const handleClick = () => {
         if (notification.type === 'ad_approval_pending' && onNavigateToAdApproval) {
@@ -152,6 +173,79 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                         {isFollowing ? 'Seguindo' : 'Seguir de volta'}
                     </button>
                 )}
+                {(() => {
+                    // Parse metadata if it's a string (Supabase sometimes returns JSON as string)
+                    let metadata = notification.metadata;
+                    if (typeof metadata === 'string') {
+                        try {
+                            metadata = JSON.parse(metadata);
+                        } catch (e) {
+                            metadata = null;
+                        }
+                    }
+                    const roomId = metadata?.room_id;
+                    const requestId = metadata?.request_id;
+                    
+                    // Chat room invitation button
+                    if (notification.type === 'chat_room_invitation' && onJoinChatRoom && roomId) {
+                        return (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onJoinChatRoom(roomId);
+                                }}
+                                className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-primary hover:bg-primary/90 text-white"
+                            >
+                                Entrar na Sala
+                            </button>
+                        );
+                    }
+                    
+                    // Room access approved button
+                    if (notification.type === 'room_access_approved' && onJoinChatRoom && roomId) {
+                        return (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onJoinChatRoom(roomId);
+                                }}
+                                className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-primary hover:bg-primary/90 text-white"
+                            >
+                                Entrar na Sala
+                            </button>
+                        );
+                    }
+                    
+                    // Room access request buttons (for room creator)
+                    if (notification.type === 'room_access_request') {
+                        if (onApproveRoomAccess && onRejectRoomAccess && requestId) {
+                            return (
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onApproveRoomAccess(requestId);
+                                        }}
+                                        className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-green-500 hover:bg-green-600 text-white"
+                                    >
+                                        Aceitar
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRejectRoomAccess(requestId);
+                                        }}
+                                        className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-red-500 hover:bg-red-600 text-white"
+                                    >
+                                        Negar
+                                    </button>
+                                </div>
+                            );
+                        }
+                    }
+                    
+                    return null;
+                })()}
             </div>
         </div>
     );
@@ -167,9 +261,12 @@ interface NotificationsProps {
     onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
     onClearAll: () => void;
     onNavigateToAdApproval?: () => void;
+    onJoinChatRoom?: (roomId: string) => void;
+    onApproveRoomAccess?: (requestId: string) => void;
+    onRejectRoomAccess?: (requestId: string) => void;
 }
 
-const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost, onFollowToggle, followedUserIds, currentUser, onViewProfile, onOpenFollowModal, onClearAll, onNavigateToAdApproval }) => {
+const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost, onFollowToggle, followedUserIds, currentUser, onViewProfile, onOpenFollowModal, onClearAll, onNavigateToAdApproval, onJoinChatRoom, onApproveRoomAccess, onRejectRoomAccess }) => {
     const [rejectedAdId, setRejectedAdId] = useState<string | null>(null);
 
     return (
@@ -198,6 +295,9 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost
                             onViewProfile={onViewProfile}
                             onOpenFollowModal={onOpenFollowModal}
                             onNavigateToAdApproval={onNavigateToAdApproval}
+                            onJoinChatRoom={onJoinChatRoom}
+                            onApproveRoomAccess={onApproveRoomAccess}
+                            onRejectRoomAccess={onRejectRoomAccess}
                             onAdRejectedClick={async (adId) => {
                                 // Verificar status do anúncio antes de abrir o modal
                                 try {
@@ -215,7 +315,6 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost
 
                                     setRejectedAdId(adId);
                                 } catch (error) {
-                                    console.error('Error checking ad status:', error);
                                     // Em caso de erro, abre o modal por precaução
                                     setRejectedAdId(adId);
                                 }

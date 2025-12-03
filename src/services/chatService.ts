@@ -422,10 +422,11 @@ export const fetchChatRooms = async (category?: string) => {
       return { data: null, error };
     }
 
-    // Fetch creator info for each room
+    // OTIMIZADO: Buscar informações do criador em paralelo (uma única query para todos)
     if (data && data.length > 0) {
-      const creatorIds = data.filter(r => r.created_by).map(r => r.created_by);
+      const creatorIds = [...new Set(data.filter(r => r.created_by).map(r => r.created_by))];
       if (creatorIds.length > 0) {
+        // Buscar todos os criadores de uma vez
         const { data: creators } = await supabase
           .from('profiles')
           .select('id, username, avatar_url')
@@ -440,7 +441,6 @@ export const fetchChatRooms = async (category?: string) => {
           });
         }
       }
-      
     }
 
     return { data, error: null };
@@ -1069,22 +1069,52 @@ export const searchUsers = async (query: string, filters?: {
 // Get new users for chat suggestions
 export const fetchNewUsers = async (days: number = 7, limit: number = 10) => {
   try {
+    // Tentar primeiro com filtro de data usando created_at
     const dateThreshold = new Date();
     dateThreshold.setDate(dateThreshold.getDate() - days);
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, full_name, created_at, plan, role, interests, age, location')
+      .select('id, username, avatar_url, first_name, last_name, created_at, plan, role, bio, followers_count, following_count')
       .gte('created_at', dateThreshold.toISOString())
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
+      // Se o erro for 400 (Bad Request), pode ser que created_at não exista ou formato incorreto
+      // Tentar sem filtro de data como fallback
+      if (error.code === 'PGRST116' || error.code === 'PGRST205' || error.message?.includes('column') || error.message?.includes('does not exist') || error.message?.includes('400')) {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, first_name, last_name, plan, role, bio, followers_count, following_count')
+          .order('id', { ascending: false })
+          .limit(limit);
+        
+        if (fallbackError) {
+          handleApiError(fallbackError, 'fetchNewUsers - fallback', { days, limit });
+          return { data: null, error: fallbackError };
+        }
+        
+        const mappedFallback = (fallbackData || []).map((profile: any) => ({
+          ...profile,
+          full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || 'Usuário',
+          created_at: new Date().toISOString() // Valor padrão se não existir
+        }));
+        
+        return { data: mappedFallback, error: null };
+      }
+      
       handleApiError(error, 'fetchNewUsers', { days, limit });
       return { data: null, error };
     }
 
-    return { data, error: null };
+    // Mapear os dados para incluir full_name calculado
+    const mappedData = (data || []).map((profile: any) => ({
+      ...profile,
+      full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || 'Usuário'
+    }));
+
+    return { data: mappedData, error: null };
   } catch (error) {
     handleApiError(error, 'fetchNewUsers', { days, limit });
     return { data: null, error };
@@ -1122,7 +1152,7 @@ export const fetchChatBuddies = async (userId: string) => {
     // Fetch buddy profiles
     const { data: buddies, error: buddiesError } = await supabase
       .from('profiles')
-      .select('id, username, avatar_url, full_name, last_active_at, plan, role, interests, age, location')
+      .select('id, username, avatar_url, first_name, last_name, last_active_at, plan, role, bio')
       .in('id', Array.from(buddyIds));
 
     if (buddiesError) {
@@ -1165,8 +1195,8 @@ export const createChatRoom = async (roomData: {
 
     const { data, error } = response;
 
+    // Verificar se há erro na resposta ou se data contém erro
     if (error) {
-      
       // Tentar extrair mensagem de erro
       let errorMessage = 'Erro ao criar sala';
       if (error && typeof error === 'object') {
@@ -1177,6 +1207,8 @@ export const createChatRoom = async (roomData: {
           errorMessage = errObj.message;
         } else if (errObj.error?.message) {
           errorMessage = errObj.error.message;
+        } else if (errObj.error) {
+          errorMessage = typeof errObj.error === 'string' ? errObj.error : errObj.error.message || errorMessage;
         }
       } else if (typeof error === 'string') {
         errorMessage = error;
@@ -1186,7 +1218,14 @@ export const createChatRoom = async (roomData: {
       return { data: null, error: new Error(errorMessage) };
     }
 
-    if (!data || !data.success) {
+    // Verificar se data contém erro (caso de 403 ou outros erros HTTP)
+    // Quando há erro HTTP, o Supabase pode retornar o erro no campo data
+    if (!data) {
+      handleApiError('Resposta vazia da função', 'createChatRoom', roomData);
+      return { data: null, error: new Error('Erro ao criar sala: resposta vazia') };
+    }
+
+    if (!data.success) {
       const errorMsg = data?.error || 'Erro ao criar sala';
       const errorDetails = data?.details || data?.hint || null;
       handleApiError(errorMsg, 'createChatRoom', roomData);
@@ -1226,6 +1265,74 @@ export const fetchUserInvitations = async () => {
   } catch (error) {
     handleApiError(error, 'fetchUserInvitations');
     return { data: [], error };
+  }
+};
+
+// Request room access
+export const requestRoomAccess = async (roomId: string): Promise<{ data: any | null; error: any | null }> => {
+  try {
+    const response = await supabase.functions.invoke('request-room-access', {
+      body: { room_id: roomId }
+    });
+    
+    const { data, error } = response;
+    
+    // When Supabase returns HTTP error (400, 500, etc), the error object is set
+    // The error body might be in data or in error.context
+    if (error) {
+      handleApiError(error, 'requestRoomAccess');
+      
+      // Try multiple ways to get the error message
+      let errorMessage = 'Erro ao solicitar acesso';
+      
+      // First try: error body might be in data (Supabase sometimes puts response body here)
+      if (data?.error) {
+        errorMessage = data.error;
+      } else if (data?.message) {
+        errorMessage = data.message;
+      }
+      // Second try: check error context (Supabase sometimes puts response here)
+      else if ((error as any)?.context) {
+        const context = (error as any).context;
+        if (context.body) {
+          try {
+            const errorBody = typeof context.body === 'string' 
+              ? JSON.parse(context.body)
+              : context.body;
+            errorMessage = errorBody?.error || errorBody?.message || errorMessage;
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+        if (context.message && errorMessage === 'Erro ao solicitar acesso') {
+          errorMessage = context.message;
+        }
+      }
+      // Third try: error message
+      else if (error?.message && error.message !== 'Edge Function returned a non-2xx status code') {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      return { data: null, error: new Error(errorMessage) };
+    }
+    
+    // Check if the response contains an error (even with status 200)
+    if (data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    // Check if success is false
+    if (data?.success === false && data?.error) {
+      return { data: null, error: new Error(data.error) };
+    }
+    
+    return { data: data?.request || null, error: null };
+  } catch (error) {
+    handleApiError(error, 'requestRoomAccess');
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso';
+    return { data: null, error: new Error(errorMessage) };
   }
 };
 

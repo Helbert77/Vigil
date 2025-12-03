@@ -448,6 +448,52 @@ const App: React.FC = () => {
     };
     pushHistoryState(snapshot);
   };
+
+  const handleJoinChatRoom = (roomId: string) => {
+    scrollToTop();
+    setCurrentPage('Chat');
+    // Armazenar roomId no sessionStorage para o ChatPage ler
+    sessionStorage.setItem('chat_room_to_open', roomId);
+    const snapshot: NavigationSnapshot = {
+      page: 'Chat',
+      activeCommunityId,
+      activePostId,
+      activeCommentId,
+      activeTag,
+      searchQuery: '',
+    };
+    pushHistoryState(snapshot);
+  };
+
+  const handleApproveRoomAccess = async (requestId: string) => {
+    try {
+      const { data, error } = await api.approveRoomAccess(requestId);
+      if (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao aprovar pedido de acesso';
+        addToast(errorMessage, 'error');
+      } else {
+        addToast('Pedido de acesso aprovado com sucesso', 'success');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao aprovar pedido de acesso';
+      addToast(errorMessage, 'error');
+    }
+  };
+
+  const handleRejectRoomAccess = async (requestId: string) => {
+    try {
+      const { data, error } = await api.rejectRoomAccess(requestId);
+      if (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao rejeitar pedido de acesso';
+        addToast(errorMessage, 'error');
+      } else {
+        addToast('Pedido de acesso rejeitado', 'success');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao rejeitar pedido de acesso';
+      addToast(errorMessage, 'error');
+    }
+  };
   const handleViewCommunity = async (communityId: string) => {
     scrollToTop();
     setSearchQuery('');
@@ -748,6 +794,9 @@ const App: React.FC = () => {
           currentUser={appUser}
           onOpenFollowModal={handleOpenFollowModal}
           onNavigateToAdApproval={() => handleNavigation('AdApprovalQueue')}
+          onJoinChatRoom={handleJoinChatRoom}
+          onApproveRoomAccess={handleApproveRoomAccess}
+          onRejectRoomAccess={handleRejectRoomAccess}
         />;
       case 'Messages':
         return <Messages

@@ -117,23 +117,19 @@ serve(async (req: Request) => {
       }
     }
 
-    // 7. Determine is_hot and is_new based on category
-    const categoryValue = category || 'normal';
-    const isHot = categoryValue === 'hot';
-    const isNew = categoryValue === 'new';
-
-    // 8. Create the chat room
+    // 7. Create the chat room
     // IMPORTANTE: NÃO incluir users_online - essa coluna não existe mais na tabela
+    // Categoria será determinada automaticamente pelo frontend baseado em isRoomHot() e isRoomNew()
     const roomData: any = {
       name: name.trim(),
       description: description?.trim() || null,
-      category: categoryValue,
+      category: 'normal',
       is_public: is_public !== undefined ? is_public : true,
       max_participants: max_participants || 100,
       created_by: user.id,
       participant_count: 0,
-      is_hot: isHot,
-      is_new: isNew
+      is_hot: false,
+      is_new: false
     };
     
     // Tentar inserir usando o cliente admin (bypass RLS)
@@ -149,10 +145,10 @@ serve(async (req: Request) => {
         const minimalRoomData: any = {
           name: name.trim(),
           description: description?.trim() || null,
-          category: categoryValue,
+          category: 'normal',
           participant_count: 0,
-          is_hot: isHot,
-          is_new: isNew
+          is_hot: false,
+          is_new: false
         };
         
         const { data: retryRoom, error: retryError } = await supabaseAdmin
@@ -235,6 +231,13 @@ serve(async (req: Request) => {
 
     // 11. Invitations for private rooms
     if (isPrivate && Array.isArray(invited_user_ids) && invited_user_ids.length > 0) {
+      console.log('[create-chat-room] Creating invitations for private room:', {
+        roomId: newRoom.id,
+        roomName: newRoom.name,
+        inviterId: user.id,
+        invitedUserIds: invited_user_ids
+      });
+
       const invites = invited_user_ids
         .filter((invitee: string) => invitee && invitee !== user.id)
         .map((invitee: string) => ({
@@ -243,9 +246,68 @@ serve(async (req: Request) => {
           invitee_id: invitee,
           status: 'pending'
         }));
+      
       if (invites.length > 0) {
-        await supabaseAdmin.from('chat_room_invitations').insert(invites);
+        console.log('[create-chat-room] Inserting invitations:', invites.length);
+        const { error: invitesError } = await supabaseAdmin.from('chat_room_invitations').insert(invites);
+        
+        if (invitesError) {
+          console.error('[create-chat-room] Error inserting invitations:', invitesError);
+        } else {
+          console.log('[create-chat-room] Invitations inserted successfully');
+        }
+        
+        // 11.1. Create notifications for each invited user
+        const notifications = invites.map((invite: any) => ({
+          recipient_id: invite.invitee_id,
+          actor_id: user.id,
+          type: 'chat_room_invitation',
+          metadata: {
+            room_id: newRoom.id,
+            room_name: newRoom.name
+          }
+        }));
+        
+        console.log('[create-chat-room] Creating notifications:', {
+          count: notifications.length,
+          notifications: notifications.map(n => ({ 
+            recipient_id: n.recipient_id, 
+            actor_id: n.actor_id,
+            type: n.type,
+            metadata: n.metadata
+          }))
+        });
+        
+        if (notifications.length > 0) {
+          const { data: notificationsData, error: notificationsError } = await supabaseAdmin
+            .from('notifications')
+            .insert(notifications)
+            .select();
+          
+          if (notificationsError) {
+            console.error('[create-chat-room] Error inserting notifications:', {
+              error: notificationsError,
+              errorMessage: notificationsError.message,
+              errorCode: notificationsError.code,
+              errorDetails: notificationsError.details,
+              errorHint: notificationsError.hint,
+              notificationsAttempted: notifications
+            });
+          } else {
+            console.log('[create-chat-room] Notifications inserted successfully:', {
+              count: notificationsData?.length || 0,
+              notificationIds: notificationsData?.map(n => n.id) || []
+            });
+          }
+        }
+      } else {
+        console.log('[create-chat-room] No valid invites to create (all filtered out)');
       }
+    } else {
+      console.log('[create-chat-room] Skipping invitations - room is public or no invited users:', {
+        isPrivate,
+        hasInvitedUsers: Array.isArray(invited_user_ids) && invited_user_ids.length > 0
+      });
     }
 
     // 12. Return success response

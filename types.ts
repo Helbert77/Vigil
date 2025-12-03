@@ -90,7 +90,7 @@ export interface Post {
 export interface Notification {
   id: string;
   actor: User; // O usuário que realizou a ação
-  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected';
+  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected';
   post_id?: string;
   is_read: boolean;
   created_at: string;
@@ -98,6 +98,9 @@ export interface Notification {
     ad_id?: string;
     ad_title?: string;
     rejection_reason?: string;
+    room_id?: string;
+    room_name?: string;
+    request_id?: string;
     [key: string]: any;
   };
 }
