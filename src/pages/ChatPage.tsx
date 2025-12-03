@@ -37,6 +37,7 @@ import {
   fetchRoomsMessageCountsLastHour,
   RealtimeChannel
 } from '@/src/services/chatService';
+import { searchUsers, fetchNewUsers } from '@/src/services/chatService';
 // Icons
 const ChevronDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m6 9 6 6 6-6"></path></Icon>;
 const ChevronRightIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m9 18 6-6-6-6"></path></Icon>;
@@ -303,6 +304,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     is_public: true,
     max_participants: 100
   });
+  const [selectedInvitees, setSelectedInvitees] = useState<string[]>([]);
+  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [isSubmittingRoom, setIsSubmittingRoom] = useState(false);
 
   // Refs
@@ -483,7 +488,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           schema: 'public',
           table: 'chat_room_participants'
         },
-        (payload) => {
+        (payload: any) => {
           const roomId = payload.new?.room_id || payload.old?.room_id;
           const userId = payload.new?.user_id || payload.old?.user_id;
           
@@ -526,7 +531,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 setSelectedRoom(null);
                 setCurrentView('radar');
                 setMessages([]);
-                addToast('Você foi removido da sala por inatividade', 'warning');
+                addToast('Você foi removido da sala por inatividade', 'info');
               }
             }
           }
@@ -575,7 +580,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           setSelectedRoom(null);
           setCurrentView('radar');
           setMessages([]);
-          addToast('Você foi removido da sala por inatividade', 'warning');
+        addToast('Você foi removido da sala por inatividade', 'info');
         }
       }
     };
@@ -1137,13 +1142,14 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await joinChatRoom(room.id);
 
       if (error) {
-        // Check if error is duplicate key (user already in room)
-        const isDuplicateError = 
-          (typeof error === 'object' && error.code === '23505') ||
-          (typeof error === 'object' && error.message && (
-            error.message.includes('duplicate key') ||
-            error.message.includes('unique constraint') ||
-            error.message.includes('chat_room_participants_room_id_user_id_key')
+        const errObj: any = error as any;
+        const msg: string = typeof errObj?.message === 'string' ? errObj.message : '';
+        const isDuplicateError =
+          (errObj?.code === '23505') ||
+          (!!msg && (
+            msg.includes('duplicate key') ||
+            msg.includes('unique constraint') ||
+            msg.includes('chat_room_participants_room_id_user_id_key')
           ));
 
         if (isDuplicateError) {
@@ -1153,7 +1159,14 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           return;
         }
 
-        const errorMessage = error instanceof Error ? error.message : (typeof error === 'object' && error.message) ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
+        const errorMessage =
+          typeof msg === 'string' && msg.length > 0
+            ? msg
+            : error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+            ? error
+            : 'Erro ao entrar na sala';
         addToast(errorMessage, 'error');
       } else {
         addToast(`Entrou na sala ${room.name}`, 'success');
@@ -1191,11 +1204,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const handleSwitchToRoom = async (room: ChatRoomType) => {
     if (!joinedRoomIds.has(room.id)) {
       // Se não está na sala, não pode visualizar
-      addToast('Entre na sala primeiro', 'warning');
+      addToast('Entre na sala primeiro', 'info');
       return;
     }
 
-    const hasUnreadMessages = roomUnreadCounts.get(room.id) > 0;
+    const hasUnreadMessages = (roomUnreadCounts.get(room.id) || 0) > 0;
     
     setSelectedRoom(room);
     setSelectedBuddy(null);
@@ -1342,7 +1355,8 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
     setIsSubmittingRoom(true);
     try {
-      const { data, error } = await createChatRoom(roomFormData);
+      const payload = roomFormData.is_public ? roomFormData : { ...roomFormData, invited_user_ids: selectedInvitees };
+      const { data, error } = await createChatRoom(payload as any);
 
       if (error) {
         let errorMessage = 'Erro ao criar sala';
@@ -1361,6 +1375,9 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         addToast('Sala criada com sucesso!', 'success');
         setShowCreateRoomModal(false);
         setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
+        setSelectedInvitees([]);
+        setUserSearchQuery('');
+        setAvailableUsers([]);
         loadChatRooms();
       }
     } catch (error: any) {
@@ -1369,6 +1386,61 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     } finally {
       setIsSubmittingRoom(false);
     }
+  };
+
+  const handleSearchInviteUsers = async () => {
+    try {
+      const query = userSearchQuery.trim();
+      if (!query) {
+        const { data } = await fetchNewUsers(7, 10);
+        const mapped = (data || []).map((u: any) => ({
+          id: u.id,
+          name: u.full_name || u.username || 'Usuário',
+          username: u.username,
+          avatarUrl: u.avatar_url,
+          bio: u.bio,
+          followersCount: u.followers_count || 0,
+          followingCount: u.following_count || 0,
+          plan: u.plan || 'free',
+          role: u.role || 'user',
+          joinDate: '',
+          createdAt: u.created_at || ''
+        }));
+        setAvailableUsers(mapped);
+        return;
+      }
+
+      const { data, error } = await searchUsers(query);
+      if (error) {
+        addToast('Erro ao buscar usuários', 'error');
+        return;
+      }
+      const mapped = (data || []).map((u: any) => ({
+        id: u.id,
+        name: u.full_name || u.username || 'Usuário',
+        username: u.username,
+        avatarUrl: u.avatar_url,
+        bio: '',
+        followersCount: 0,
+        followingCount: 0,
+        plan: 'free',
+        role: 'user',
+        joinDate: '',
+        createdAt: ''
+      }));
+      setAvailableUsers(mapped);
+    } catch (e) {
+      addToast('Erro ao buscar usuários', 'error');
+    }
+  };
+
+  const toggleInvitee = (userId: string) => {
+    setSelectedInvitees(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      }
+      return [...prev, userId];
+    });
   };
 
   const handleEditRoom = async () => {
@@ -1478,7 +1550,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   // Open location settings based on device/browser
   const openLocationSettings = () => {
     const userAgent = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
     const isAndroid = /Android/.test(userAgent);
     const isMobile = isIOS || isAndroid;
     const isMac = /Mac/.test(userAgent);
@@ -1716,49 +1788,7 @@ Recarregue esta página após ativar.`);
           <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isLeftSidebarCollapsed ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Collapsed View - Ícone de participantes no topo e avatares abaixo */}
-        {isLeftSidebarCollapsed && (
-          <div className="flex flex-col h-full">
-            {/* Ícone de participantes online no topo (quando em sala) */}
-            {selectedRoom && (
-              <div className="flex flex-col items-center p-3 border-b border-light-border dark:border-dark-border">
-                <button
-                  onClick={() => setIsLeftSidebarCollapsed(false)}
-                  className="relative p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                  title={`${participantsCount} Participantes Online`}
-                >
-                  <span className="text-lg md:text-xl">👥</span>
-                  {participantsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                      {participantsCount > 9 ? '9+' : participantsCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* Lista de avatares dos participantes (quando em sala) */}
-            {selectedRoom && (
-              <div className="flex-1 overflow-y-auto p-2 space-y-3">
-                {roomParticipants.map((participant) => (
-                  <div 
-                    key={participant.id}
-                    className="flex flex-col items-center"
-                    title={participant.name}
-                  >
-                    <Avatar
-                      src={participant.avatarUrl || ''}
-                      alt={participant.name}
-                      size="sm"
-                      userId={participant.id}
-                      showStatus={true}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Collapsed View desativado temporariamente */}
 
         {/* Participants List (when in room) or Buddies List */}
         {!isLeftSidebarCollapsed && (
@@ -1950,9 +1980,15 @@ Recarregue esta página após ativar.`);
                   <div className="flex items-center gap-1">
                     <h3 className="font-bold text-xs md:text-sm text-gray-900 dark:text-white truncate">
                       {selectedRoom.name}
+                      {!selectedRoom.is_public && (
+                        <span className="text-gray-600 dark:text-gray-400 ml-1" title="Sala Privada">🔒</span>
+                      )}
                     </h3>
                     {isRoomHot(selectedRoom.id, roomsMessageCountsLastHour) && <FireIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
                     {isRoomNew(selectedRoom.created_at) && <NewIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
+                    {!selectedRoom.is_public && (
+                      <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">Privada</span>
+                    )}
                   </div>
                   <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
                     {selectedRoom.description || 'Sala de bate-papo'}
@@ -2050,7 +2086,7 @@ Recarregue esta página após ativar.`);
                   // Improved sender name logic with fallbacks
                   let senderName = 'Usuário';
                   if (isSentByMe) {
-                    senderName = user.full_name || user.username || 'Eu';
+                    senderName = user.name || user.username || 'Eu';
                   } else if (message.sender) {
                     // Prioritize full_name, then username, then fallback
                     senderName = message.sender.full_name || message.sender.username || 'Usuário';
@@ -2280,18 +2316,24 @@ Recarregue esta página após ativar.`);
                           title={joinedRoomIds.has(room.id) ? 'Clique para visualizar' : room.name}
                         >
                           {room.name}
-                        </h4>
+                          {!room.is_public && (
+                            <span className="text-gray-600 dark:text-gray-400 ml-1" title="Sala Privada">🔒</span>
+                          )}
+                          </h4>
 
                           {/* Badge de mensagens não lidas - só aparece se contador > 0 */}
-                          {joinedRoomIds.has(room.id) && roomUnreadCounts.get(room.id) > 0 && (
+                          {joinedRoomIds.has(room.id) && (roomUnreadCounts.get(room.id) || 0) > 0 && (
                             <span className="bg-red-500 text-white text-[10px] md:text-xs rounded-full px-1.5 md:px-2 py-0.5 min-w-[18px] md:min-w-[20px] text-center font-bold flex-shrink-0">
-                              {roomUnreadCounts.get(room.id) > 99 ? '99+' : roomUnreadCounts.get(room.id)}
+                              {(roomUnreadCounts.get(room.id) || 0) > 99 ? '99+' : (roomUnreadCounts.get(room.id) || 0)}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
                           {isRoomHot(room.id, roomsMessageCountsLastHour) && <span title="HOT"><FireIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
                           {isRoomNew(room.created_at) && <span title="NEW"><NewIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
+                          {!room.is_public && (
+                            <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium ml-1">Privada</span>
+                          )}
                           {canManageRoom(room) && (
                             <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
                               <button
@@ -2440,13 +2482,76 @@ Recarregue esta página após ativar.`);
                   type="checkbox"
                   id="is_public"
                   checked={roomFormData.is_public}
-                  onChange={(e) => setRoomFormData({ ...roomFormData, is_public: e.target.checked })}
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
+                    setRoomFormData({ ...roomFormData, is_public: checked });
+                    setShowUserSelector(!checked);
+                    if (!checked) {
+                      await handleSearchInviteUsers();
+                    }
+                  }}
                   className="mr-2"
                 />
-                <label htmlFor="is_public" className="text-sm text-gray-700 dark:text-gray-300">
-                  Sala pública
-                </label>
+              <label htmlFor="is_public" className="text-sm text-gray-700 dark:text-gray-300">
+                Sala pública
+              </label>
               </div>
+              {!roomFormData.is_public && (
+                <div className="space-y-3 border-t border-light-border dark:border-dark-border pt-3">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    Esta sala será privada. Selecione usuários para enviar convites.
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      placeholder="Buscar usuários pelo username"
+                      className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={handleSearchInviteUsers}
+                      className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium"
+                    >
+                      Buscar
+                    </button>
+                  </div>
+                  {selectedInvitees.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedInvitees.map(id => {
+                        const u = availableUsers.find(x => x.id === id);
+                        const label = u?.username || u?.name || id.slice(0, 6);
+                        return (
+                          <span key={id} className="inline-flex items-center gap-2 bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                            {label}
+                            <button onClick={() => toggleInvitee(id)} className="text-primary hover:text-primary/80">✕</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="max-h-40 overflow-y-auto divide-y divide-light-border dark:divide-dark-border border border-light-border dark:border-dark-border rounded-lg">
+                    {availableUsers.length === 0 ? (
+                      <div className="p-3 text-sm text-gray-500 dark:text-gray-400">Nenhum usuário encontrado</div>
+                    ) : (
+                      availableUsers.map(u => (
+                        <div key={u.id} className="flex items-center justify-between p-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar src={u.avatarUrl} alt={u.username} size="sm" />
+                            <div className="text-sm text-gray-800 dark:text-gray-200">{u.username || u.name}</div>
+                          </div>
+                          <button
+                            onClick={() => toggleInvitee(u.id)}
+                            className={`text-xs px-2 py-1 rounded ${selectedInvitees.includes(u.id) ? 'bg-red-500 text-white' : 'bg-primary text-white'}`}
+                          >
+                            {selectedInvitees.includes(u.id) ? 'Remover' : 'Convidar'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleCreateRoom}

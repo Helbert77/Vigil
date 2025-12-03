@@ -59,7 +59,7 @@ serve(async (req: Request) => {
       );
     }
 
-    const { name, description, category, is_public, max_participants } = requestBody;
+    const { name, description, category, is_public, max_participants, invited_user_ids } = requestBody;
     
     // 3. Validate input
     if (!name || name.trim() === '') {
@@ -233,7 +233,22 @@ serve(async (req: Request) => {
       }
     }
 
-    // 11. Return success response
+    // 11. Invitations for private rooms
+    if (isPrivate && Array.isArray(invited_user_ids) && invited_user_ids.length > 0) {
+      const invites = invited_user_ids
+        .filter((invitee: string) => invitee && invitee !== user.id)
+        .map((invitee: string) => ({
+          room_id: newRoom.id,
+          inviter_id: user.id,
+          invitee_id: invitee,
+          status: 'pending'
+        }));
+      if (invites.length > 0) {
+        await supabaseAdmin.from('chat_room_invitations').insert(invites);
+      }
+    }
+
+    // 12. Return success response
     const responseRoom = {
       ...newRoom,
       creator: creatorInfo

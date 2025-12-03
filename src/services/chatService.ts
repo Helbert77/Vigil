@@ -1,4 +1,5 @@
 import { supabase } from '../../integrations/supabase/client';
+import type { User } from '@/types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // Utility function for standardized error handling (following existing pattern)
@@ -107,6 +108,7 @@ export interface ChatRoom {
   category: string;
   is_public?: boolean;
   created_by?: string;
+  max_participants?: number;
   created_at: string;
   updated_at: string;
   is_hot: boolean;
@@ -571,7 +573,7 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
           username: sender.username || 'Usuário',
           avatar_url: sender.avatar_url,
           full_name: fullName
-        } : null
+        } : undefined
       };
     });
 
@@ -733,7 +735,7 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
             username: sender.username || 'Usuário',
             avatar_url: sender.avatar_url,
             full_name: fullName
-          } : null
+          } : undefined
         };
         callback(formattedMessage);
       }
@@ -1149,6 +1151,7 @@ export const createChatRoom = async (roomData: {
   category?: string;
   is_public?: boolean;
   max_participants?: number;
+  invited_user_ids?: string[];
 }) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1197,6 +1200,99 @@ export const createChatRoom = async (roomData: {
     return { data: data.room, error: null };
   } catch (error) {
     handleApiError(error, 'createChatRoom', roomData);
+    return { data: null, error };
+  }
+};
+
+export const fetchUserInvitations = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data, error } = await supabase
+      .from('chat_room_invitations')
+      .select('*')
+      .or(`invitee_id.eq.${user.id},inviter_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      handleApiError(error, 'fetchUserInvitations');
+      return { data: [], error };
+    }
+
+    return { data: data || [], error: null };
+  } catch (error) {
+    handleApiError(error, 'fetchUserInvitations');
+    return { data: [], error };
+  }
+};
+
+export const acceptInvitation = async (invitationId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data: invitation, error: fetchError } = await supabase
+      .from('chat_room_invitations')
+      .select('*')
+      .eq('id', invitationId)
+      .single();
+
+    if (fetchError || !invitation) {
+      return { data: null, error: fetchError || new Error('Convite não encontrado') };
+    }
+
+    const { error: updateError } = await supabase
+      .from('chat_room_invitations')
+      .update({ status: 'accepted', updated_at: new Date().toISOString() })
+      .eq('id', invitationId);
+
+    if (updateError) {
+      handleApiError(updateError, 'acceptInvitation', { invitationId });
+      return { data: null, error: updateError };
+    }
+
+    const { error: joinError } = await supabase
+      .from('chat_room_participants')
+      .insert({ room_id: invitation.room_id, user_id: user.id, joined_at: new Date().toISOString() });
+
+    if (joinError) {
+      handleApiError(joinError, 'acceptInvitation - join room', { invitationId, roomId: invitation.room_id });
+      return { data: null, error: joinError };
+    }
+
+    return { data: { room_id: invitation.room_id }, error: null };
+  } catch (error) {
+    handleApiError(error, 'acceptInvitation', { invitationId });
+    return { data: null, error };
+  }
+};
+
+export const declineInvitation = async (invitationId: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { error } = await supabase
+      .from('chat_room_invitations')
+      .update({ status: 'declined', updated_at: new Date().toISOString() })
+      .eq('id', invitationId)
+      .eq('invitee_id', user.id);
+
+    if (error) {
+      handleApiError(error, 'declineInvitation', { invitationId });
+      return { data: null, error };
+    }
+
+    return { data: { success: true }, error: null };
+  } catch (error) {
+    handleApiError(error, 'declineInvitation', { invitationId });
     return { data: null, error };
   }
 };
