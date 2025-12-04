@@ -40,7 +40,7 @@ import {
   requestRoomAccess
 } from '@/src/services/chatService';
 import { searchUsers, fetchNewUsers } from '@/src/services/chatService';
-import { fetchFollowersWithProfiles } from '@/src/services/api';
+import { fetchFollowersWithProfiles, clearRoomMessages } from '@/src/services/api';
 // Icons
 const ChevronDownIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m6 9 6 6 6-6"></path></Icon>;
 const ChevronRightIcon = ({ className = "h-5 w-5" }: { className?: string }) => <Icon className={className}><path d="m9 18 6-6-6-6"></path></Icon>;
@@ -80,12 +80,13 @@ const isRoomNew = (createdAt: string): boolean => {
 // Função para verificar se uma sala ainda é considerada "hot" (quente)
 // Uma sala é hot se tem mais de 50 mensagens na última hora
 // Esta função recebe o roomId e usa o estado roomsMessageCountsLastHour
+// IMPORTANTE: A contagem já exclui mensagens deletadas pelo usuário atual
 const isRoomHot = (roomId: string, messageCountsMap: Map<string, number>): boolean => {
   if (!roomId || !messageCountsMap) return false;
   
   const messageCount = messageCountsMap.get(roomId) || 0;
   
-  // Sala é hot se tem mais de 50 mensagens na última hora
+  // Sala é hot se tem mais de 50 mensagens na última hora (já filtradas)
   return messageCount > 50;
 };
 const SendIcon = () => <Icon className="h-6 w-6"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></Icon>;
@@ -365,12 +366,10 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      addToast('Conexão restaurada', 'success');
     };
 
     const handleOffline = () => {
       setIsOnline(false);
-      addToast('Conexão perdida', 'info');
     };
 
     window.addEventListener('online', handleOnline);
@@ -416,14 +415,21 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       const { data, error } = await fetchRoomUnreadCounts(roomIdsArray);
 
       if (!error && data) {
-        setRoomUnreadCounts(new Map(Object.entries(data)));
+        setRoomUnreadCounts(prev => {
+          const newMap = new Map(Object.entries(data));
+          // IMPORTANTE: Sempre zerar contador da sala atual (você está dentro dela)
+          if (selectedRoom) {
+            newMap.set(selectedRoom.id, 0);
+          }
+          return newMap;
+        });
       }
     };
 
     // Adiar um pouco para não competir com carregamento inicial
     const timeoutId = setTimeout(loadUnreadCounts, 500);
     return () => clearTimeout(timeoutId);
-  }, [joinedRoomIds, isInitializing]);
+  }, [joinedRoomIds, isInitializing, selectedRoom]);
 
   // Atualizar contagens de mensagens da última hora periodicamente (a cada 5 minutos) - OTIMIZADO
   useEffect(() => {
@@ -432,7 +438,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     
     const updateMessageCounts = async () => {
       const roomIds = chatRooms.map(room => room.id);
-      const { data: countMap } = await fetchRoomsMessageCountsLastHour(roomIds);
+      const { data: countMap } = await fetchRoomsMessageCountsLastHour(roomIds, session?.user?.id);
       
       if (countMap) {
         setRoomsMessageCountsLastHour(countMap);
@@ -571,7 +577,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
                 setSelectedRoom(null);
                 setCurrentView('radar');
                 setMessages([]);
-                addToast('Você foi removido da sala por inatividade', 'info');
               }
             }
           }
@@ -643,7 +648,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           setSelectedRoom(null);
           setCurrentView('radar');
           setMessages([]);
-          addToast('Você foi removido da sala por inatividade', 'info');
         }
       }
     };
@@ -783,7 +787,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         setUserActivityStatus('offline');
         // Leave the room automatically
         handleLeaveRoom(selectedRoom);
-        addToast('Você foi removido da sala por inatividade', 'info');
       }
     }, 30000); // Check every 30 seconds
 
@@ -1002,17 +1005,180 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   };
 
-  // Limpar conversas localmente (apenas no navegador)
-  const handleClearConversations = () => {
+  // Limpar conversas: sistema híbrido (localStorage + Supabase)
+  // Criadores/moderadores: deletam definitivamente do Supabase
+  // Usuários normais: marcam como deletadas no Supabase (sincronização) + localStorage (cache)
+  const handleClearConversations = async () => {
     if (selectedRoom) {
-      // Limpar mensagens da sala atual
-      setMessages([]);
-      addToast('Conversas limpas localmente', 'success');
-      setShowChatOptionsMenu(false);
+      const isCreator = selectedRoom.created_by === session?.user?.id;
+      const isAdminOrModerator = user.role === 'admin' || user.role === 'moderator';
+      
+      if (isCreator || isAdminOrModerator) {
+        // CASO 1: Criador/Moderador - Deletar definitivamente do Supabase
+        try {
+          setIsSending(true);
+          
+          const { data, error } = await clearRoomMessages(selectedRoom.id);
+          
+          if (error) throw error;
+          
+          if (data?.success) {
+            // Limpar também do cache local (caso tenha algo salvo)
+            localStorage.removeItem(`deleted_messages_cache_${selectedRoom.id}`);
+            setMessages([]);
+            
+            // Atualizar contagem de mensagens "hot" imediatamente
+            // Como TODAS as mensagens foram deletadas permanentemente, a contagem deve ser zerada
+            setRoomsMessageCountsLastHour(prev => {
+              const newMap = new Map(prev);
+              newMap.set(selectedRoom.id, 0);
+              return newMap;
+            });
+            
+            // Atualizar contagem via fetch após um pequeno delay para garantir sincronização
+            // Isso garante que se houver novas mensagens sendo adicionadas simultaneamente, a contagem seja correta
+            setTimeout(async () => {
+              try {
+                const { data: countMap } = await fetchRoomsMessageCountsLastHour([selectedRoom.id], session?.user?.id);
+                if (countMap) {
+                  setRoomsMessageCountsLastHour(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(selectedRoom.id, countMap.get(selectedRoom.id) || 0);
+                    return newMap;
+                  });
+                }
+              } catch (e) {
+                // Ignorar erros na atualização secundária
+                console.warn('Erro ao atualizar contagem após limpeza:', e);
+              }
+            }, 500);
+          } else {
+            throw new Error(data?.error || 'Erro ao limpar mensagens');
+          }
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Erro ao limpar mensagens. Tente novamente.';
+          addToast(errorMessage, 'error');
+        } finally {
+          setIsSending(false);
+          setShowChatOptionsMenu(false);
+        }
+      } else {
+        // CASO 2: Usuário normal - Sistema híbrido (Supabase + localStorage)
+        try {
+          setIsSending(true);
+          
+          // Coletar IDs de todas as mensagens atuais
+          const messageIds = messages.map(msg => msg.id);
+          
+          if (messageIds.length === 0) {
+            setShowChatOptionsMenu(false);
+            return;
+          }
+          
+          // 1. Atualizar no Supabase usando RPC (sincronização entre dispositivos)
+          let rpcSuccess = false;
+          const { error: rpcError } = await supabase.rpc(
+            'mark_all_room_messages_deleted',
+            {
+              p_room_id: selectedRoom.id,
+              p_user_id: session?.user?.id
+            }
+          );
+          
+          if (!rpcError) {
+            rpcSuccess = true;
+          } else {
+            // Se a função RPC não existir ou coluna não existir, usar apenas localStorage
+            const errorMsg = rpcError.message || '';
+            const isFunctionError = errorMsg.includes('function') && errorMsg.includes('does not exist');
+            const isColumnError = errorMsg.includes('column') && errorMsg.includes('does not exist');
+            
+            if (isFunctionError || isColumnError) {
+              // Coluna ou função não existe ainda - usar apenas localStorage
+              // Isso permite que funcione mesmo antes de executar os scripts SQL
+              console.warn('Coluna deleted_by_users ou função RPC não existe. Usando apenas localStorage.');
+            } else {
+              // Outro tipo de erro - tentar fallback manual
+              try {
+                for (const msgId of messageIds) {
+                  const { data: currentMsg } = await supabase
+                    .from('chat_room_messages')
+                    .select('deleted_by_users')
+                    .eq('id', msgId)
+                    .single();
+                  
+                  if (currentMsg && currentMsg.deleted_by_users) {
+                    const currentDeletedBy = (currentMsg.deleted_by_users || []) as string[];
+                    if (!currentDeletedBy.includes(session?.user?.id || '')) {
+                      const updatedDeletedBy = [...currentDeletedBy, session?.user?.id];
+                      await supabase
+                        .from('chat_room_messages')
+                        .update({ deleted_by_users: updatedDeletedBy })
+                        .eq('id', msgId);
+                    }
+                  }
+                }
+                rpcSuccess = true;
+              } catch (fallbackError) {
+                // Se fallback também falhar, continuar apenas com localStorage
+                console.warn('Fallback manual também falhou. Usando apenas localStorage.');
+              }
+            }
+          }
+          
+          // 2. Atualizar cache local (performance)
+          const cacheKey = `deleted_messages_cache_${selectedRoom.id}`;
+          const existingDeletedIds = JSON.parse(
+            localStorage.getItem(cacheKey) || '[]'
+          );
+          
+          // Combinar IDs existentes com novos (evitar duplicatas)
+          const allDeletedIds = [...new Set([...existingDeletedIds, ...messageIds])];
+          localStorage.setItem(cacheKey, JSON.stringify(allDeletedIds));
+          
+          // Debug: verificar se foi salvo
+          const verifyCache = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+          console.log('[Clear Conversations] Sala:', selectedRoom.id);
+          console.log('[Clear Conversations] Mensagens atuais:', messageIds.length);
+          console.log('[Clear Conversations] Cache ANTES:', existingDeletedIds.length);
+          console.log('[Clear Conversations] Cache DEPOIS:', verifyCache.length);
+          console.log('[Clear Conversations] IDs salvos:', verifyCache);
+          
+          // 3. Limpar UI imediatamente
+          setMessages([]);
+          
+          // 4. Atualizar contagem de mensagens "hot" (reduzir contagem das mensagens deletadas)
+          // Contar quantas mensagens deletadas eram da última hora
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          const deletedMessagesInLastHour = messages.filter(msg => {
+            const msgDate = new Date(msg.created_at);
+            return msgDate >= oneHourAgo;
+          }).length;
+          
+          if (deletedMessagesInLastHour > 0) {
+            setRoomsMessageCountsLastHour(prev => {
+              const newMap = new Map(prev);
+              const currentCount = newMap.get(selectedRoom.id) || 0;
+              const newCount = Math.max(0, currentCount - deletedMessagesInLastHour);
+              newMap.set(selectedRoom.id, newCount);
+              return newMap;
+            });
+          }
+          
+          // IMPORTANTE: Não recarregar mensagens aqui
+          // O filtro será aplicado automaticamente na próxima vez que as mensagens forem carregadas
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Erro ao ocultar mensagens. Tente novamente.';
+          addToast(errorMessage, 'error');
+        } finally {
+          setIsSending(false);
+          setShowChatOptionsMenu(false);
+        }
+      }
     } else if (selectedBuddy) {
-      // Limpar mensagens do buddy atual
+      // Para conversas privadas (buddy), apenas limpar localmente por enquanto
+      // Se necessário, pode ser implementada uma função similar para conversas privadas
       setMessages([]);
-      addToast('Conversas limpas localmente', 'success');
       setShowChatOptionsMenu(false);
     }
   };
@@ -1023,80 +1189,70 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
     // Check if online before sending
     if (!isOnline) {
-      addToast('Você está offline. Mensagem será enviada quando a conexão for restaurada.', 'info');
       return;
     }
 
     // Handle room message
     if (selectedRoom) {
+      // Criar mensagem otimista ANTES de enviar (feedback visual instantâneo)
+      const tempMessageId = `temp_${Date.now()}_${Math.random()}`;
+      const optimisticMessage = {
+        id: tempMessageId,
+        conversation_id: selectedRoom.id,
+        sender_id: session?.user?.id || '',
+        content: messageText.trim(),
+        created_at: new Date().toISOString(),
+        is_read: false,
+        is_deleted: false,
+        sender: {
+          id: session?.user?.id || '',
+          username: user?.username || 'Você',
+          avatar_url: user?.avatar_url,
+          full_name: user?.full_name || user?.username || 'Você'
+        }
+      };
+
+      // Adicionar mensagem otimista IMEDIATAMENTE (antes do await)
+      setMessages(prev => [...prev, optimisticMessage]);
+      setMessageText('');
+      shouldScrollRef.current = true;
+
       setIsSending(true);
       try {
         const { data: messageData, error } = await sendRoomMessage(selectedRoom.id, messageText);
 
         if (error) {
+          // Remover mensagem otimista em caso de erro
+          setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
           const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
           addToast(errorMessage, 'error');
+          setIsSending(false);
           return;
         }
 
-        // Update activity when sending message
+        // Update activity when sending message (não bloquear com await)
         const now = Date.now();
         lastActivityTimeRef.current = now;
         setUserActivityStatus('online');
-        await updateRoomActivity(selectedRoom.id);
+        updateRoomActivity(selectedRoom.id).catch(() => {}); // Não bloquear se falhar
 
-        // Set flag to scroll to bottom when message is received via subscription
-        shouldScrollRef.current = true;
-
-        // Fallback: Se não houver subscription ativa ou se a mensagem não aparecer em 1.5s, adicionar manualmente
+        // Substituir mensagem otimista pela mensagem real quando chegar
         if (messageData) {
-          const messageId = messageData.id;
-          let messageAdded = false;
-
-          // Verificar se mensagem já existe (caso a subscription seja muito rápida)
           setMessages(prev => {
-            if (prev.some(msg => msg.id === messageId)) {
-              messageAdded = true;
-              return prev;
+            // Remover mensagem otimista e adicionar a real
+            const filtered = prev.filter(msg => msg.id !== tempMessageId);
+            // Verificar se a mensagem real já não existe (via subscription)
+            if (!filtered.some(msg => msg.id === messageData.id)) {
+              return [...filtered, messageData];
             }
-            return prev;
+            return filtered;
           });
-
-          // Se não foi adicionada e não há subscription, adicionar imediatamente
-          if (!messageAdded && !messageSubscription) {
-            setMessages(prev => [...prev, messageData]);
-            messageAdded = true;
-          }
-
-          // Fallback com timeout se subscription não funcionar
-          if (!messageAdded) {
-            const fallbackTimeout = setTimeout(() => {
-              setMessages(prev => {
-                const exists = prev.some(msg => msg.id === messageId);
-                if (!exists) {
-                  return [...prev, messageData];
-                }
-                return prev;
-              });
-            }, 1500);
-
-            // Limpar timeout se mensagem aparecer
-            const checkInterval = setInterval(() => {
-              setMessages(prev => {
-                const exists = prev.some(msg => msg.id === messageId);
-                if (exists) {
-                  clearTimeout(fallbackTimeout);
-                  clearInterval(checkInterval);
-                }
-                return prev;
-              });
-            }, 100);
-
-            setTimeout(() => clearInterval(checkInterval), 3000);
-          }
+        } else {
+          // Se não houver messageData, remover apenas a otimista
+          setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
         }
 
-        setMessageText('');
+        setIsSending(false);
         
         // Focar no input após enviar mensagem
         setTimeout(() => {
@@ -1207,7 +1363,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso';
         addToast(errorMessage, 'error');
       } else {
-        addToast('Pedido de acesso enviado com sucesso', 'success');
         // Reload invitations to update UI
         const { data: invitationsData } = await fetchUserInvitations();
         if (invitationsData) {
@@ -1237,8 +1392,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
       
       if (isInRoom) {
         // User is already in room, DON'T leave - this was the bug!
-        // Just show a message
-        addToast(`Você já está na sala ${room.name}`, 'info');
         return;
       }
 
@@ -1269,7 +1422,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
         if (isDuplicateError) {
           // User is already in room, treat as success
-          addToast(`Você já está na sala ${room.name}`, 'info');
           setJoinedRoomIds(prev => new Set([...prev, room.id]));
           return;
         }
@@ -1284,7 +1436,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             : 'Erro ao entrar na sala';
         addToast(errorMessage, 'error');
       } else {
-        addToast(`Entrou na sala ${room.name}`, 'success');
         setJoinedRoomIds(prev => new Set([...prev, room.id]));
         
         const updatedRoom = {
@@ -1319,7 +1470,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const handleSwitchToRoom = async (room: ChatRoomType) => {
     if (!joinedRoomIds.has(room.id)) {
       // Se não está na sala, não pode visualizar
-      addToast('Entre na sala primeiro', 'info');
       return;
     }
 
@@ -1333,11 +1483,14 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     setUserActivityStatus('online');
 
     // Reset unread count imediatamente ao entrar na sala
-    await updateRoomLastRead(room.id);
     setRoomUnreadCounts(prev => {
       const newMap = new Map(prev);
       newMap.set(room.id, 0);
       return newMap;
+    });
+    // Atualizar last_read no servidor (não bloquear UI)
+    updateRoomLastRead(room.id).catch(() => {
+      // Ignorar erros silenciosamente
     });
 
     // Scroll automático é feito diretamente no useEffect de messages
@@ -1351,7 +1504,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao sair da sala';
         addToast(errorMessage, 'error');
       } else {
-        addToast(`Saiu da sala ${room.name}`, 'success');
         setJoinedRoomIds(prev => {
           const newSet = new Set(prev);
           newSet.delete(room.id);
@@ -1422,11 +1574,35 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
           });
         }
 
+        // Verificar se a mensagem foi deletada ANTES de atualizar contagem
+        const cacheKey = `deleted_messages_cache_${roomId}`;
+        let isMessageDeleted = false;
+        try {
+          const cachedDeletedIds = JSON.parse(
+            localStorage.getItem(cacheKey) || '[]'
+          );
+          if (cachedDeletedIds.includes(newMessage.id)) {
+            isMessageDeleted = true;
+          }
+        } catch (e) {
+          // Erro ao verificar cache, ignorar
+        }
+        
+        // Verificar também no servidor (deleted_by_users)
+        if (!isMessageDeleted && session?.user?.id && newMessage.deleted_by_users) {
+          const deletedByUsers = Array.isArray(newMessage.deleted_by_users) 
+            ? newMessage.deleted_by_users 
+            : [];
+          if (deletedByUsers.includes(session.user.id)) {
+            isMessageDeleted = true;
+          }
+        }
+        
         // Atualizar contagem de mensagens da última hora para esta sala
-        // Verificar se a mensagem foi criada na última hora
+        // IMPORTANTE: Só contar se mensagem NÃO foi deletada pelo usuário atual
         const messageDate = new Date(newMessage.created_at);
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-        if (messageDate >= oneHourAgo) {
+        if (messageDate >= oneHourAgo && !isMessageDeleted) {
           setRoomsMessageCountsLastHour(prev => {
             const newMap = new Map(prev);
             const currentCount = newMap.get(roomId) || 0;
@@ -1434,7 +1610,12 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
             return newMap;
           });
         }
-
+        
+        // Se mensagem foi deletada, não adicionar à UI
+        if (isMessageDeleted) {
+          return;
+        }
+        
         // Para mensagens do próprio usuário, sempre fazer scroll
         if (isFromCurrentUser) {
           shouldScrollRef.current = true;
@@ -1443,12 +1624,15 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         }
         
         setMessages(prev => {
+          // Remover mensagem otimista temporária se existir (substituir pela real)
+          const filtered = prev.filter(msg => !msg.id.startsWith('temp_'));
+          
           // Check if message already exists to prevent duplicates
-          const messageExists = prev.some(msg => msg.id === newMessage.id);
+          const messageExists = filtered.some(msg => msg.id === newMessage.id);
           if (messageExists) {
-            return prev;
+            return filtered;
           }
-          return [...prev, newMessage];
+          return [...filtered, newMessage];
         });
       });
 
@@ -1499,7 +1683,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         
         addToast(errorMessage, 'error');
       } else {
-        addToast('Sala criada com sucesso!', 'success');
         setShowCreateRoomModal(false);
         setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
         setSelectedInvitees([]);
@@ -1599,7 +1782,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao atualizar sala';
         addToast(errorMessage, 'error');
       } else {
-        addToast('Sala atualizada com sucesso!', 'success');
         setShowEditRoomModal(false);
         setRoomToEdit(null);
         setRoomFormData({ name: '', description: '', category: 'normal', is_public: true, max_participants: 100 });
@@ -1628,7 +1810,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao excluir sala';
         addToast(errorMessage, 'error');
       } else {
-        addToast('Sala excluída com sucesso!', 'success');
         setShowDeleteRoomModal(false);
         setRoomToDelete(null);
         
@@ -2174,13 +2355,17 @@ Recarregue esta página após ativar.`);
                   {/* Dropdown Menu */}
                   {showChatOptionsMenu && (
                     <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-light-border dark:border-dark-border rounded-lg shadow-lg z-50">
-                      <button
-                        onClick={handleClearConversations}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                      >
-                        <span>🗑️</span>
-                        <span>Limpar conversas</span>
-                      </button>
+                      {/* Mostrar opção de limpar conversas para todos os usuários (sala) */}
+                      {selectedRoom && (
+                        <button
+                          onClick={handleClearConversations}
+                          disabled={isSending}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <span>🗑️</span>
+                          <span>{isSending ? 'Limpando...' : 'Limpar conversas'}</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2255,24 +2440,33 @@ Recarregue esta página após ativar.`);
                         </div>
                       )}
                       
-                      <div className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} mb-1`}>
+                      <div className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'} mb-1`}>
+                        {/* Nome do usuário e hora FORA do balão, acima */}
+                        {!isSentByMe && (
+                          <div className="flex items-center gap-2 mb-0.5 px-1">
+                            <p className="text-[10px] md:text-xs font-semibold text-gray-700 dark:text-gray-300">
+                              {senderName}
+                            </p>
+                            <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400">
+                              {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Para mensagens próprias, mostrar hora acima também */}
+                        {isSentByMe && (
+                          <div className="flex items-center justify-end gap-2 mb-0.5 px-1">
+                            <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400">
+                              {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3 md:px-4 py-2 ${isSentByMe
                           ? 'bg-primary text-white rounded-br-none'
                           : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
                           } ${isTemp ? 'opacity-60' : ''}`}>
-                          {/* Show sender name above message for messages from others */}
-                          {!isSentByMe && (
-                            <p className="text-[10px] md:text-xs font-semibold mb-0.5 md:mb-1 text-gray-600 dark:text-gray-300">
-                              {senderName}
-                            </p>
-                          )}
                           <p className="break-words text-xs md:text-sm">{message.content}</p>
-                          <p
-                            className={`text-[10px] md:text-xs mt-0.5 md:mt-1 ${isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                              }`}
-                          >
-                            {isTemp ? 'Enviando...' : formatTimestamp(message.created_at)}
-                          </p>
                         </div>
                       </div>
                     </div>

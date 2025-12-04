@@ -511,6 +511,11 @@ export const joinChatRoom = async (roomId: string) => {
 // Fetch messages from a chat room
 export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
   try {
+    // Buscar ID do usuário atual
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+
+    // 1. Buscar mensagens do Supabase
     const { data, error } = await supabase
       .from('chat_room_messages')
       .select('*')
@@ -523,8 +528,78 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
       return { data: null, error };
     }
 
+    // 2. Verificar cache local PRIMEIRO (sempre funciona, mesmo sem coluna no banco)
+    const cacheKey = `deleted_messages_cache_${roomId}`;
+    let cachedDeletedIds: string[] = [];
+    
+    if (currentUserId) {
+      try {
+        const cacheData = localStorage.getItem(cacheKey);
+        cachedDeletedIds = cacheData ? JSON.parse(cacheData) : [];
+        console.log(`[fetchRoomMessages] Cache carregado para sala ${roomId}:`, cachedDeletedIds.length, 'IDs deletados');
+      } catch (e) {
+        console.error('[fetchRoomMessages] Erro ao ler cache:', e);
+        cachedDeletedIds = [];
+      }
+    }
+
+    // 3. Filtrar mensagens deletadas - SEMPRE usar cache primeiro
+    const totalMessages = (data || []).length;
+    let visibleMessages = (data || []).filter((msg: any) => {
+      if (!currentUserId) return true;
+      
+      // PRIMEIRO: Verificar cache local (sempre funciona)
+      if (cachedDeletedIds.includes(msg.id)) {
+        return false; // Mensagem deletada no cache
+      }
+      
+      // SEGUNDO: Verificar servidor (se coluna existir)
+      const deletedByUsers = msg.deleted_by_users;
+      if (deletedByUsers && Array.isArray(deletedByUsers) && deletedByUsers.includes(currentUserId)) {
+        // Atualizar cache se necessário
+        if (!cachedDeletedIds.includes(msg.id)) {
+          cachedDeletedIds.push(msg.id);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(cachedDeletedIds));
+          } catch (e) {
+            // Ignorar erro de localStorage
+          }
+        }
+        return false; // Mensagem deletada no servidor
+      }
+      
+      return true; // Mensagem não deletada
+    });
+    
+    // Debug: verificar filtro
+    if (currentUserId && totalMessages > 0) {
+      const filteredCount = totalMessages - visibleMessages.length;
+      console.log(`[fetchRoomMessages] Sala ${roomId}: ${totalMessages} mensagens totais, ${filteredCount} filtradas, ${visibleMessages.length} visíveis`);
+      console.log(`[fetchRoomMessages] Cache tem ${cachedDeletedIds.length} IDs:`, cachedDeletedIds.slice(0, 5), cachedDeletedIds.length > 5 ? '...' : '');
+    }
+
+    // 4. Sincronizar cache com servidor (atualizar se houver diferenças)
+    // IMPORTANTE: NÃO remover cache se servidor não tiver dados - cache é a fonte da verdade quando coluna não existe
+    if (currentUserId) {
+      const serverDeletedIds = (data || [])
+        .filter((msg: any) => {
+          const deletedBy = msg.deleted_by_users;
+          return deletedBy && Array.isArray(deletedBy) && deletedBy.includes(currentUserId);
+        })
+        .map((msg: any) => msg.id);
+
+      // Combinar cache local com servidor (manter ambos)
+      const combinedDeletedIds = [...new Set([...cachedDeletedIds, ...serverDeletedIds])];
+      
+      // Atualizar cache apenas se houver novos IDs do servidor
+      if (combinedDeletedIds.length !== cachedDeletedIds.length) {
+        localStorage.setItem(cacheKey, JSON.stringify(combinedDeletedIds));
+        console.log(`[fetchRoomMessages] Cache atualizado: ${cachedDeletedIds.length} -> ${combinedDeletedIds.length} IDs`);
+      }
+    }
+
     // Fetch sender info for all messages
-    const userIds = [...new Set((data || []).map((msg: any) => msg.user_id).filter((id: string) => id))];
+    const userIds = [...new Set(visibleMessages.map((msg: any) => msg.user_id).filter((id: string) => id))];
     let senderMap = new Map();
 
     if (userIds.length > 0) {
@@ -549,7 +624,7 @@ export const fetchRoomMessages = async (roomId: string, limit: number = 50) => {
     }
 
     // Format messages to match ChatMessage interface
-    const formattedMessages = (data || []).map((msg: any) => {
+    const formattedMessages = visibleMessages.map((msg: any) => {
       const sender = senderMap.get(msg.user_id);
       
       // Build full_name from first_name and last_name (matching the profiles table structure)
@@ -694,7 +769,11 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
         filter: `room_id=eq.${roomId}`
       },
       async (payload) => {
-        // Fetch complete message
+        // Buscar ID do usuário atual
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        // Fetch complete message (incluindo deleted_by_users)
         const { data: messageData, error: msgError } = await supabase
           .from('chat_room_messages')
           .select('*')
@@ -702,6 +781,44 @@ export const subscribeToRoomMessages = (roomId: string, callback: (message: Chat
           .single();
 
         if (msgError || !messageData) return;
+
+        // Verificar cache local primeiro (performance)
+        if (currentUserId) {
+          const cacheKey = `deleted_messages_cache_${roomId}`;
+          try {
+            const cachedDeletedIds = JSON.parse(
+              localStorage.getItem(cacheKey) || '[]'
+            );
+            if (cachedDeletedIds.includes(messageData.id)) {
+              // Mensagem deletada no cache, não mostrar
+              return;
+            }
+          } catch (e) {
+            // Cache inválido, continuar verificando servidor
+          }
+        }
+
+        // Verificar servidor (fonte da verdade)
+        if (currentUserId && messageData.deleted_by_users) {
+          const deletedByUsers = messageData.deleted_by_users as string[];
+          if (deletedByUsers.includes(currentUserId)) {
+            // Atualizar cache se necessário
+            const cacheKey = `deleted_messages_cache_${roomId}`;
+            try {
+              const cachedDeletedIds = JSON.parse(
+                localStorage.getItem(cacheKey) || '[]'
+              );
+              if (!cachedDeletedIds.includes(messageData.id)) {
+                cachedDeletedIds.push(messageData.id);
+                localStorage.setItem(cacheKey, JSON.stringify(cachedDeletedIds));
+              }
+            } catch (e) {
+              // Erro ao atualizar cache, ignorar
+            }
+            // Mensagem deletada, não mostrar
+            return;
+          }
+        }
 
         // Fetch sender info
         const { data: sender, error: senderError } = await supabase
@@ -1583,7 +1700,7 @@ export const fetchRoomsParticipantCounts = async (roomIds: string[]) => {
 };
 
 // Fetch message counts from last hour for multiple rooms (OTIMIZADO)
-export const fetchRoomsMessageCountsLastHour = async (roomIds: string[]) => {
+export const fetchRoomsMessageCountsLastHour = async (roomIds: string[], userId?: string) => {
   try {
     if (roomIds.length === 0) {
       return { data: new Map<string, number>(), error: null };
@@ -1591,10 +1708,10 @@ export const fetchRoomsMessageCountsLastHour = async (roomIds: string[]) => {
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     
-    // Buscar contagem de mensagens da última hora para todas as salas de uma vez
+    // Buscar mensagens da última hora com informações de deleted_by_users
     const { data, error } = await supabase
       .from('chat_room_messages')
-      .select('room_id')
+      .select('room_id, id, deleted_by_users')
       .in('room_id', roomIds)
       .gte('created_at', oneHourAgo);
 
@@ -1603,12 +1720,50 @@ export const fetchRoomsMessageCountsLastHour = async (roomIds: string[]) => {
       return { data: new Map<string, number>(), error };
     }
 
-    // Contar mensagens por sala
+    // Buscar cache de mensagens deletadas para cada sala
+    const deletedMessagesCache = new Map<string, Set<string>>();
+    if (userId) {
+      roomIds.forEach(roomId => {
+        const cacheKey = `deleted_messages_cache_${roomId}`;
+        try {
+          const cachedDeletedIds = JSON.parse(
+            localStorage.getItem(cacheKey) || '[]'
+          ) as string[];
+          deletedMessagesCache.set(roomId, new Set(cachedDeletedIds));
+        } catch (e) {
+          deletedMessagesCache.set(roomId, new Set());
+        }
+      });
+    }
+
+    // Contar mensagens por sala, excluindo as deletadas pelo usuário
     const countMap = new Map<string, number>();
     if (data && Array.isArray(data)) {
-      data.forEach((msg: { room_id: string }) => {
-        const currentCount = countMap.get(msg.room_id) || 0;
-        countMap.set(msg.room_id, currentCount + 1);
+      data.forEach((msg: { room_id: string; id: string; deleted_by_users?: string[] | null }) => {
+        // Verificar se mensagem foi deletada pelo usuário atual
+        let isDeleted = false;
+        
+        if (userId) {
+          // Verificar cache primeiro
+          const roomDeletedCache = deletedMessagesCache.get(msg.room_id);
+          if (roomDeletedCache && roomDeletedCache.has(msg.id)) {
+            isDeleted = true;
+          }
+          
+          // Verificar servidor
+          if (!isDeleted && msg.deleted_by_users) {
+            const deletedByUsers = Array.isArray(msg.deleted_by_users) ? msg.deleted_by_users : [];
+            if (deletedByUsers.includes(userId)) {
+              isDeleted = true;
+            }
+          }
+        }
+        
+        // Contar apenas se não foi deletada
+        if (!isDeleted) {
+          const currentCount = countMap.get(msg.room_id) || 0;
+          countMap.set(msg.room_id, currentCount + 1);
+        }
       });
     }
 

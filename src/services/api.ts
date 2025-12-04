@@ -1153,6 +1153,11 @@ export const hardDeleteConversation = (conversationId: string) =>
     body: { conversation_id: conversationId },
   });
 
+export const clearRoomMessages = (roomId: string) =>
+  supabase.functions.invoke('clear-room-messages', {
+    body: { room_id: roomId },
+  });
+
 // --- Library API ---
 // Função auxiliar para obter usuário atual
 const getCurrentUserProfile = async () => {
