@@ -271,43 +271,43 @@ CREATE TRIGGER update_user_ad_credits_updated_at
 CREATE OR REPLACE FUNCTION check_and_pause_expired_ads()
 RETURNS void AS $$
 BEGIN
-  -- Pausar anúncios que atingiram a data de término
+  -- Encerrar anúncios que atingiram a data de término
   UPDATE anuncios
   SET 
-    status = 'completed',
+    status = 'ended',
     completion_reason = 'duration_ended'
   WHERE 
-    status = 'active'
+    status IN ('active', 'paused')
     AND approval_status = 'approved'
     AND end_date IS NOT NULL
     AND end_date < NOW()
-    AND completion_reason IS NULL;
+    AND status != 'ended';
 
-  -- Pausar anúncios de pacote que atingiram impressões máximas
+  -- Encerrar anúncios de pacote que atingiram impressões máximas
   UPDATE anuncios
   SET 
-    status = 'completed',
+    status = 'ended',
     completion_reason = 'impressions_reached'
   WHERE 
-    status = 'active'
+    status IN ('active', 'paused')
     AND approval_status = 'approved'
     AND payment_type = 'package'
     AND max_impressions IS NOT NULL
     AND views_count >= max_impressions
-    AND completion_reason IS NULL;
+    AND status != 'ended';
 
-  -- Pausar anúncios CPM que esgotaram o orçamento
+  -- Encerrar anúncios CPM que esgotaram o orçamento
   UPDATE anuncios
   SET 
-    status = 'completed',
+    status = 'ended',
     completion_reason = 'budget_exhausted'
   WHERE 
-    status = 'active'
+    status IN ('active', 'paused')
     AND approval_status = 'approved'
     AND payment_type = 'cpm'
     AND budget IS NOT NULL
     AND spent >= budget
-    AND completion_reason IS NULL;
+    AND status != 'ended';
 END;
 $$ LANGUAGE plpgsql;
 

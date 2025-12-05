@@ -82,7 +82,7 @@ export const trackAdImpression = async (adId: string): Promise<boolean> => {
       };
 
       if (shouldPause) {
-        updateData.status = 'completed';
+        updateData.status = 'ended';
         updateData.completion_reason = completionReason;
       }
 
@@ -120,7 +120,7 @@ export const trackAdImpression = async (adId: string): Promise<boolean> => {
       };
 
       if (shouldPause) {
-        updateData.status = 'completed';
+        updateData.status = 'ended';
         updateData.completion_reason = completionReason;
       }
 
@@ -153,14 +153,15 @@ export const checkAndPauseExpiredAds = async (): Promise<number> => {
   try {
     const now = new Date().toISOString();
 
-    // Buscar anúncios ativos que passaram da data de término
+    // Buscar anúncios ativos ou pausados que passaram da data de término
     const { data: expiredAds, error } = await supabase
       .from('anuncios')
       .select('id')
-      .eq('status', 'active')
+      .in('status', ['active', 'paused'])
       .eq('approval_status', 'approved')
       .not('end_date', 'is', null)
-      .lt('end_date', now);
+      .lt('end_date', now)
+      .neq('status', 'ended');
 
     if (error) {
       console.error('Error fetching expired ads:', error);
@@ -171,11 +172,11 @@ export const checkAndPauseExpiredAds = async (): Promise<number> => {
       return 0;
     }
 
-    // Pausar todos os anúncios expirados
+    // Encerrar todos os anúncios expirados
     const { error: updateError } = await supabase
       .from('anuncios')
       .update({
-        status: 'completed',
+        status: 'ended',
         completion_reason: 'duration_ended',
       })
       .in('id', expiredAds.map(ad => ad.id));
@@ -282,11 +283,15 @@ export const getAdMetrics = async (adId: string) => {
  */
 export const pauseAd = async (adId: string, reason: 'manual_pause' | 'budget_exhausted' | 'impressions_reached' | 'duration_ended') => {
   try {
+    // Se for duration_ended, budget_exhausted ou impressions_reached, usar 'ended'
+    // Se for manual_pause, usar 'paused'
+    const newStatus = reason === 'manual_pause' ? 'paused' : 'ended';
+    
     const { data, error } = await supabase
       .from('anuncios')
       .update({
-        status: 'completed',
-        completion_reason: reason,
+        status: newStatus,
+        completion_reason: reason === 'manual_pause' ? null : reason,
       })
       .eq('id', adId)
       .select()

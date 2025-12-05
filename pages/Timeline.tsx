@@ -9,7 +9,6 @@ import AddEventImageModal from '@/src/components/timeline/AddEventImageModal';
 const SearchIcon = () => <Icon><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 const GlobeIcon = () => <Icon><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></Icon>;
 const InfoIcon = () => <Icon><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></Icon>;
-const PlusIcon = () => <Icon><path d="M5 12h14"></path><path d="M12 5v14"></path></Icon>;
 const ImageIcon = () => <Icon className="h-8 w-8"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const XIcon = () => <Icon><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></Icon>;
 const LinkIcon = () => <Icon><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></Icon>;
@@ -37,7 +36,6 @@ const Timeline: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [eventForImage, setEventForImage] = useState<TimelineEvent | null>(null);
@@ -50,9 +48,8 @@ const Timeline: React.FC = () => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (event.description && event.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-    const matchesStatus = selectedStatus === 'all' || event.status === selectedStatus;
-    
-    return matchesSearch && matchesCategory && matchesStatus;
+
+    return matchesSearch && matchesCategory;
   });
 
   const formatYear = (year: number) => {
@@ -101,66 +98,55 @@ const Timeline: React.FC = () => {
   return (
     <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-800 dark:text-gray-200 overflow-x-hidden transition-colors duration-300">
       {/* Header Section */}
-      <div className="relative pt-20 pb-16 flex flex-col items-center">
+      <div className="relative pt-6 pb-16 flex flex-col items-center">
         <div className="container mx-auto px-6 text-center">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight animated-gradient">
-            VIGIL UNVEILED
-          </h1>
-          <h2 className="text-2xl md:text-3xl font-light text-gray-600 dark:text-slate-300 mb-8 italic">
+          <h2 className="text-2xl md:text-3xl font-light text-gray-600 dark:text-slate-300 mb-4 italic">
             Uma Jornada Através das Teorias da Conspiração
           </h2>
-          <p className="text-gray-500 dark:text-slate-400 text-lg max-w-2xl mx-auto mb-8">
-            Explore a cronologia das teorias conspiratórias mais influentes da história moderna
+          <p className="text-gray-500 dark:text-slate-400 text-lg max-w-2xl mx-auto mb-6">
+            Explore a cronologia dos eventos mais influentes que tentaram ocultar da história moderna
           </p>
 
           {/* Centered Controls */}
-          <div className="max-w-4xl mx-auto w-full px-4 z-10">
-            <div className="bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-enhanced rounded-xl p-4 border border-light-border dark:border-dark-border shadow-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Buscar eventos..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-full text-gray-800 dark:text-gray-200"
-                  />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                    <SearchIcon />
+          <div className="max-w-6xl mx-auto w-full px-4 z-10">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+              {/* Filters Container */}
+              <div className="bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-enhanced rounded-xl p-4 border border-light-border dark:border-dark-border shadow-lg flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Buscar eventos..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-full text-gray-800 dark:text-gray-200"
+                    />
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+                      <SearchIcon />
+                    </div>
                   </div>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 w-full"
+                  >
+                    <option value="all">Todas as Categorias</option>
+                    {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
                 </div>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 w-full"
-                >
-                  <option value="all">Todas as Categorias</option>
-                  {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 w-full"
-                >
-                  <option value="all">Todos os Status</option>
-                  <option value="confirmed">Confirmado</option>
-                  <option value="disputed">Disputado</option>
-                  <option value="debunked">Desmentido</option>
-                </select>
               </div>
-            </div>
 
-            {/* Add Event Button */}
-            <div className="mt-6">
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto shadow-lg"
-              >
-                <PlusIcon />
-                Adicionar Evento
-              </button>
+              {/* Add Event Button - Outside the container */}
+              <div className="lg:flex-shrink-0">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-secondary hover:bg-blue-700 text-white font-bold rounded-full transition-colors px-6 py-3 shadow-md flex items-center justify-center whitespace-nowrap w-full lg:w-auto"
+                >
+                  Adicionar Evento
+                </button>
+              </div>
             </div>
           </div>
         </div>

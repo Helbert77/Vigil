@@ -42,22 +42,56 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
         setAllAdsCount(totalCount);
       }
 
-      // Buscar anúncios filtrados
+      // Buscar todos os anúncios primeiro
       let query = supabase
         .from('anuncios')
         .select('*')
         .eq('advertiser_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (filter !== 'all') {
-        query = query.eq('status', filter);
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
 
-      setAds(data || []);
+      // Verificar e atualizar anúncios expirados no frontend
+      const now = new Date();
+      const expiredAdIds: string[] = [];
+      
+      let updatedAds = (data || []).map((ad: any) => {
+        // Verificar se a data de término passou
+        if (ad.end_date && new Date(ad.end_date) < now && ad.status !== 'ended') {
+          expiredAdIds.push(ad.id);
+          return { ...ad, status: 'ended', completion_reason: 'duration_ended' };
+        }
+        return ad;
+      });
+
+      // Atualizar no banco de dados se houver anúncios expirados
+      if (expiredAdIds.length > 0) {
+        await supabase
+          .from('anuncios')
+          .update({
+            status: 'ended',
+            completion_reason: 'duration_ended',
+          })
+          .in('id', expiredAdIds);
+      }
+
+      // Aplicar filtro após verificar expiração
+      if (filter !== 'all') {
+        if (filter === 'ended') {
+          // Para 'ended', incluir anúncios com status 'ended' ou que expiraram por data
+          updatedAds = updatedAds.filter((ad: any) => {
+            const isEnded = ad.status === 'ended';
+            const isExpired = ad.end_date && new Date(ad.end_date) < now;
+            return isEnded || isExpired;
+          });
+        } else {
+          updatedAds = updatedAds.filter((ad: any) => ad.status === filter);
+        }
+      }
+
+      setAds(updatedAds);
     } catch (error: any) {
       console.error('Erro ao buscar anúncios:', error);
       addToast('Erro ao carregar anúncios', 'error');
@@ -342,6 +376,15 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                     <div className="text-right">
                       <span className="block">Valor Restante:</span>
                       <span className={`font-bold ${(() => {
+                          // Verificar se está encerrado por status ou por data
+                          const isEnded = ad.status === 'ended';
+                          const isExpired = ad.end_date && new Date(ad.end_date) < new Date();
+                          const shouldShowZero = isEnded || isExpired;
+
+                          if (shouldShowZero) {
+                            return 'text-red-500';
+                          }
+
                           let remaining = ad.budget;
 
                           // Cálculo para pacotes baseados em tempo
@@ -356,14 +399,21 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                               const percentageRemaining = Math.max(0, 1 - (elapsed / totalDuration));
                               remaining = ad.budget * percentageRemaining;
                             }
-                          } else if (ad.status === 'ended') {
-                            remaining = 0;
                           }
 
                           return remaining <= 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400';
                         })()
                         }`}>
                         € {(() => {
+                          // Verificar se está encerrado por status ou por data
+                          const isEnded = ad.status === 'ended';
+                          const isExpired = ad.end_date && new Date(ad.end_date) < new Date();
+                          const shouldShowZero = isEnded || isExpired;
+
+                          if (shouldShowZero) {
+                            return '0.00';
+                          }
+
                           let remaining = ad.budget;
 
                           if (ad.payment_type === 'package' && ad.start_date && ad.end_date && ad.status === 'active') {
@@ -377,8 +427,6 @@ const MyAds: React.FC<MyAdsProps> = ({ user }) => {
                               const percentageRemaining = Math.max(0, 1 - (elapsed / totalDuration));
                               remaining = ad.budget * percentageRemaining;
                             }
-                          } else if (ad.status === 'ended') {
-                            remaining = 0;
                           }
 
                           return remaining.toFixed(2);

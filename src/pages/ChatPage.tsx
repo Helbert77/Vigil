@@ -2041,11 +2041,7 @@ Recarregue esta página após ativar.`);
     <>
       <style>{scrollbarStyles}</style>
       <div
-        className="h-screen max-h-screen flex flex-col md:flex-row bg-light-bg dark:bg-dark-bg overflow-hidden"
-        style={{
-          height: 'calc(100dvh - 80px)', // Use dynamic viewport height for better mobile support
-          minHeight: 'calc(100vh - 80px)' // Fallback for browsers that don't support dvh
-        }}
+        className="fixed top-14 sm:top-16 left-0 right-0 bottom-0 flex flex-col md:flex-row bg-light-bg dark:bg-dark-bg overflow-hidden z-40"
       >
         {/* Initial Loading Overlay */}
       {isInitializing && (
