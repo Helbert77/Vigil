@@ -23,6 +23,17 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     persistSession: true,
     detectSessionInUrl: true,
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+    log_level: 'error', // Disable verbose logging
+  },
+  global: {
+    headers: {
+      'x-client-info': 'vigil-web',
+    },
+  },
 });
 
 // Opcional: cliente de serviço para ambientes seguros (Node/SSR/Workers)

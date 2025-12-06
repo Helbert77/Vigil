@@ -137,8 +137,6 @@ export interface TimelineEvent {
   year: number;
   category: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
   description?: string;
-  impact: 'low' | 'medium' | 'high' | 'critical';
-  status: 'confirmed' | 'disputed' | 'debunked';
   country?: string;
   parent_id?: string;
   x_position: number;
@@ -146,11 +144,11 @@ export interface TimelineEvent {
   children_ids?: string[];
   source_1?: string;
   source_2?: string;
-  evidence_level?: 'baixo' | 'medio' | 'alto' | 'confirmado';
-  social_damage?: 'baixo' | 'medio' | 'alto' | 'critico';
-  verification_priority?: 'baixa' | 'media' | 'alta' | 'urgente';
   event_date?: string;
   image_url?: string;
+  upvotes?: number;
+  downvotes?: number;
+  user_votes?: { [userId: string]: 'up' | 'down' };
 }
 
 export interface TrendingTopic {

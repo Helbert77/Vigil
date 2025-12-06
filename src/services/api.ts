@@ -870,27 +870,71 @@ export const fetchFollows = async (userId: string) => {
 
 // --- Timeline Events API ---
 export const fetchTimelineEvents = () =>
-  supabase.rpc('get_timeline_events_with_children');
+  supabase
+    .from('timeline_events')
+    .select('*')
+    .order('year', { ascending: true });
 
 export const createTimelineEvent = (eventData: {
   title: string;
   year: number;
   category: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
   description?: string;
-  impact: 'low' | 'medium' | 'high' | 'critical';
-  status: 'confirmed' | 'disputed' | 'debunked';
   country?: string;
   parent_id?: string;
   x_position?: number;
   y_position?: number;
   source_1?: string;
   source_2?: string;
-  evidence_level?: 'baixo' | 'medio' | 'alto' | 'confirmado';
-  social_damage?: 'baixo' | 'medio' | 'alto' | 'critico';
   event_date?: string;
   image_url?: string;
 }) =>
   supabase.from('timeline_events').insert(eventData).select().single();
+
+export const voteOnEvent = async (
+  eventId: string, 
+  voteType: 'up' | 'down', 
+  userId: string
+) => {
+  // Buscar evento atual
+  const { data: event, error: fetchError } = await supabase
+    .from('timeline_events')
+    .select('upvotes, downvotes, user_votes')
+    .eq('id', eventId)
+    .single();
+
+  if (fetchError || !event) {
+    return { data: null, error: fetchError || new Error('Evento não encontrado') };
+  }
+
+  const userVotes = event.user_votes || {};
+  const previousVote = userVotes[userId];
+  
+  let upvotes = event.upvotes || 0;
+  let downvotes = event.downvotes || 0;
+
+  // Se clicou no mesmo botão, remove o voto
+  if (previousVote === voteType) {
+    if (voteType === 'up') upvotes--;
+    if (voteType === 'down') downvotes--;
+    delete userVotes[userId];
+  } else {
+    // Remover voto anterior se existir
+    if (previousVote === 'up') upvotes--;
+    if (previousVote === 'down') downvotes--;
+
+    // Adicionar novo voto
+    if (voteType === 'up') upvotes++;
+    if (voteType === 'down') downvotes++;
+    
+    userVotes[userId] = voteType;
+  }
+
+  return supabase
+    .from('timeline_events')
+    .update({ upvotes, downvotes, user_votes: userVotes })
+    .eq('id', eventId);
+};
 
 export const updateTimelineEvent = (eventId: string, updates: { [key: string]: any }) =>
   supabase.from('timeline_events').update(updates).eq('id', eventId);

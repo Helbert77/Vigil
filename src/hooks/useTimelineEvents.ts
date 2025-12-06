@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { TimelineEvent } from '../../types';
 import { fetchTimelineEvents, updateEventPosition } from '../services/api';
+import { supabase } from '../../integrations/supabase/client';
 
 export const useTimelineEvents = () => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
@@ -21,8 +22,6 @@ export const useTimelineEvents = () => {
         year: event.year,
         category: event.category,
         description: event.description,
-        impact: event.impact,
-        status: event.status,
         country: event.country,
         parent_id: event.parent_id,
         x_position: event.x_position || 0,
@@ -30,11 +29,11 @@ export const useTimelineEvents = () => {
         children_ids: event.children_ids || [],
         source_1: event.source_1,
         source_2: event.source_2,
-        evidence_level: event.evidence_level,
-        social_damage: event.social_damage,
-        verification_priority: event.verification_priority,
         event_date: event.event_date,
-        image_url: event.image_url
+        image_url: event.image_url,
+        upvotes: event.upvotes || 0,
+        downvotes: event.downvotes || 0,
+        user_votes: event.user_votes || {}
       }));
       
       setEvents(formattedEvents);
@@ -64,6 +63,92 @@ export const useTimelineEvents = () => {
   useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  // Realtime listener for timeline events - ultra optimized with startTransition
+  useEffect(() => {
+    const channel = supabase
+      .channel('timeline_events_changes', {
+        config: {
+          broadcast: { self: false },
+          presence: { key: '' }
+        }
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'timeline_events'
+        },
+        (payload) => {
+          // Defer ALL processing to next microtask - handler returns immediately
+          queueMicrotask(() => {
+            const eventType = payload.eventType;
+            
+            if (eventType === 'UPDATE') {
+              const id = payload.new.id;
+              const upvotes = payload.new.upvotes;
+              const downvotes = payload.new.downvotes;
+              const userVotes = payload.new.user_votes;
+              
+              startTransition(() => {
+                setEvents(prev => {
+                  const index = prev.findIndex(e => e.id === id);
+                  if (index === -1) return prev;
+                  
+                  const existing = prev[index];
+                  if (existing.upvotes === upvotes && existing.downvotes === downvotes) {
+                    return prev;
+                  }
+                  
+                  const updated = [...prev];
+                  updated[index] = {
+                    ...existing,
+                    upvotes,
+                    downvotes,
+                    user_votes: userVotes
+                  };
+                  return updated;
+                });
+              });
+              
+            } else if (eventType === 'INSERT') {
+              const newEvent = payload.new as TimelineEvent;
+              
+              startTransition(() => {
+                setEvents(prev => {
+                  if (prev.some(e => e.id === newEvent.id)) return prev;
+                  const updated = [...prev, newEvent];
+                  // Only sort if last event is out of order
+                  if (updated.length > 1 && updated[updated.length - 2].year > newEvent.year) {
+                    return updated.sort((a, b) => a.year - b.year);
+                  }
+                  return updated;
+                });
+              });
+              
+            } else if (eventType === 'DELETE') {
+              const id = payload.old.id;
+              
+              startTransition(() => {
+                setEvents(prev => {
+                  const index = prev.findIndex(e => e.id === id);
+                  if (index === -1) return prev;
+                  const updated = [...prev];
+                  updated.splice(index, 1);
+                  return updated;
+                });
+              });
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return {
     events,

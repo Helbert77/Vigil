@@ -110,13 +110,12 @@ function generateInsertSQL(events) {
     const escapedSource1 = (event.source_1 || '').replace(/'/g, "''");
     const escapedSource2 = (event.source_2 || '').replace(/'/g, "''");
     
-    return `('${escapedTitle}', ${event.year}, '${event.category}', '${escapedDescription}', '${event.impact}', '${event.status}', '${escapedCountry}', '${escapedSource1}', '${escapedSource2}', '${event.evidence_level}', '${event.social_damage}', '${event.verification_priority}', ${event.event_date ? `'${event.event_date}'` : 'NULL'}, ${event.x_position}, ${event.y_position})`;
+    return `('${escapedTitle}', ${event.year}, '${event.category}', '${escapedDescription}', '${escapedCountry}', '${escapedSource1}', '${escapedSource2}', ${event.event_date ? `'${event.event_date}'` : 'NULL'}, ${event.x_position}, ${event.y_position})`;
   }).join(',\n');
   
   return `INSERT INTO public.timeline_events (
-    title, year, category, description, impact, status, country,
-    source_1, source_2, evidence_level, social_damage, verification_priority,
-    event_date, x_position, y_position
+    title, year, category, description, country,
+    source_1, source_2, event_date, x_position, y_position
   ) VALUES\n${values};`;
 }
 

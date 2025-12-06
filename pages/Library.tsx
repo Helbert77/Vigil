@@ -142,34 +142,21 @@ const Library: React.FC<LibraryProps> = ({
           minHeight: '60px'
         }}
       >
-        <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
-        
-        {/* Botão Adicionar Item - Visível apenas para Premium e Admin */}
-        {userCanAddItems && (
-          <button
-            id="library-add-button"
-            data-testid="add-library-item-button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="library-add-button flex items-center justify-center bg-secondary hover:bg-blue-700 text-white font-bold rounded-full transition-colors md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base shadow-md"
-            aria-label="Adicionar Item"
-            type="button"
-            style={{ 
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              visibility: 'visible',
-              opacity: 1,
-              zIndex: 10,
-              position: 'relative',
-              minWidth: '150px',
-              minHeight: '40px',
-              maxWidth: 'none',
-              flexShrink: 0
-            }}
-          >
-            <span>Adicionar Item</span>
-          </button>
-        )}
+        <div>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
+            Explore o acervo proibido de conhecimento que desafia a narrativa oficial. Ebooks, artigos, documentos e links que revelam as verdades que tentaram esconder de você.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
+            Contribua para o crescimento do nosso acervo.{' '}
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none rounded px-1 focus-subtle font-medium"
+            >
+              Contribua
+            </button>
+          </p>
+        </div>
       </div>
 
       {/* Filters and Controls */}
