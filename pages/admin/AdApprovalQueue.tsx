@@ -20,7 +20,7 @@ interface PendingAd {
   advertiser_id: string;
   advertiser_name: string;
   advertiser_avatar: string | null;
-  payment_type: 'package' | 'cpm' | null;
+  payment_type: 'package' | 'cpm' | 'credits' | null;
   package_type: string | null;
   budget: number | null;
   cpm_rate: number | null;
@@ -51,8 +51,10 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
         .eq('payment_status', 'paid')
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-
+      if (error) {
+        throw error;
+      }
+      
       setAds(data as PendingAd[] || []);
     } catch (error: any) {
       console.error('Erro ao buscar anúncios pendentes:', error);
@@ -144,6 +146,13 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       return (
         <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
           💰 CPM €{ad.cpm_rate?.toFixed(2)} - Budget €{ad.budget?.toFixed(2)}
+        </span>
+      );
+    }
+    if (ad.payment_type === 'credits') {
+      return (
+        <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
+          💳 Créditos - Budget €{ad.budget?.toFixed(2)}
         </span>
       );
     }

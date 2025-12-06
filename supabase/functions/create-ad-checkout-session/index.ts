@@ -69,8 +69,31 @@ serve(async (req) => {
       });
     }
 
-    // Validar anúncio se necessário
-    if (adId) {
+    // Para créditos, se adId foi fornecido, validar que existe
+    if (paymentType === 'credits' && adId) {
+      const { data: ad, error: adError } = await supabase
+        .from('anuncios')
+        .select('id, advertiser_id')
+        .eq('id', adId)
+        .single();
+
+      if (adError || !ad) {
+        return new Response(JSON.stringify({ error: 'Ad not found for credits payment' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (ad.advertiser_id !== userId) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Validar anúncio para package e cpm (créditos valida depois)
+    if ((paymentType === 'package' || paymentType === 'cpm') && adId) {
       const { data: ad, error: adError } = await supabase
         .from('anuncios')
         .select('id, advertiser_id, title, description')
@@ -144,6 +167,11 @@ serve(async (req) => {
         ...metadata,
         credit_amount: creditAmount.toString(),
       };
+      
+      // SEMPRE incluir ad_id se fornecido e válido
+      if (adId && typeof adId === 'string' && adId.trim() !== '') {
+        metadata.ad_id = adId.trim();
+      }
 
       // Criar sessão sem price_id, usando amount direto
       priceId = ''; // Vai usar amount

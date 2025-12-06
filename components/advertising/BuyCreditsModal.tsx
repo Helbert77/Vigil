@@ -8,6 +8,7 @@ interface BuyCreditsModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: User;
+  onCreditSelect?: (amount: number) => void;
 }
 
 const XIcon = () => (
@@ -16,7 +17,7 @@ const XIcon = () => (
   </svg>
 );
 
-const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, user }) => {
+const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, user, onCreditSelect }) => {
   const { addToast } = useToast();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +62,14 @@ const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, user
       return;
     }
 
+    // Se há callback de seleção, usar o fluxo unificado
+    if (onCreditSelect) {
+      onCreditSelect(selectedAmount);
+      onClose();
+      return;
+    }
+
+    // Fluxo direto (mantido para compatibilidade)
     setIsLoading(true);
 
     try {
@@ -79,7 +88,28 @@ const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, user
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro na requisição: ${response.status} - ${errorText || 'Resposta vazia'}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Resposta inválida do servidor: ${text || 'Resposta não é JSON'}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Resposta vazia do servidor');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        throw new Error(`Erro ao processar resposta: ${parseError instanceof Error ? parseError.message : 'JSON inválido'}`);
+      }
 
       if (data.error) {
         throw new Error(data.error);

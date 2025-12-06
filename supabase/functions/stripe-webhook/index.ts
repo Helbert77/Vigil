@@ -49,8 +49,24 @@ serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      return new Response(JSON.stringify({ error: 'Invalid signature', details: err.message }), { status: 400 });
     }
+
+    // Obter body da requisição
+    const body = await req.text();
+    
+    // Verificar assinatura e construir evento
+    let event: Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
+    } catch (err: any) {
+      console.error('Webhook signature verification failed:', err.message);
+      return new Response(JSON.stringify({ error: 'Invalid signature', details: err.message }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Processing Stripe event:', event.type);
 
     // Processar eventos do Stripe
     switch (event.type) {
@@ -61,10 +77,16 @@ serve(async (req: Request) => {
         const paymentIntentId = session.payment_intent as string;
 
         // Verificar se é pagamento de anúncio
-        if (session.metadata?.ad_id || session.metadata?.payment_type) {
-          const paymentType = session.metadata.payment_type;
-          const adId = session.metadata.ad_id;
-          const userIdFromMeta = session.metadata.user_id;
+        // Verificar metadata com diferentes formatos de chave
+        const rawAdId = session.metadata?.ad_id || session.metadata?.adId;
+        const paymentType = session.metadata?.payment_type;
+        
+        if (rawAdId || paymentType) {
+          // Garantir que adId seja tratado corretamente (null, undefined ou string vazia = undefined)
+          const adId = rawAdId && String(rawAdId).trim() !== '' 
+            ? String(rawAdId).trim()
+            : undefined;
+          const userIdFromMeta = session.metadata?.user_id;
 
           if (paymentType === 'package' && adId) {
             // Pagamento de pacote de anúncio
@@ -115,18 +137,14 @@ serve(async (req: Request) => {
 
                 if (notificationError) {
                   console.error('Error sending notifications:', notificationError);
-                } else {
-                  console.log(`✅ Notifications sent to ${moderators.length} moderators/admins for ad ${adId}`);
                 }
-              } else {
-                console.log('No moderators/admins found to notify');
               }
             } catch (error) {
               console.error('Error in notification process:', error);
             }
 
-          } else if (paymentType === 'credits') {
-            // Compra de créditos
+          } else if (paymentType === 'credits' && adId) {
+            // Compra de créditos COM anúncio associado
             const creditAmount = parseFloat(session.metadata.credit_amount || '0');
             const bonus = calculateBonus(creditAmount);
             const totalCredits = creditAmount + bonus;
@@ -160,7 +178,86 @@ serve(async (req: Request) => {
               description: `Compra de €${creditAmount} em créditos (+ €${bonus.toFixed(2)} bônus)`,
             });
 
-            console.log(`Credits purchased: €${creditAmount} + €${bonus.toFixed(2)} bonus for user ${userIdFromMeta}`);
+            // Atualizar anúncio para aprovação (IGUAL AOS OUTROS PLANOS)
+            const { error: updateError } = await supabase.from('anuncios').update({
+              payment_status: 'paid',
+              stripe_payment_intent_id: paymentIntentId,
+              approval_status: 'pending_approval',
+              status: 'paused', // Manter pausado até aprovação
+              budget: creditAmount,
+              spent: 0,
+              payment_type: 'credits',
+            }).eq('id', adId);
+
+            if (updateError) {
+              console.error('Error updating ad with credits:', updateError);
+            }
+
+            // Enviar notificações para moderadores/admins sobre novo anúncio pendente
+            try {
+              const { data: moderators, error: moderatorsError } = await supabase
+                .from('profiles')
+                .select('id')
+                .in('role', ['admin', 'moderator']);
+
+              if (moderatorsError) {
+                console.error('Error fetching moderators:', moderatorsError);
+              } else if (moderators && moderators.length > 0) {
+                const notifications = moderators.map((mod: { id: string }) => ({
+                  recipient_id: mod.id,
+                  actor_id: userIdFromMeta || null,
+                  type: 'ad_approval_pending',
+                  metadata: { ad_id: adId }
+                }));
+
+                const { error: notificationError } = await supabase
+                  .from('notifications')
+                  .insert(notifications);
+
+                if (notificationError) {
+                  console.error('Error sending notifications:', notificationError);
+                }
+              }
+            } catch (error) {
+              console.error('Error in notification process:', error);
+            }
+
+          } else if (paymentType === 'credits' && !adId) {
+            // Compra de créditos SEM anúncio associado (apenas recarga)
+            const creditAmount = parseFloat(session.metadata.credit_amount || '0');
+            const bonus = calculateBonus(creditAmount);
+            const totalCredits = creditAmount + bonus;
+
+            // Inserir/atualizar créditos do usuário
+            const { data: existingCredits } = await supabase
+              .from('user_ad_credits')
+              .select('id, balance, total_purchased')
+              .eq('user_id', userIdFromMeta)
+              .single();
+
+            if (existingCredits) {
+              await supabase.from('user_ad_credits').update({
+                balance: existingCredits.balance + totalCredits,
+                total_purchased: existingCredits.total_purchased + creditAmount,
+              }).eq('user_id', userIdFromMeta);
+            } else {
+              await supabase.from('user_ad_credits').insert({
+                user_id: userIdFromMeta,
+                balance: totalCredits,
+                total_purchased: creditAmount,
+              });
+            }
+
+            // Registrar transação
+            await supabase.from('ad_credit_transactions').insert({
+              user_id: userIdFromMeta,
+              amount: creditAmount,
+              transaction_type: 'purchase',
+              stripe_payment_intent_id: paymentIntentId,
+              description: `Compra de €${creditAmount} em créditos (+ €${bonus.toFixed(2)} bônus)`,
+            });
+
+            console.log(`Credits purchased (no ad): €${creditAmount} + €${bonus.toFixed(2)} bonus for user ${userIdFromMeta}`);
 
           } else if (paymentType === 'cpm' && adId) {
             // Pagamento de anúncio CPM
@@ -200,18 +297,15 @@ serve(async (req: Request) => {
 
                 if (notificationError) {
                   console.error('Error sending notifications:', notificationError);
-                } else {
-                  console.log(`✅ Notifications sent to ${moderators.length} moderators/admins for ad ${adId}`);
                 }
-              } else {
-                console.log('No moderators/admins found to notify');
               }
             } catch (error) {
               console.error('Error in notification process:', error);
             }
           }
+        }
 
-        } else if (userId && subscriptionId) {
+        if (userId && subscriptionId) {
           // Pagamento de assinatura (código existente)
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 

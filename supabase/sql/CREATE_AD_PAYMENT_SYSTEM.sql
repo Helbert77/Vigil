@@ -8,7 +8,7 @@
 -- 1. ADICIONAR COLUNAS NA TABELA ANUNCIOS
 -- ============================================
 
-ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS payment_type VARCHAR(20) DEFAULT 'free' CHECK (payment_type IN ('free', 'package', 'cpm'));
+ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS payment_type VARCHAR(20) DEFAULT 'free' CHECK (payment_type IN ('free', 'package', 'cpm', 'credits'));
 ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS package_type VARCHAR(20) CHECK (package_type IN ('bronze', 'silver', 'gold', 'platinum') OR package_type IS NULL);
 ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS budget DECIMAL(10,2);
 ALTER TABLE anuncios ADD COLUMN IF NOT EXISTS spent DECIMAL(10,2) DEFAULT 0;

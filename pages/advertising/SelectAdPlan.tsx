@@ -23,6 +23,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   const [selectedTab, setSelectedTab] = useState<'packages' | 'cpm'>('packages');
   const [selectedPackage, setSelectedPackage] = useState<PackageType | null>(null);
   const [selectedCpmBudget, setSelectedCpmBudget] = useState<number | null>(null);
+  const [selectedCreditAmount, setSelectedCreditAmount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isBuyCreditsOpen, setIsBuyCreditsOpen] = useState(false);
 
@@ -61,6 +62,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   };
 
   const handleProceedToPayment = async () => {
+    // Validações baseadas no que foi selecionado
     if (selectedTab === 'packages' && !selectedPackage) {
       addToast('Selecione um pacote', 'error');
       return;
@@ -68,6 +70,70 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 
     if (selectedTab === 'cpm' && !selectedCpmBudget) {
       addToast('Defina um orçamento', 'error');
+      return;
+    }
+
+    if (selectedCreditAmount && !selectedTab) {
+      // Usuário selecionou créditos, processar como compra de créditos
+      setIsLoading(true);
+
+      try {
+        const requestBody = {
+          userId: user.id,
+          adId: adId, // ✅ CORREÇÃO: Incluir adId para créditos
+          paymentType: 'credits',
+          creditAmount: selectedCreditAmount,
+          successUrl: `${window.location.origin}/?page=PaymentSuccess&session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/?page=SelectAdPlan&ad_id=${adId}`,
+        };
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-ad-checkout-session`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            },
+            body: JSON.stringify(requestBody),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Erro na requisição: ${response.status} - ${errorText || 'Resposta vazia'}`);
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Resposta inválida do servidor: ${text || 'Resposta não é JSON'}`);
+        }
+
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Resposta vazia do servidor');
+        }
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (parseError) {
+          throw new Error(`Erro ao processar resposta: ${parseError instanceof Error ? parseError.message : 'JSON inválido'}`);
+        }
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (data.url) {
+          window.location.href = data.url;
+        }
+
+      } catch (error: any) {
+        addToast(error.message || 'Erro ao processar pagamento', 'error');
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -96,7 +162,28 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         }
       );
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro na requisição: ${response.status} - ${errorText || 'Resposta vazia'}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Resposta inválida do servidor: ${text || 'Resposta não é JSON'}`);
+      }
+
+      const text = await response.text();
+      if (!text || text.trim() === '') {
+        throw new Error('Resposta vazia do servidor');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        throw new Error(`Erro ao processar resposta: ${parseError instanceof Error ? parseError.message : 'JSON inválido'}`);
+      }
 
       if (data.error) {
         throw new Error(data.error);
@@ -273,21 +360,40 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         )}
 
         {/* Botão de comprar créditos */}
-        <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-xl p-6 mb-8">
+        <div className={`bg-gradient-to-r rounded-xl p-6 mb-8 border transition-all duration-200 ${
+          selectedCreditAmount 
+            ? 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800'
+            : 'from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800'
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-1">
-                Prefere usar créditos?
+              <h3 className={`text-lg font-semibold mb-1 ${
+                selectedCreditAmount 
+                  ? 'text-green-900 dark:text-green-100'
+                  : 'text-purple-900 dark:text-purple-100'
+              }`}>
+                {selectedCreditAmount ? 'Créditos Selecionados!' : 'Prefere usar créditos?'}
               </h3>
-              <p className="text-sm text-purple-700 dark:text-purple-300">
-                Compre créditos e use quando quiser criar novos anúncios CPM
+              <p className={`text-sm ${
+                selectedCreditAmount 
+                  ? 'text-green-700 dark:text-green-300'
+                  : 'text-purple-700 dark:text-purple-300'
+              }`}>
+                {selectedCreditAmount 
+                  ? `€${selectedCreditAmount} em créditos selecionados. Clique em "Prosseguir para Pagamento" para finalizar.`
+                  : 'Compre créditos e use quando quiser criar novos anúncios CPM'
+                }
               </p>
             </div>
             <button
               onClick={() => setIsBuyCreditsOpen(true)}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+              className={`px-6 py-3 font-semibold rounded-lg transition-colors ${
+                selectedCreditAmount 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+              }`}
             >
-              Comprar Créditos
+              {selectedCreditAmount ? 'Alterar Valor' : 'Comprar Créditos'}
             </button>
           </div>
         </div>
@@ -302,10 +408,10 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             </div>
             <button
               onClick={handleProceedToPayment}
-              disabled={isLoading || (selectedTab === 'packages' && !selectedPackage) || (selectedTab === 'cpm' && !selectedCpmBudget)}
+              disabled={isLoading || (selectedTab === 'packages' && !selectedPackage) || (selectedTab === 'cpm' && !selectedCpmBudget) && !selectedCreditAmount}
               className={`
                 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200
-                ${(selectedPackage || selectedCpmBudget) && !isLoading
+                ${(selectedPackage || selectedCpmBudget || selectedCreditAmount) && !isLoading
                   ? 'bg-primary hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                   : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 }
@@ -313,7 +419,9 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             >
               {isLoading
                 ? 'Processando...'
-                : 'Prosseguir para Pagamento →'
+                : selectedCreditAmount
+                  ? `Pagar €${selectedCreditAmount} (Créditos) →`
+                  : 'Prosseguir para Pagamento →'
               }
             </button>
           </div>
@@ -325,6 +433,12 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         isOpen={isBuyCreditsOpen}
         onClose={() => setIsBuyCreditsOpen(false)}
         user={user}
+        onCreditSelect={(amount) => {
+          setSelectedCreditAmount(amount);
+          setSelectedTab(undefined as any); // Limpar seleção de tabs
+          setSelectedPackage(null);
+          setSelectedCpmBudget(null);
+        }}
       />
     </div>
   );
