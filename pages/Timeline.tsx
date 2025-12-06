@@ -359,9 +359,9 @@ const Timeline: React.FC = () => {
                   <div className="md:hidden relative">
                     {isEven ? (
                       // Evento par: Balão à esquerda, imagem à direita
-                      <div className="grid grid-cols-2 gap-4 items-center">
+                      <div className="grid grid-cols-2 gap-6 items-start">
                         {/* Balão à esquerda */}
-                        <div className="flex justify-start pl-6">
+                        <div className="flex justify-start pl-8 pt-8">
                           <div
                             className="timeline-event floating-element bg-light-card dark:bg-dark-card p-1 rounded-full shadow-lg border border-light-border dark:border-dark-border cursor-pointer transition-all duration-300 flex items-center justify-center w-28 h-28 hover:animate-pulse-glow"
                             onClick={() => setSelectedEvent(event)}
@@ -376,7 +376,7 @@ const Timeline: React.FC = () => {
 
                         {/* Imagem à direita */}
                         {event.image_url ? (
-                          <div className="pr-6">
+                          <div className="pr-8 pt-4">
                             <div className="w-full h-32 rounded-lg overflow-hidden shadow-lg border border-light-border dark:border-dark-border cursor-pointer hover:animate-pulse-glow transition-all duration-300" onClick={() => setSelectedEvent(event)}>
                               <img
                                 src={event.image_url}
@@ -386,7 +386,7 @@ const Timeline: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <div className="pr-6">
+                          <div className="pr-8 pt-4">
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-full h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
@@ -400,10 +400,10 @@ const Timeline: React.FC = () => {
                       </div>
                     ) : (
                       // Evento ímpar: Imagem à esquerda, balão à direita
-                      <div className="grid grid-cols-2 gap-4 items-center">
+                      <div className="grid grid-cols-2 gap-6 items-start">
                         {/* Imagem à esquerda */}
                         {event.image_url ? (
-                          <div className="pl-6">
+                          <div className="pl-8 pt-4">
                             <div className="w-full h-32 rounded-lg overflow-hidden shadow-lg border border-light-border dark:border-dark-border cursor-pointer hover:animate-pulse-glow transition-all duration-300" onClick={() => setSelectedEvent(event)}>
                               <img
                                 src={event.image_url}
@@ -413,7 +413,7 @@ const Timeline: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <div className="pl-6">
+                          <div className="pl-8 pt-4">
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-full h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
@@ -426,7 +426,7 @@ const Timeline: React.FC = () => {
                         )}
 
                         {/* Balão à direita */}
-                        <div className="flex justify-end pr-6">
+                        <div className="flex justify-end pr-8 pt-8">
                           <div
                             className="timeline-event floating-element bg-light-card dark:bg-dark-card p-1 rounded-full shadow-lg border border-light-border dark:border-dark-border cursor-pointer transition-all duration-300 flex items-center justify-center w-28 h-28 hover:animate-pulse-glow"
                             onClick={() => setSelectedEvent(event)}
