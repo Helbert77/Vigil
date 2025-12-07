@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
@@ -246,9 +247,10 @@ serve(async (req) => {
           payment_status: 'pending',
           payment_type: paymentType,
           ...(packageType && { package_type: packageType }),
-          ...(cpmBudget && { budget: cpmBudget, cpm_rate: 8.00 }),
+          ...(cpmBudget && { budget: cpmBudget, cpm_rate: 6.00 }),
         })
         .eq('id', adId);
+
     }
 
     return new Response(
@@ -262,7 +264,6 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error creating checkout session:', error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',

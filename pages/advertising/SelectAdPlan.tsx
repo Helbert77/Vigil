@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
-import { AD_PRICING_CONFIG, getPackageArray, PackageType } from '@/src/config/adPricing';
+import { AD_PRICING_CONFIG, getPackageArray, PackageType, formatPrice, calculateCreditWithBonus } from '@/src/config/adPricing';
 import AdPackageCard from '@/components/advertising/AdPackageCard';
 import CPMCalculator from '@/components/advertising/CPMCalculator';
-import BuyCreditsModal from '@/components/advertising/BuyCreditsModal';
 import { pushHistoryState } from '@/src/utils/history';
 
 interface SelectAdPlanProps {
@@ -20,12 +19,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   const adId = urlParams.get('ad_id');
 
   const [adData, setAdData] = useState<any>(null);
-  const [selectedTab, setSelectedTab] = useState<'packages' | 'cpm'>('packages');
+  const [selectedTab, setSelectedTab] = useState<'packages' | 'cpm' | 'credits'>('packages');
   const [selectedPackage, setSelectedPackage] = useState<PackageType | null>(null);
   const [selectedCpmBudget, setSelectedCpmBudget] = useState<number | null>(null);
   const [selectedCreditAmount, setSelectedCreditAmount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBuyCreditsOpen, setIsBuyCreditsOpen] = useState(false);
+  const [balance, setBalance] = useState<number>(0);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     if (!adId) {
@@ -36,6 +36,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 
     fetchAdData();
   }, [adId]);
+
+  useEffect(() => {
+    if (selectedTab === 'credits') {
+      fetchUserCredits();
+      fetchTransactions();
+    }
+  }, [selectedTab, user.id]);
 
   const fetchAdData = async () => {
     if (!adId) return;
@@ -61,6 +68,31 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
     setAdData(data);
   };
 
+  const fetchUserCredits = async () => {
+    const { data, error } = await supabase
+      .from('user_ad_credits')
+      .select('balance')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) {
+      setBalance(data.balance);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    const { data, error } = await supabase
+      .from('ad_credit_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (data) {
+      setTransactions(data);
+    }
+  };
+
   const handleProceedToPayment = async () => {
     // Validações baseadas no que foi selecionado
     if (selectedTab === 'packages' && !selectedPackage) {
@@ -73,8 +105,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
       return;
     }
 
-    if (selectedCreditAmount && !selectedTab) {
-      // Usuário selecionou créditos, processar como compra de créditos
+    if (selectedTab === 'credits' && !selectedCreditAmount) {
+      addToast('Selecione um valor de créditos', 'error');
+      return;
+    }
+
+    if (selectedTab === 'credits' && selectedCreditAmount) {
+      // Usuário selecionou créditos na aba, processar como compra de créditos
       setIsLoading(true);
 
       try {
@@ -235,10 +272,10 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   const packages = getPackageArray();
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-8">
+    <div className="min-h-screen bg-light-bg dark:bg-dark-bg py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
 
 
           <button
@@ -251,11 +288,11 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             Voltar para Meus Anúncios
           </button>
 
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Escolha o Plano do seu Anúncio
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Selecione um pacote fixo ou defina um orçamento personalizado
+          <p className="text-base sm:text-lg text-gray-700 dark:text-gray-400">
+            Selecione um pacote fixo, defina um orçamento personalizado ou compre créditos
           </p>
         </div>
 
@@ -294,34 +331,62 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-4 mb-6 border-b border-light-border dark:border-dark-border">
+        <div className="flex space-x-1 sm:space-x-4 mb-6 border-b border-light-border dark:border-dark-border">
           <button
-            onClick={() => setSelectedTab('packages')}
+            onClick={() => {
+              setSelectedTab('packages');
+              setSelectedCreditAmount(null);
+            }}
             className={`
-              pb-4 px-2 font-semibold transition-colors relative
+              pb-4 px-1 sm:px-2 font-semibold transition-colors relative text-xs sm:text-sm
               ${selectedTab === 'packages'
                 ? 'text-primary dark:text-primary'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }
             `}
           >
-            Pacotes Fixos
+            <span className="hidden sm:inline">Pacotes Fixos</span>
+            <span className="sm:hidden">Pacotes</span>
             {selectedTab === 'packages' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
           <button
-            onClick={() => setSelectedTab('cpm')}
+            onClick={() => {
+              setSelectedTab('cpm');
+              setSelectedCreditAmount(null);
+            }}
             className={`
-              pb-4 px-2 font-semibold transition-colors relative
+              pb-4 px-1 sm:px-2 font-semibold transition-colors relative text-xs sm:text-sm
               ${selectedTab === 'cpm'
                 ? 'text-primary dark:text-primary'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }
             `}
           >
-            Orçamento Personalizado (CPM)
+            <span className="hidden sm:inline">Orçamento Personalizado (CPM)</span>
+            <span className="sm:hidden">CPM</span>
             {selectedTab === 'cpm' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setSelectedTab('credits');
+              setSelectedPackage(null);
+              setSelectedCpmBudget(null);
+            }}
+            className={`
+              pb-4 px-1 sm:px-2 font-semibold transition-colors relative text-xs sm:text-sm
+              ${selectedTab === 'credits'
+                ? 'text-primary dark:text-primary'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }
+            `}
+          >
+            <span className="hidden sm:inline">Comprar Créditos</span>
+            <span className="sm:hidden">Créditos</span>
+            {selectedTab === 'credits' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
           </button>
@@ -330,7 +395,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
         {/* Conteúdo das tabs */}
         {selectedTab === 'packages' ? (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
               {packages.map((pkg) => (
                 <AdPackageCard
                   key={pkg.name}
@@ -342,13 +407,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               ))}
             </div>
 
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-amber-800 dark:text-yellow-200">
                 💡 <strong>Dica:</strong> O pacote Ouro oferece o melhor custo-benefício com alcance máximo e recursos premium!
               </p>
             </div>
           </div>
-        ) : (
+        ) : selectedTab === 'cpm' ? (
           <div>
             <CPMCalculator
               onBudgetConfirm={(budget, impressions) => {
@@ -357,60 +422,140 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               disabled={isLoading}
             />
           </div>
+        ) : (
+          <div>
+            {/* Saldo atual */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white mb-6 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Saldo Atual</p>
+                  <p className="text-4xl font-bold">{formatPrice(balance)}</p>
+                </div>
+                <div className="text-5xl">💰</div>
+              </div>
+            </div>
+
+            {/* Opções de créditos */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Escolha o valor
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {AD_PRICING_CONFIG.credits.options.map((option) => {
+                  const totalWithBonus = calculateCreditWithBonus(option.value);
+                  const isSelected = selectedCreditAmount === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSelectedCreditAmount(option.value);
+                        setSelectedPackage(null);
+                        setSelectedCpmBudget(null);
+                      }}
+                      disabled={isLoading}
+                      className={`
+                        relative p-4 rounded-xl border-2 transition-all duration-200
+                        ${isSelected
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-700'
+                        }
+                        ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
+                      `}
+                    >
+                      {option.bonus && (
+                        <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          +{option.bonus}%
+                        </span>
+                      )}
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {formatPrice(option.value)}
+                        </div>
+                        {option.bonus && (
+                          <div className="text-sm text-green-600 dark:text-green-400 font-semibold mt-1">
+                            Recebe {formatPrice(totalWithBonus)}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Informações sobre créditos */}
+            <div className="bg-sky-50 dark:bg-blue-900/20 border border-sky-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+              <h4 className="font-semibold text-sky-900 dark:text-blue-100 mb-2 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Como usar os créditos?
+              </h4>
+              <ul className="text-sm text-sky-800 dark:text-blue-200 space-y-1 ml-7">
+                <li>• Use créditos para criar anúncios CPM personalizados</li>
+                <li>• 1 crédito = €1,00</li>
+                <li>• CPM: €6,00 por 1.000 impressões</li>
+                <li>• Créditos não expiram</li>
+                <li>• Bônus automático em compras acima de €50</li>
+              </ul>
+            </div>
+
+            {/* Histórico de transações */}
+            {transactions.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  Últimas Transações
+                </h3>
+                <div className="space-y-2">
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {transaction.description}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(transaction.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <span className={`
+                        text-lg font-bold
+                        ${transaction.amount > 0
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
+                        }
+                      `}>
+                        {transaction.amount > 0 ? '+' : ''}{formatPrice(Math.abs(transaction.amount))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
-        {/* Botão de comprar créditos */}
-        <div className={`bg-gradient-to-r rounded-xl p-6 mb-8 border transition-all duration-200 ${
-          selectedCreditAmount 
-            ? 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800'
-            : 'from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-lg font-semibold mb-1 ${
-                selectedCreditAmount 
-                  ? 'text-green-900 dark:text-green-100'
-                  : 'text-purple-900 dark:text-purple-100'
-              }`}>
-                {selectedCreditAmount ? 'Créditos Selecionados!' : 'Prefere usar créditos?'}
-              </h3>
-              <p className={`text-sm ${
-                selectedCreditAmount 
-                  ? 'text-green-700 dark:text-green-300'
-                  : 'text-purple-700 dark:text-purple-300'
-              }`}>
-                {selectedCreditAmount 
-                  ? `€${selectedCreditAmount} em créditos selecionados. Clique em "Prosseguir para Pagamento" para finalizar.`
-                  : 'Compre créditos e use quando quiser criar novos anúncios CPM'
-                }
-              </p>
-            </div>
-            <button
-              onClick={() => setIsBuyCreditsOpen(true)}
-              className={`px-6 py-3 font-semibold rounded-lg transition-colors ${
-                selectedCreditAmount 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
-              }`}
-            >
-              {selectedCreditAmount ? 'Alterar Valor' : 'Comprar Créditos'}
-            </button>
-          </div>
-        </div>
-
         {/* Botão de prosseguir */}
-        <div className="sticky bottom-0 bg-light-card dark:bg-dark-card border-t border-light-border dark:border-dark-border p-6 -mx-4 sm:-mx-6 lg:-mx-8 shadow-lg">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div>
+        <div className="sticky bottom-0 bg-light-card dark:bg-dark-card border-t border-light-border dark:border-dark-border p-4 sm:p-6 -mx-4 sm:-mx-6 lg:-mx-8 shadow-lg">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-0 sm:justify-between">
+            <div className="flex-1">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Após o pagamento, seu anúncio será enviado para aprovação
               </p>
             </div>
             <button
               onClick={handleProceedToPayment}
-              disabled={isLoading || (selectedTab === 'packages' && !selectedPackage) || (selectedTab === 'cpm' && !selectedCpmBudget) && !selectedCreditAmount}
+              disabled={
+                isLoading ||
+                (selectedTab === 'packages' && !selectedPackage) ||
+                (selectedTab === 'cpm' && !selectedCpmBudget) ||
+                (selectedTab === 'credits' && !selectedCreditAmount)
+              }
               className={`
-                px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200
+                px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-base sm:text-lg transition-all duration-200 w-full sm:w-auto
                 ${(selectedPackage || selectedCpmBudget || selectedCreditAmount) && !isLoading
                   ? 'bg-primary hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                   : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
@@ -419,27 +564,14 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             >
               {isLoading
                 ? 'Processando...'
-                : selectedCreditAmount
-                  ? `Pagar €${selectedCreditAmount} (Créditos) →`
+                : selectedTab === 'credits' && selectedCreditAmount
+                  ? `Comprar ${formatPrice(selectedCreditAmount)} em Créditos →`
                   : 'Prosseguir para Pagamento →'
               }
             </button>
           </div>
         </div>
       </div>
-
-      {/* Modal de compra de créditos */}
-      <BuyCreditsModal
-        isOpen={isBuyCreditsOpen}
-        onClose={() => setIsBuyCreditsOpen(false)}
-        user={user}
-        onCreditSelect={(amount) => {
-          setSelectedCreditAmount(amount);
-          setSelectedTab(undefined as any); // Limpar seleção de tabs
-          setSelectedPackage(null);
-          setSelectedCpmBudget(null);
-        }}
-      />
     </div>
   );
 };

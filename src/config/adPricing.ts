@@ -93,7 +93,7 @@ export const AD_PRICING_CONFIG = {
   } as Record<PackageType, AdPackage>,
   
   cpm: {
-    rate: 8.00, // EUR por 1.000 impressões
+    rate: 6.00, // EUR por 1.000 impressões
     minBudget: 10.00,
     maxBudget: 500.00,
   } as CPMConfig,
