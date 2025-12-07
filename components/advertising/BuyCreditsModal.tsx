@@ -73,42 +73,23 @@ const BuyCreditsModal: React.FC<BuyCreditsModalProps> = ({ isOpen, onClose, user
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-ad-checkout-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
-        body: JSON.stringify({
+      // Usar o método nativo do Supabase para chamar Edge Functions
+      const { data, error } = await supabase.functions.invoke('create-ad-checkout-session', {
+        body: {
           userId: user.id,
           paymentType: 'credits',
           creditAmount: selectedAmount,
           successUrl: `${window.location.origin}/advertising/my-ads?credits=success`,
           cancelUrl: `${window.location.origin}/advertising/my-ads?credits=canceled`,
-        }),
+        },
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro na requisição: ${response.status} - ${errorText || 'Resposta vazia'}`);
+      if (error) {
+        throw new Error(`Erro na requisição: ${error.message}`);
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Resposta inválida do servidor: ${text || 'Resposta não é JSON'}`);
-      }
-
-      const text = await response.text();
-      if (!text || text.trim() === '') {
+      if (!data) {
         throw new Error('Resposta vazia do servidor');
-      }
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (parseError) {
-        throw new Error(`Erro ao processar resposta: ${parseError instanceof Error ? parseError.message : 'JSON inválido'}`);
       }
 
       if (data.error) {
