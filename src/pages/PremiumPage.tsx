@@ -362,6 +362,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 "Selo verificado",
                 "Suporte prioritário por e-mail",
                 "Anúncios Reduzidos",
+                "Criar salas de chat Privativas",
               ]}
               onSelect={() => setSelectedPlan("pro")}
               onConfirm={handleConfirmPlan}
@@ -391,6 +392,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             "Acesso total a página E-Books",
             "Atendimento e Suporte via chat",
             "Acesso antecipado a novos recursos",
+            "Criar salas de chat Privativas",
           ]}
           highlighted
           onSelect={() => setSelectedPlan("premium")}

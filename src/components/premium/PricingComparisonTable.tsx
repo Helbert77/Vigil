@@ -34,6 +34,7 @@ const ICON_FEATURES: Feature[] = [
   { name: "Criar comunidades", free: false, basic: false, pro: false, premium: true },
   { name: "Selo verificado", free: false, basic: false, pro: true, premium: true },
   { name: "Acesso antecipado", free: false, basic: false, pro: false, premium: true },
+  { name: "Criar salas de chat Privativas", free: false, basic: false, pro: true, premium: true },
 ];
 
 // Combinar features: texto primeiro, ícones depois
