@@ -23,7 +23,7 @@ const ThemeToggle: React.FC = () => {
 
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-700 dark:text-gray-300">Tema</span>
+      <span className="text-gray-700 dark:text-gray-300">Usar Tema Escuro</span>
       <button
         onClick={toggleTheme}
         className={`relative inline-flex flex-shrink-0 items-center h-6 rounded-full w-11 transition-colors ${

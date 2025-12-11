@@ -90,7 +90,7 @@ export interface Post {
 export interface Notification {
   id: string;
   actor: User; // O usuário que realizou a ação
-  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected';
+  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected' | 'timeline_approved' | 'timeline_rejected' | 'timeline_moderation_pending';
   post_id?: string;
   is_read: boolean;
   created_at: string;
@@ -149,6 +149,25 @@ export interface TimelineEvent {
   upvotes?: number;
   downvotes?: number;
   user_votes?: { [userId: string]: 'up' | 'down' };
+}
+
+export interface TimelineModerationQueueItem {
+  id: string;
+  title: string;
+  year: number;
+  category: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
+  description?: string;
+  country?: string;
+  source_1?: string;
+  source_2?: string;
+  event_date?: string;
+  author_id: string;
+  author?: User; // Populated via join
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+  rejection_reason?: string;
 }
 
 export interface TrendingTopic {

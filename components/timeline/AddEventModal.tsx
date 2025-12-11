@@ -3,6 +3,8 @@ import { Icon } from '@/components/icons/Icon';
 import { TimelineEvent } from '@/types';
 import { createTimelineEvent, updateTimelineEvent } from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
+import { useSession } from '@/contexts/SessionContext';
+import * as api from '../../src/services/api';
 
 const XIcon = () => <Icon><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></Icon>;
 
@@ -10,12 +12,16 @@ interface AddEventModalProps {
   onClose: () => void;
   onEventAdded: () => void;
   editingEvent?: TimelineEvent | null;
+  isModerationEdit?: boolean; // NOVO
+  queueItemId?: string; // NOVO
 }
 
-const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, editingEvent }) => {
+const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, editingEvent, isModerationEdit, queueItemId }) => {
   const { addToast } = useToast();
+  const { user } = useSession(); // NOVO
   const [loading, setLoading] = useState(false);
   const isEditing = !!editingEvent;
+  const isAdminOrModerator = user?.role === 'admin' || user?.role === 'moderator'; // NOVO
 
   const [formData, setFormData] = useState({
     title: '',
@@ -69,38 +75,57 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
     setLoading(true);
     try {
-      // Prepare form data for submission, excluding removed fields
       const { media, event_date, ...submitData } = formData;
 
+      // NOVO: Se está editando item da fila de moderação
+      if (isModerationEdit && queueItemId) {
+        const { error } = await api.updateTimelineQueueItem(queueItemId, {
+          ...submitData,
+          ...(event_date && { event_date })
+        });
+        if (error) throw error;
+        addToast('Evento atualizado na fila!', 'success');
+        onEventAdded();
+        onClose();
+        return;
+      }
+
+      // Se está editando evento existente na timeline
       if (isEditing && editingEvent) {
-        // Update existing event
         const { error } = await updateTimelineEvent(editingEvent.id, {
           ...submitData,
           ...(event_date && { event_date })
         });
-
         if (error) throw error;
         addToast('Evento atualizado com sucesso!', 'success');
-      } else {
-        // Create new event
+      } 
+      // NOVO: Se é admin/moderador, criar direto na timeline
+      else if (isAdminOrModerator) {
         const { error } = await createTimelineEvent({
           ...submitData,
-          ...(event_date && { event_date }), // Only include event_date if it's not empty
+          ...(event_date && { event_date }),
           x_position: 0,
           y_position: 0,
-          // Add media handling if needed
           ...(media && { media_file: media })
         });
-
         if (error) throw error;
         addToast('Evento criado com sucesso!', 'success');
+      } 
+      // NOVO: Se é usuário comum, submeter para moderação
+      else {
+        const { error } = await api.submitTimelineEventForModeration({
+          ...submitData,
+          ...(event_date && { event_date })
+        });
+        if (error) throw error;
+        addToast('Evento submetido para moderação! Aguarde aprovação.', 'info');
       }
 
       onEventAdded();
       onClose();
     } catch (err) {
-      console.error('Erro ao adicionar evento:', err);
-      addToast('Erro ao adicionar evento. Tente novamente.', 'error');
+      console.error('Erro ao processar evento:', err);
+      addToast('Erro ao processar evento. Tente novamente.', 'error');
     } finally {
       setLoading(false);
     }
@@ -218,7 +243,17 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                   }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <div
+                  tabIndex={0}
+                  className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const fileInput = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      fileInput?.click();
+                    }
+                  }}
+                >
                   {formData.media ? (
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,32 +274,34 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Fonte 1
-            </label>
-            <input
-              type="url"
-              name="source_1"
-              value={formData.source_1}
-              onChange={handleChange}
-              className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-              placeholder="https://fonte1.com"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Fonte 1
+              </label>
+              <input
+                type="url"
+                name="source_1"
+                value={formData.source_1}
+                onChange={handleChange}
+                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
+                placeholder="https://fonte1.com"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Fonte 2
-            </label>
-            <input
-              type="url"
-              name="source_2"
-              value={formData.source_2}
-              onChange={handleChange}
-              className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-              placeholder="https://fonte2.com"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Fonte 2
+              </label>
+              <input
+                type="url"
+                name="source_2"
+                value={formData.source_2}
+                onChange={handleChange}
+                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
+                placeholder="https://fonte2.com"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">

@@ -1034,13 +1034,13 @@ export const fetchTrendingTopics = async () => {
 export const fetchNotifications = (userId: string) =>
   supabase.from('notifications').select(`*, actor:actor_id (*)`).eq('recipient_id', userId).order('created_at', { ascending: false });
 
-export const createNotification = (notification: { recipient_id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected'; post_id?: string; metadata?: any; }) =>
+export const createNotification = (notification: { recipient_id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected' | 'timeline_approved' | 'timeline_rejected' | 'timeline_moderation_pending'; post_id?: string; metadata?: any; }) =>
   supabase.rpc('create_notification_if_enabled', {
     p_recipient_id: notification.recipient_id,
     p_actor_id: notification.actor_id,
     p_type: notification.type,
     p_post_id: notification.post_id,
-    p_metadata: notification.metadata || null
+    p_metadata: notification.metadata
   });
 
 // Request room access
@@ -2234,3 +2234,242 @@ export const fetchAdDailyMetrics = async (adId: string, daysInterval: number = 3
     engagement: Number(item.engagement) || 0
   }));
 };
+
+// ============================================
+// TIMELINE MODERATION - NOVAS FUNÇÕES
+// NÃO MODIFICAM AS FUNÇÕES EXISTENTES
+// ============================================
+
+// Submeter evento para moderação (usuários comuns)
+export const submitTimelineEventForModeration = async (eventData: {
+  title: string;
+  year: number;
+  category: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
+  description?: string;
+  country?: string;
+  source_1?: string;
+  source_2?: string;
+  event_date?: string;
+}) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: new Error('Usuário não autenticado') };
+
+  // 1. Inserir evento na fila
+  const result = await supabase
+    .from('timeline_moderation_queue')
+    .insert({
+      ...eventData,
+      author_id: user.id,
+      status: 'pending'
+    })
+    .select()
+    .single();
+
+  if (result.error) return result;
+
+  // 2. Notificar todos os moderadores
+  try {
+    const { data: moderators } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['admin', 'moderator']);
+
+    if (moderators && moderators.length > 0) {
+      const notifications = moderators.map(mod => ({
+        recipient_id: mod.id,
+        actor_id: user.id,
+        type: 'timeline_moderation_pending',
+        post_id: null, // NULL para notificações de timeline (não é um post)
+        metadata: { 
+          queue_item_id: result.data.id,
+          event_title: eventData.title,
+          event_year: eventData.year,
+          event_category: eventData.category
+        }
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+    }
+  } catch (notificationError) {
+    console.error('Erro ao notificar moderadores:', notificationError);
+  }
+
+  return result;
+};
+
+// Buscar fila de moderação de eventos da timeline
+export const fetchTimelineModerationQueue = async () => {
+  // Primeiro buscar os eventos
+  const eventsResult = await supabase
+    .from('timeline_moderation_queue')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+
+  if (eventsResult.error) {
+    return eventsResult;
+  }
+
+  // Depois buscar os autores separadamente
+  const events = eventsResult.data || [];
+  const authorIds = [...new Set(events.map(event => event.author_id))];
+  
+  let authorsData = [];
+  if (authorIds.length > 0) {
+    const authorsResult = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', authorIds);
+    
+    authorsData = authorsResult.data || [];
+  }
+
+  // Combinar os dados
+  const eventsWithAuthors = events.map(event => ({
+    ...event,
+    author: authorsData.find(author => author.id === event.author_id)
+  }));
+
+  return {
+    data: eventsWithAuthors,
+    error: null
+  };
+};
+
+// Aprovar evento da timeline
+export const approveTimelineEvent = async (queueItemId: string, moderatorId: string) => {
+  // 1. Buscar item da fila
+  const { data: queueItem, error: fetchError } = await supabase
+    .from('timeline_moderation_queue')
+    .select('*')
+    .eq('id', queueItemId)
+    .single();
+
+  if (fetchError || !queueItem) {
+    return { data: null, error: fetchError || new Error('Item não encontrado') };
+  }
+
+  // 2. Inserir na timeline_events
+  const { data: newEvent, error: insertError } = await supabase
+    .from('timeline_events')
+    .insert({
+      title: queueItem.title,
+      year: queueItem.year,
+      category: queueItem.category,
+      description: queueItem.description,
+      country: queueItem.country,
+      source_1: queueItem.source_1,
+      source_2: queueItem.source_2,
+      event_date: queueItem.event_date,
+      x_position: 0,
+      y_position: 0,
+      created_by: queueItem.author_id
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    return { data: null, error: insertError };
+  }
+
+  // 3. Atualizar status na fila
+  const { error: updateError } = await supabase
+    .from('timeline_moderation_queue')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: moderatorId
+    })
+    .eq('id', queueItemId);
+
+  if (updateError) {
+    return { data: null, error: updateError };
+  }
+
+  // 4. Criar notificação para o autor
+  try {
+    await supabase.from('notifications').insert({
+      recipient_id: queueItem.author_id,
+      actor_id: moderatorId,
+      type: 'timeline_approved',
+      post_id: null, // NULL para notificações de timeline (não é um post)
+      metadata: {
+        timeline_event_id: newEvent.id,
+        event_title: queueItem.title,
+        event_year: queueItem.year,
+        event_category: queueItem.category
+      }
+    });
+  } catch (notificationError) {
+    console.error('Erro ao criar notificação de aprovação:', notificationError);
+  }
+
+  return { data: newEvent, error: null };
+};
+
+// Rejeitar evento da timeline
+export const rejectTimelineEvent = async (
+  queueItemId: string,
+  moderatorId: string,
+  reason?: string
+) => {
+  // 1. Buscar autor do item
+  const { data: queueItem, error: fetchError } = await supabase
+    .from('timeline_moderation_queue')
+    .select('author_id')
+    .eq('id', queueItemId)
+    .single();
+
+  if (fetchError || !queueItem) {
+    return { error: fetchError || new Error('Item não encontrado') };
+  }
+
+  // 2. Atualizar status na fila
+  const { error: updateError } = await supabase
+    .from('timeline_moderation_queue')
+    .update({
+      status: 'rejected',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: moderatorId,
+      rejection_reason: reason
+    })
+    .eq('id', queueItemId);
+
+  if (updateError) {
+    return { error: updateError };
+  }
+
+  // 3. Criar notificação para o autor
+  try {
+    await supabase.from('notifications').insert({
+      recipient_id: queueItem.author_id,
+      actor_id: moderatorId,
+      type: 'timeline_rejected',
+      post_id: null, // NULL para notificações de timeline (não é um post)
+      metadata: {
+        queue_item_id: queueItemId,
+        ...(reason && { rejection_reason: reason })
+      }
+    });
+  } catch (notificationError) {
+    console.error('Erro ao criar notificação de rejeição:', notificationError);
+  }
+
+  return { error: null };
+};
+
+// Atualizar evento na fila (para edição pelo moderador)
+export const updateTimelineQueueItem = (queueItemId: string, updates: {
+  title?: string;
+  year?: number;
+  category?: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
+  description?: string;
+  country?: string;
+  source_1?: string;
+  source_2?: string;
+  event_date?: string;
+}) =>
+  supabase
+    .from('timeline_moderation_queue')
+    .update(updates)
+    .eq('id', queueItemId);

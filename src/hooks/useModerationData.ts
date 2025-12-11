@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { User } from '@/types';
@@ -17,11 +17,19 @@ export const useModerationData = (appUser: User | null) => {
   const fetchModerationQueue = useCallback(async () => {
     if (!isModerator) return;
     try {
+      // Buscar posts/comentários
       const { data, error } = await api.fetchModerationQueue();
       if (error) throw error;
       const queueData = data || [];
       setModerationQueue(queueData);
-      setPendingModerationCount(queueData.length);
+      
+      // Buscar eventos da timeline
+      const { data: timelineData, error: timelineError } = await api.fetchTimelineModerationQueue();
+      if (timelineError) throw timelineError;
+      const timelineQueueData = timelineData || [];
+      
+      // Somar ambos
+      setPendingModerationCount(queueData.length + timelineQueueData.length);
     } catch (error) {
       // Error log removed for production
       setIsLoading(false);
@@ -72,6 +80,7 @@ export const useModerationData = (appUser: User | null) => {
           
           const newItem = { ...payload.new, author };
           setModerationQueue(prev => [newItem, ...prev]);
+          // Incrementar apenas posts/comentários (timeline já é contado separadamente)
           setPendingModerationCount(prev => prev + 1);
           addToast('Novo item na fila de moderação!', 'info');
         }
@@ -80,6 +89,7 @@ export const useModerationData = (appUser: User | null) => {
         (payload) => {
           if (payload.old.status === 'pending' && payload.new.status !== 'pending') {
             setModerationQueue(prev => prev.filter(item => item.id !== payload.new.id));
+            // Decrementar apenas posts/comentários (timeline já é contado separadamente)
             setPendingModerationCount(prev => Math.max(0, prev - 1));
           }
         }
@@ -116,9 +126,36 @@ export const useModerationData = (appUser: User | null) => {
         }
       });
 
+    // TIMELINE EVENTS - Exatamente igual aos posts/comentários
+    const timelineChannel = supabase.channel('timeline-moderation-realtime-channel');
+    timelineChannel
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'timeline_moderation_queue' },
+        async (payload) => {
+          // Apenas incrementar se for pending
+          if (payload.new.status === 'pending') {
+            setPendingModerationCount(prev => prev + 1);
+            addToast('Novo evento da timeline aguardando moderação!', 'info');
+          }
+        }
+      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'timeline_moderation_queue' },
+        (payload) => {
+          // Decrementar quando evento for aprovado ou rejeitado
+          if (payload.new.status === 'approved' || payload.new.status === 'rejected') {
+            setPendingModerationCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Warning log removed for production
+        }
+      });
+
     return () => {
       moderationChannel.unsubscribe();
       appealsChannel.unsubscribe();
+      timelineChannel.unsubscribe();
     };
   }, [isModerator, appUser, addToast, fetchModerationQueue, fetchAppealsQueue]);
 

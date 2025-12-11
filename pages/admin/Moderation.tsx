@@ -2,7 +2,8 @@ import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import ModerationCard from '@/components/admin/ModerationCard';
-import * as api from '@/src/services/api';
+import TimelineModerationSection from '../../src/components/timeline/TimelineModerationSection';
+import * as api from '../../src/services/api';
 
 interface ModerationProps {
   queue: any[];
@@ -31,21 +32,31 @@ const Moderation: React.FC<ModerationProps> = ({ queue, isLoading, onDataChange 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Fila de Moderação</h1>
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      ) : queue.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          <p>A fila de moderação está vazia. Bom trabalho!</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {queue.map((item) => (
-            <ModerationCard key={item.id} item={item} onAction={handleAction} />
-          ))}
-        </div>
-      )}
+      
+      {/* NOVA SEÇÃO - Eventos da Timeline */}
+      <div className="mb-8">
+        <TimelineModerationSection />
+      </div>
+
+      {/* SEÇÃO EXISTENTE - Posts e Comentários */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Posts e Comentários</h2>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : queue.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <p>A fila de moderação está vazia. Bom trabalho!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {queue.map((item) => (
+              <ModerationCard key={item.id} item={item} onAction={handleAction} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

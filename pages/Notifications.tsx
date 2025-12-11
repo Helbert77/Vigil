@@ -51,6 +51,12 @@ const getNotificationText = (notification: Notification): string => {
         case 'room_access_rejected':
             const rejectedRoomName = notification.metadata?.room_name || 'uma sala';
             return `rejeitou seu pedido de acesso à sala "${rejectedRoomName}".`;
+        case 'timeline_approved':
+            return 'aprovou seu evento da timeline!';
+        case 'timeline_rejected':
+            return 'rejeitou seu evento da timeline.';
+        case 'timeline_moderation_pending':
+            return 'submeteu um novo evento para moderação na timeline.';
         default:
             return '';
     }
@@ -71,6 +77,9 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'ad_approval_pending') return <AlertCircleIcon />;
     if (type === 'ad_approved') return <CheckCircleIcon />;
     if (type === 'ad_rejected') return <XCircleIcon />;
+    if (type === 'timeline_approved') return <CheckCircleIcon />;
+    if (type === 'timeline_rejected') return <XCircleIcon />;
+    if (type === 'timeline_moderation_pending') return <AlertCircleIcon />;
     return <div className="h-6 w-6"></div>;
 };
 
