@@ -6,6 +6,7 @@ import ReportModal from '@/src/components/post/ReportModal';
 import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
 import { pushHistoryState } from '@/src/utils/history';
+import { logger } from '@/src/utils/Logger';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const TrashIcon = () => <Icon className="h-5 w-5 text-red-500"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></Icon>;
@@ -85,7 +86,8 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
         throw result.error;
       }
       
-      // Toast removido - modal fecha indicando sucesso
+      // Feedback de sucesso ao usuário
+      addToast('Denúncia enviada com sucesso! Nossa equipe irá analisar o conteúdo.', 'success');
       setIsReportModalOpen(false);
       logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {

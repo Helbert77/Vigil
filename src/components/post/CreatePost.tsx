@@ -21,14 +21,12 @@ const InfoIcon = () => <Icon className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0
 interface CreatePostProps {
   onAddPost: (text: string, imageUrl?: string, videoUrl?: string, audioUrl?: string, poll?: Poll, communityId?: string, evidenceBoard?: EvidenceItem[], media_is_sensitive?: boolean) => void;
   user: User;
-  communities: Community[];
-  joinedCommunityIds: string[];
   community?: Community;
   allUsers: User[];
   setCurrentPage: (page: any) => void;
 }
 
-const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, joinedCommunityIds, community, allUsers, setCurrentPage }) => {
+const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, allUsers, setCurrentPage }) => {
   const [text, setText] = useState('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'poll' | 'evidence' | null>(null);
   
@@ -45,9 +43,8 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
-  const [postToCommunityOnly, setPostToCommunityOnly] = useState(false);
+  const [postToCommunityOnly, setPostToCommunityOnly] = useState(true);
   
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
@@ -70,7 +67,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   useEffect(() => {
     if (community) {
-      setPostToCommunityOnly(false);
+      setPostToCommunityOnly(true);
     }
   }, [community]);
 
@@ -87,7 +84,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
     setPollMinutes(0);
     setEvidenceItems([]);
     setShowEmojiPicker(false);
-    setSelectedCommunityId(undefined);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
   
@@ -109,7 +105,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
       };
     }
 
-    const finalCommunityId = community ? (postToCommunityOnly ? undefined : community.id) : selectedCommunityId;
+    // Quando dentro de uma comunidade:
+    // - Se postToCommunityOnly é true (checkbox desmarcado): post fica apenas na comunidade
+    // - Se postToCommunityOnly é false (checkbox marcado "Tornar público"): post vai para comunidade E feed geral
+    const finalCommunityId = community ? community.id : undefined;
 
     onAddPost(text, imageUrl, videoUrl, audioUrl, poll, finalCommunityId, mediaType === 'evidence' ? evidenceItems : undefined, isSensitive);
     resetState();
@@ -335,11 +334,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
 
   const isPostDisabled = (!text.trim() && !imageUrl && !videoUrl && !audioUrl && !mediaType) || isUploading || isOverLimit;
 
-  const userJoinedCommunities = React.useMemo(() => 
-    communities.filter(c => joinedCommunityIds.includes(c.id)),
-    [communities, joinedCommunityIds]
-  );
-
   return (
     <Card className="mb-6">
       <div className="flex space-x-4">
@@ -555,12 +549,12 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
              </Tooltip>
           </div>
          <div className="flex items-center space-x-3">
-             {community ? (
+             {community && (
                <div className="flex items-center space-x-2 text-sm">
                  <input
                    type="checkbox"
                    id="post-to-community"
-                   checked={postToCommunityOnly}
+                   checked={!postToCommunityOnly}
                    onChange={() => setPostToCommunityOnly(!postToCommunityOnly)}
                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
                  />
@@ -568,19 +562,6 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, communities, j
                    Tornar público
                  </label>
                </div>
-             ) : userJoinedCommunities.length > 0 && (
-                 <select
-                     value={selectedCommunityId || ''}
-                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCommunityId(e.target.value || undefined)}
-                     className="bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary w-auto flex-shrink-0"
-                 >
-                     <option value="">General Feed</option>
-                     {userJoinedCommunities.map((community: Community) => (
-                         <option key={community.id} value={community.id}>
-                             {community.name}
-                         </option>
-                     ))}
-                 </select>
              )}
               {text.length > 0 && (
                 <div className={`text-sm font-medium ${isOverLimit ? 'text-red-500' : 'text-gray-500'}`}>

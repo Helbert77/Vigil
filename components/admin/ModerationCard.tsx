@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Avatar from '@/components/common/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -10,9 +10,35 @@ interface ModerationCardProps {
 }
 
 const ModerationCard: React.FC<ModerationCardProps> = ({ item, onAction }) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ModerationCard.tsx:12',message:'Component render - content_text length',data:{contentLength:item?.content_text?.length||0,contentPreview:item?.content_text?.substring(0,50)||'',hasLongWords:item?.content_text?.split(/\s+/).some((w:string)=>w.length>50)||false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<'warn' | 'suspend' | null>(null);
   const [reason, setReason] = useState('');
+  const cardRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLParagraphElement>(null);
+  
+  useEffect(() => {
+    // #region agent log
+    const contentText = item?.content_text || '';
+    const longestWord = contentText.split(/\s+/).reduce((a:string,b:string)=>a.length>b.length?a:b,'');
+    fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ModerationCard.tsx:useEffect-content',message:'Content analysis',data:{contentLength:contentText.length,longestWordLength:longestWord.length,longestWord:longestWord.substring(0,100)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+  }, [item]);
+  
+  useEffect(() => {
+    // #region agent log
+    if (cardRef.current && contentRef.current) {
+      setTimeout(() => {
+        const cardRect = cardRef.current!.getBoundingClientRect();
+        const contentRect = contentRef.current!.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(contentRef.current!);
+        fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ModerationCard.tsx:useEffect-dimensions',message:'Element dimensions and styles POST-FIX',data:{cardWidth:cardRect.width,cardScrollWidth:cardRef.current!.scrollWidth,contentWidth:contentRect.width,contentScrollWidth:contentRef.current!.scrollWidth,wordBreak:computedStyle.wordBreak,overflowWrap:computedStyle.overflowWrap,whiteSpace:computedStyle.whiteSpace,hasCardOverflow:cardRef.current!.scrollWidth>cardRect.width,hasContentOverflow:contentRef.current!.scrollWidth>contentRect.width},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
+      }, 100);
+    }
+    // #endregion
+  }, [item]);
 
   const getSeverityClass = (score: number) => {
     if (score > 85) return 'border-red-500 bg-red-50 dark:bg-red-900/20';
@@ -40,9 +66,9 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ item, onAction }) => {
 
   return (
     <>
-      <div className={`border-l-4 p-4 rounded-lg shadow-md bg-light-card dark:bg-dark-card ${getSeverityClass(item.severity_score)}`}>
+      <div ref={cardRef} className={`border-l-4 p-4 rounded-lg shadow-md bg-light-card dark:bg-dark-card overflow-hidden ${getSeverityClass(item.severity_score)}`}>
         <div className="flex flex-col sm:flex-row justify-between items-start">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3 mb-2">
               <Avatar src={item.author?.avatar_url} alt={item.author?.username} size="sm" />
               <div>
@@ -62,7 +88,7 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ item, onAction }) => {
                 </span>
               ))}
             </div>
-            <p className="text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 p-3 rounded-md whitespace-pre-wrap">
+            <p ref={contentRef} className="text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 p-3 rounded-md whitespace-pre-wrap break-words">
               {item.content_text}
             </p>
           </div>

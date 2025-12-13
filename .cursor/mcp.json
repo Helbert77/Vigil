@@ -1,17 +1,15 @@
 {
   "mcpServers": {
-    "stripe": {
+    "supabase": {
       "command": "npx",
       "args": [
         "-y",
-        "@stripe/mcp",
-        "--tools=all"
-      ],
-      "env": {
-        "STRIPE_SECRET_KEY":"sk_test_51SSFzRIcSthxxcjgrYxuwJZ86cmQCN92ogy8sKHQtuGfWfW2smVCKwxKUYwJkpaQ6KyRqTFT4hC5dTEHywFceqaZ00WWXrvRf7",
-        "STRIPE_ACCOUNT_ID": ""
-      }
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_d41da72955ac138690e7dc532b8129e8222ed9cc",
+        "--project-ref",
+        "oprqgllsqtfdyjgvgovo"
+      ]
     }
   }
 }
-

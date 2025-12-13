@@ -80,7 +80,7 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
 
   return (
     <div>
-      <CreatePost onAddPost={onAddPost} user={user} communities={communities} joinedCommunityIds={joinedCommunityIds} allUsers={allUsers} setCurrentPage={setCurrentPage} />
+      <CreatePost onAddPost={onAddPost} user={user} allUsers={allUsers} setCurrentPage={setCurrentPage} />
 
       <div>
         {feedItems.length > 0 ? feedItems.map((item, index) => {

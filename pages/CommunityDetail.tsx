@@ -182,8 +182,6 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
           <CreatePost 
             onAddPost={onAddPost} 
             user={user} 
-            communities={communities} 
-            joinedCommunityIds={joinedCommunityIds}
             community={community}
             allUsers={allUsers}
             setCurrentPage={setCurrentPage}

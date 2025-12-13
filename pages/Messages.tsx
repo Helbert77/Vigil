@@ -432,7 +432,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                   </div>
 
                   {/* Messages Area */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
                     {newChatTargetUser ? (
                       <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                         <p>Envie a primeira mensagem para {newChatTargetUser.name}!</p>
@@ -449,7 +449,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                         return (
                           <div
                             key={message.id}
-                            className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} w-full`}
                           >
                             <div
                               className={`max-w-[70%] rounded-2xl px-4 py-2 ${
@@ -457,8 +457,9 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                                   ? 'bg-primary text-white rounded-br-none'
                                   : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-none border border-light-border dark:border-dark-border'
                               } ${isTemp ? 'opacity-60' : ''}`}
+                              style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                             >
-                              <p className="break-words">{message.text}</p>
+                              <p className="break-words whitespace-pre-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>{message.text}</p>
                               <p
                                 className={`text-xs mt-1 ${
                                   isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'

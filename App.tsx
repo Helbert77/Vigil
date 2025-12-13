@@ -97,7 +97,16 @@ const App: React.FC = () => {
   const [followModalData, setFollowModalData] = useState<{ user: User; initialFollowers: User[]; initialFollowing: User[]; initialTab: 'followers' | 'following'; } | null>(null);
   const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([]);
   const mainContentRef = useRef<HTMLElement>(null);
-  const [showSplashScreen, setShowSplashScreen] = useState(true);
+  const [showSplashScreen, setShowSplashScreen] = useState(() => {
+    // Verificar se deve mostrar splash screen após logout
+    const shouldShowSplash = sessionStorage.getItem('vigil_show_splash_on_load');
+    if (shouldShowSplash === 'true') {
+      sessionStorage.removeItem('vigil_show_splash_on_load');
+      return true;
+    }
+    // Primeira carga: mostrar splash apenas se não houver sessão
+    return !sessionStorage.getItem('hasLoadedBefore');
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showSupportButton, setShowSupportButton] = useState(true);
@@ -358,12 +367,16 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplashScreen(false);
-    }, 5000);
+    if (showSplashScreen) {
+      const timer = setTimeout(() => {
+        setShowSplashScreen(false);
+        // Marcar que já carregou uma vez
+        sessionStorage.setItem('hasLoadedBefore', 'true');
+      }, 5000);
 
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplashScreen]);
 
   const handleViewPost = (postId: string) => {
     scrollToTop();
@@ -566,6 +579,9 @@ const App: React.FC = () => {
     // Prefixo das mensagens visualizadas para não serem apagadas no logout
     const VIEWED_MESSAGES_KEY_PREFIX = 'vigil_viewed_messages_';
 
+    // Definir flag para mostrar splash screen após reload
+    sessionStorage.setItem('vigil_show_splash_on_load', 'true');
+
     // Limpar localStorage seletivamente (preservar mensagens visualizadas)
     try {
       for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -577,9 +593,6 @@ const App: React.FC = () => {
     } catch (e) {
       // Silencioso: se algo falhar, não interrompe o fluxo de logout
     }
-
-    // Limpar sessionStorage normalmente
-    sessionStorage.clear();
 
     // Limpar todos os cookies do domínio
     const cookies = document.cookie.split(";");
@@ -604,6 +617,9 @@ const App: React.FC = () => {
     }
 
     try {
+      // Definir flag para mostrar splash screen após reload
+      sessionStorage.setItem('vigil_show_splash_on_load', 'true');
+
       // Timeout para evitar que o logout trave indefinidamente
       const logoutPromise = api.logout();
       const timeoutPromise = new Promise((_, reject) =>
