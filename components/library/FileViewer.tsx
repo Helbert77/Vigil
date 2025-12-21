@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '../icons/Icon';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
@@ -6,6 +6,60 @@ const MaximizeIcon = () => <Icon className="h-5 w-5"><path d="M8 3H5a2 2 0 0 0-2
 const MinimizeIcon = () => <Icon className="h-5 w-5"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></Icon>;
 const ZoomInIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line><line x1="11" x2="11" y1="8" y2="14"></line><line x1="8" x2="14" y1="11" y2="11"></line></Icon>;
 const ZoomOutIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y1="21" y2="16.65"></line><line x1="8" x2="14" y1="11" y2="11"></line></Icon>;
+
+// Componente para visualizar texto de Data URLs
+const TextViewer: React.FC<{ fileUrl: string; fileName: string }> = ({ fileUrl, fileName }) => {
+  const [content, setContent] = useState<string>('Carregando...');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadContent = async () => {
+      try {
+        if (fileUrl.startsWith('data:')) {
+          // É uma Data URL - decodificar o Base64
+          const base64Data = fileUrl.split(',')[1];
+          const decodedContent = atob(base64Data);
+          setContent(decodedContent);
+        } else {
+          // É uma URL normal - fazer fetch
+          const response = await fetch(fileUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const text = await response.text();
+          setContent(text);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar conteúdo:', err);
+        setError(err instanceof Error ? err.message : 'Erro desconhecido');
+        setContent('Erro ao carregar o conteúdo do arquivo.');
+      }
+    };
+
+    loadContent();
+  }, [fileUrl]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center w-full h-full">
+        <div className="text-center text-red-600 dark:text-red-400">
+          <p className="text-lg mb-4">Erro ao carregar arquivo</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-white dark:bg-gray-900 overflow-auto">
+      <div className="p-6">
+        <pre className="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100 font-mono leading-relaxed">
+          {content}
+        </pre>
+      </div>
+    </div>
+  );
+};
 
 interface FileViewerProps {
   fileUrl: string;
@@ -17,8 +71,31 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
 
-  // Detectar tipo de arquivo pela URL
+  // Detectar tipo de arquivo pela URL ou Data URL
   const getFileType = (url: string): 'image' | 'video' | 'pdf' | 'text' | 'document' | 'unknown' => {
+    // Se é uma Data URL, detectar pelo MIME type
+    if (url.startsWith('data:')) {
+      const mimeType = url.split(';')[0].split(':')[1];
+      
+      if (mimeType.startsWith('image/')) {
+        return 'image';
+      }
+      if (mimeType.startsWith('video/')) {
+        return 'video';
+      }
+      if (mimeType === 'application/pdf') {
+        return 'pdf';
+      }
+      if (mimeType.startsWith('text/') || mimeType === 'text/plain') {
+        return 'text';
+      }
+      if (['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(mimeType)) {
+        return 'document';
+      }
+      return 'text'; // Fallback para Data URLs desconhecidas como texto
+    }
+    
+    // Para URLs normais, usar extensão
     const extension = url.split('.').pop()?.toLowerCase() || '';
     
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(extension)) {
@@ -83,22 +160,18 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
         );
 
       case 'pdf':
+        // Para Data URLs de PDF, usar diretamente. Para URLs normais, adicionar parâmetros
+        const pdfSrc = fileUrl.startsWith('data:') ? fileUrl : `${fileUrl}#toolbar=1&navpanes=1&scrollbar=1`;
         return (
           <iframe
-            src={`${fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+            src={pdfSrc}
             className="w-full h-full border-0"
             title={fileName}
           />
         );
 
       case 'text':
-        return (
-          <iframe
-            src={fileUrl}
-            className="w-full h-full border-0 bg-white dark:bg-gray-900"
-            title={fileName}
-          />
-        );
+        return <TextViewer fileUrl={fileUrl} fileName={fileName} />;
 
       case 'document':
         // Para documentos do Office, usar visualizador do Google Docs

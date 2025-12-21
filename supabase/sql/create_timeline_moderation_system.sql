@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.timeline_moderation_queue (
   source_1 TEXT,
   source_2 TEXT,
   event_date TEXT,
+  image_url TEXT,
   
   -- Metadados de moderação
   author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

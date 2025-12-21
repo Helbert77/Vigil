@@ -4,6 +4,7 @@ import { TimelineEvent } from '@/types';
 import { createTimelineEvent, updateTimelineEvent } from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
 import { useSession } from '@/contexts/SessionContext';
+import { supabase } from '@/integrations/supabase/client';
 import * as api from '../../src/services/api';
 
 const XIcon = () => <Icon><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></Icon>;
@@ -20,6 +21,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
   const { addToast } = useToast();
   const { user } = useSession(); // NOVO
   const [loading, setLoading] = useState(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
   const isEditing = !!editingEvent;
   const isAdminOrModerator = user?.role === 'admin' || user?.role === 'moderator'; // NOVO
 
@@ -32,7 +35,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
     source_1: '',
     source_2: '',
     event_date: '',
-    media: null as File | null
+    media: null as File | null,
+    image_url: '' as string
   });
 
   // Initialize form data when editing
@@ -47,8 +51,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
         source_1: editingEvent.source_1 || '',
         source_2: editingEvent.source_2 || '',
         event_date: editingEvent.event_date || '',
-        media: null as File | null
+        media: null as File | null,
+        image_url: editingEvent.image_url || ''
       });
+      if (editingEvent.image_url) {
+        setMediaPreviewUrl(editingEvent.image_url);
+      }
     }
   }, [editingEvent]);
 
@@ -58,6 +66,45 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       ...prev,
       [name]: name === 'year' ? (value === '' ? '' : parseInt(value) || '') : value
     }));
+  };
+
+  const handleMediaUpload = async (file: File) => {
+    if (!user) {
+      addToast('Você precisa estar logado para fazer upload de mídia.', 'error');
+      return;
+    }
+
+    setIsUploadingMedia(true);
+    const fileExt = file.name.split('.').pop();
+    const filePath = `timeline-media/${user.id}/${Date.now()}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('posts-media')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        addToast('Falha ao fazer upload da mídia. Tente novamente.', 'error');
+        setIsUploadingMedia(false);
+        return;
+      }
+
+      const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
+
+      if (data.publicUrl) {
+        setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
+        setMediaPreviewUrl(data.publicUrl);
+        addToast('Mídia carregada com sucesso!', 'success');
+      } else {
+        addToast('Não foi possível obter o URL da mídia.', 'error');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      addToast('Erro ao fazer upload da mídia. Tente novamente.', 'error');
+    } finally {
+      setIsUploadingMedia(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,13 +122,55 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
     setLoading(true);
     try {
-      const { media, event_date, ...submitData } = formData;
+      let imageUrl = formData.image_url;
+
+      // Se há um arquivo de mídia selecionado mas ainda não foi feito upload, fazer upload primeiro
+      if (formData.media && !imageUrl) {
+        if (!user) {
+          addToast('Você precisa estar logado para fazer upload de mídia.', 'error');
+          setLoading(false);
+          return;
+        }
+
+        setIsUploadingMedia(true);
+        const fileExt = formData.media.name.split('.').pop();
+        const filePath = `timeline-media/${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('posts-media')
+          .upload(filePath, formData.media);
+
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          addToast('Falha ao fazer upload da mídia. Tente novamente.', 'error');
+          setLoading(false);
+          setIsUploadingMedia(false);
+          return;
+        }
+
+        const { data } = supabase.storage.from('posts-media').getPublicUrl(filePath);
+        if (data.publicUrl) {
+          imageUrl = data.publicUrl;
+        } else {
+          addToast('Não foi possível obter o URL da mídia.', 'error');
+          setLoading(false);
+          setIsUploadingMedia(false);
+          return;
+        }
+        setIsUploadingMedia(false);
+      }
+
+      const { media, event_date, image_url: _, ...submitData } = formData;
+
+      // Usar o ano como event_date (formato: "YYYY-01-01" para anos positivos, ou string do ano para AC)
+      const eventDateValue = formData.year.toString();
 
       // NOVO: Se está editando item da fila de moderação
       if (isModerationEdit && queueItemId) {
         const { error } = await api.updateTimelineQueueItem(queueItemId, {
           ...submitData,
-          ...(event_date && { event_date })
+          event_date: eventDateValue,
+          ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
         addToast('Evento atualizado na fila!', 'success');
@@ -94,7 +183,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       if (isEditing && editingEvent) {
         const { error } = await updateTimelineEvent(editingEvent.id, {
           ...submitData,
-          ...(event_date && { event_date })
+          event_date: eventDateValue,
+          ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
         addToast('Evento atualizado com sucesso!', 'success');
@@ -103,10 +193,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       else if (isAdminOrModerator) {
         const { error } = await createTimelineEvent({
           ...submitData,
-          ...(event_date && { event_date }),
+          event_date: eventDateValue,
+          ...(imageUrl && { image_url: imageUrl }),
           x_position: 0,
-          y_position: 0,
-          ...(media && { media_file: media })
+          y_position: 0
         });
         if (error) throw error;
         addToast('Evento criado com sucesso!', 'success');
@@ -115,7 +205,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       else {
         const { error } = await api.submitTimelineEventForModeration({
           ...submitData,
-          ...(event_date && { event_date })
+          event_date: eventDateValue,
+          ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
         addToast('Evento submetido para moderação! Aguarde aprovação.', 'info');
@@ -239,27 +330,45 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                   accept="image/*,video/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0] || null;
-                    setFormData(prev => ({ ...prev, media: file }));
+                    if (file) {
+                      setFormData(prev => ({ ...prev, media: file }));
+                      // Criar preview local
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setMediaPreviewUrl(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                      // Fazer upload automaticamente
+                      handleMediaUpload(file);
+                    }
                   }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={isUploadingMedia}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div
                   tabIndex={0}
-                  className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className={`w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isUploadingMedia ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       const fileInput = e.currentTarget.previousElementSibling as HTMLInputElement;
-                      fileInput?.click();
+                      if (!isUploadingMedia) {
+                        fileInput?.click();
+                      }
                     }
                   }}
                 >
-                  {formData.media ? (
+                  {isUploadingMedia ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-500"></div>
+                      <span>Enviando mídia...</span>
+                    </div>
+                  ) : formData.media || mediaPreviewUrl ? (
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="truncate">{formData.media.name}</span>
+                      <span className="truncate">{formData.media?.name || 'Mídia carregada'}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -271,6 +380,49 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                   )}
                 </div>
               </div>
+              {mediaPreviewUrl && (
+                <div className="mt-2 relative">
+                  {formData.media?.type.startsWith('image/') || mediaPreviewUrl.startsWith('data:image') || mediaPreviewUrl.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
+                    <>
+                      <img 
+                        src={mediaPreviewUrl} 
+                        alt="Preview" 
+                        className="w-full max-h-48 object-contain rounded-lg border border-light-border dark:border-dark-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, media: null, image_url: '' }));
+                          setMediaPreviewUrl(null);
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
+                        title="Remover mídia"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-full p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-light-border dark:border-dark-border text-center text-sm text-gray-500 dark:text-gray-400 relative">
+                      Preview de vídeo não disponível
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, media: null, image_url: '' }));
+                          setMediaPreviewUrl(null);
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
+                        title="Remover mídia"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -314,10 +466,10 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isUploadingMedia}
               className="px-6 py-3 md:py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-base"
             >
-              {loading ? (isEditing ? 'Salvando...' : 'Criando...') : (isEditing ? 'Salvar Alterações' : 'Criar Evento')}
+              {loading || isUploadingMedia ? (isEditing ? 'Salvando...' : 'Criando...') : (isEditing ? 'Salvar Alterações' : 'Criar Evento')}
             </button>
           </div>
         </form>

@@ -101,7 +101,7 @@ const App: React.FC = () => {
     // Verificar se deve mostrar splash screen após logout
     const shouldShowSplash = sessionStorage.getItem('vigil_show_splash_on_load');
     if (shouldShowSplash === 'true') {
-      sessionStorage.removeItem('vigil_show_splash_on_load');
+      // Não remover ainda, será removido após 5 segundos
       return true;
     }
     // Primeira carga: mostrar splash apenas se não houver sessão
@@ -370,7 +370,8 @@ const App: React.FC = () => {
     if (showSplashScreen) {
       const timer = setTimeout(() => {
         setShowSplashScreen(false);
-        // Marcar que já carregou uma vez
+        // Remover flag de splash após logout e marcar que já carregou uma vez
+        sessionStorage.removeItem('vigil_show_splash_on_load');
         sessionStorage.setItem('hasLoadedBefore', 'true');
       }, 5000);
 
@@ -701,11 +702,17 @@ const App: React.FC = () => {
     return { filteredPosts, filteredAllUsers, filteredNotifications, filteredConversations, filteredUsersToFollow };
   }, [posts, allUsers, notifications, conversations, usersToFollow, blockedUserIds, followedUserIds, appUser, communities]);
 
-  if (sessionLoading) return <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div></div>;
-
-  if (!session && showSplashScreen) {
+  // Verificar se devemos mostrar splash screen após logout (prioridade máxima)
+  const shouldShowSplashAfterLogout = sessionStorage.getItem('vigil_show_splash_on_load') === 'true';
+  
+  // Se estamos em um fluxo de logout, SEMPRE mostrar splash screen primeiro
+  // Isso garante que nunca mostramos login antes da splash após logout
+  if (shouldShowSplashAfterLogout || showSplashScreen) {
     return <SplashScreen />;
   }
+
+  // Mostrar loading apenas se não estamos em fluxo de splash
+  if (sessionLoading) return <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div></div>;
 
   if (currentPage === 'UpdatePassword') return <><ToastContainer /><UpdatePassword /></>;
   if (!session || !appUser) return <><ToastContainer /><Login /></>;

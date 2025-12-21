@@ -89,11 +89,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       return;
     }
 
-    // Para links externos, abrir em nova aba
-    if (item.type === 'link') {
+    // Para links externos (que não são Data URLs), abrir em nova aba
+    if (item.type === 'link' && !item.file_url.startsWith('data:')) {
       window.open(item.file_url, '_blank');
     } else {
-      // Para arquivos, abrir no visualizador
+      // Para arquivos (incluindo Data URLs), abrir no visualizador
       setShowViewer(true);
     }
   };

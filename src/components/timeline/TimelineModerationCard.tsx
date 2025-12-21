@@ -80,6 +80,19 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
                 </div>
               )}
 
+              {item.image_url && (
+                <div className="mt-3">
+                  <img
+                    src={item.image_url}
+                    alt={item.title}
+                    className="w-full max-h-64 object-contain rounded-lg border border-light-border dark:border-dark-border"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+
               {(item.source_1 || item.source_2) && (
                 <div className="text-xs space-y-1">
                   <p className="font-semibold text-gray-700 dark:text-gray-300">Fontes:</p>

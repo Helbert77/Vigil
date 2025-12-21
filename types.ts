@@ -161,6 +161,7 @@ export interface TimelineModerationQueueItem {
   source_1?: string;
   source_2?: string;
   event_date?: string;
+  image_url?: string;
   author_id: string;
   author?: User; // Populated via join
   status: 'pending' | 'approved' | 'rejected';

@@ -1,0 +1,203 @@
+# 🔒 REGRAS DE SEGURANÇA DO CURSOR - PROJETO VIGIL
+
+## ⛔ RESTRIÇÕES CRÍTICAS DE SUPABASE
+
+### 🚨 PROIBIÇÕES ABSOLUTAS (SEM EXCEÇÕES)
+
+O agente AI está **ESTRITAMENTE PROIBIDO** de executar as seguintes ações no Supabase **SEM AUTORIZAÇÃO EXPLÍCITA DO USUÁRIO**:
+
+#### 1. **OPERAÇÕES DE BANCO DE DADOS**
+- ❌ `mcp_supabase_execute_sql` - Executar SQL diretamente
+- ❌ `mcp_supabase_apply_migration` - Aplicar migrações
+- ❌ Criar, alterar ou deletar tabelas
+- ❌ Criar, alterar ou deletar colunas
+- ❌ Criar, alterar ou deletar índices
+- ❌ Criar, alterar ou deletar triggers
+- ❌ Criar, alterar ou deletar funções/procedures
+- ❌ Modificar constraints (PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK)
+- ❌ Modificar políticas RLS (Row Level Security)
+- ❌ INSERT, UPDATE, DELETE em qualquer tabela
+- ❌ TRUNCATE ou DROP de qualquer objeto
+
+#### 2. **EDGE FUNCTIONS**
+- ❌ `mcp_supabase_deploy_edge_function` - Deploy de Edge Functions
+- ❌ Criar novas Edge Functions
+- ❌ Modificar Edge Functions existentes
+- ❌ Deletar Edge Functions
+
+#### 3. **GERENCIAMENTO DE PROJETO**
+- ❌ `mcp_supabase_create_project` - Criar novos projetos
+- ❌ `mcp_supabase_pause_project` - Pausar projeto
+- ❌ `mcp_supabase_restore_project` - Restaurar projeto
+- ❌ `mcp_supabase_create_branch` - Criar branches
+- ❌ `mcp_supabase_delete_branch` - Deletar branches
+- ❌ `mcp_supabase_merge_branch` - Merge de branches
+- ❌ `mcp_supabase_reset_branch` - Reset de branches
+- ❌ `mcp_supabase_rebase_branch` - Rebase de branches
+
+---
+
+## ✅ OPERAÇÕES PERMITIDAS (SOMENTE LEITURA)
+
+O agente pode executar **APENAS** as seguintes operações **SEM** solicitar autorização:
+
+### 📖 Consultas de Leitura
+- ✅ `mcp_supabase_list_projects` - Listar projetos
+- ✅ `mcp_supabase_get_project` - Ver detalhes do projeto
+- ✅ `mcp_supabase_list_tables` - Listar tabelas
+- ✅ `mcp_supabase_list_extensions` - Listar extensões
+- ✅ `mcp_supabase_list_migrations` - Listar migrações
+- ✅ `mcp_supabase_list_edge_functions` - Listar Edge Functions
+- ✅ `mcp_supabase_get_edge_function` - Ver código de Edge Function
+- ✅ `mcp_supabase_list_branches` - Listar branches
+- ✅ `mcp_supabase_get_logs` - Ver logs (edge-function, postgres, auth, storage, realtime)
+- ✅ `mcp_supabase_get_advisors` - Ver avisos de segurança/performance
+- ✅ `mcp_supabase_get_project_url` - Ver URL do projeto
+- ✅ `mcp_supabase_get_publishable_keys` - Ver chaves públicas
+- ✅ `mcp_supabase_generate_typescript_types` - Gerar tipos TypeScript
+
+### 📊 Consultas SQL (SOMENTE SELECT)
+- ✅ Queries `SELECT` para análise e investigação
+- ✅ Queries de estatísticas e agregações
+- ✅ Queries de verificação de estrutura (information_schema)
+
+---
+
+## 🔐 PROTOCOLO DE AUTORIZAÇÃO
+
+### Quando o agente PRECISA executar uma operação restrita:
+
+1. **PARAR IMEDIATAMENTE** antes de executar
+2. **EXPLICAR CLARAMENTE:**
+   - O que será executado
+   - Por que é necessário
+   - Qual o impacto esperado
+   - Quais riscos existem
+3. **MOSTRAR O CÓDIGO/SQL COMPLETO** que será executado
+4. **AGUARDAR AUTORIZAÇÃO EXPLÍCITA** do usuário
+5. **CONFIRMAR NOVAMENTE** antes de executar
+
+### ⚠️ Formato de Solicitação de Autorização
+
+```
+🔒 AUTORIZAÇÃO NECESSÁRIA
+
+Operação: [Nome da operação]
+Ferramenta: [Nome da ferramenta MCP]
+Impacto: [Descrição do impacto]
+Riscos: [Possíveis riscos]
+
+Código a ser executado:
+```sql
+[CÓDIGO COMPLETO AQUI]
+```
+
+❓ Deseja autorizar esta operação? (Responda "SIM, AUTORIZO" para confirmar)
+```
+
+---
+
+## 📝 REGRAS DE ANÁLISE E INVESTIGAÇÃO
+
+### ✅ O agente PODE (e DEVE):
+- Analisar estrutura do banco de dados
+- Investigar problemas usando queries SELECT
+- Gerar relatórios de análise
+- Sugerir soluções e correções
+- Preparar scripts SQL para revisão
+- Documentar problemas encontrados
+
+### ❌ O agente NÃO PODE:
+- Executar as soluções sem autorização
+- Aplicar correções diretamente
+- Modificar dados ou estrutura
+- Fazer deploy de código
+- Criar ou deletar recursos
+
+---
+
+## 🛡️ PROTEÇÕES ADICIONAIS
+
+### Palavras-chave que exigem autorização:
+- `CREATE`, `ALTER`, `DROP`
+- `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`
+- `GRANT`, `REVOKE`
+- `deploy`, `apply`, `migrate`
+- `pause`, `restore`, `delete`, `merge`, `reset`
+
+### Exceções (não exigem autorização):
+- `SELECT` (queries de leitura)
+- `SHOW`, `DESCRIBE`, `EXPLAIN`
+- Queries em `information_schema` ou `pg_catalog`
+
+---
+
+## 📋 CHECKLIST DE SEGURANÇA
+
+Antes de QUALQUER operação de escrita no Supabase, o agente DEVE verificar:
+
+- [ ] A operação é realmente necessária?
+- [ ] Existe uma alternativa de leitura?
+- [ ] O usuário foi informado claramente?
+- [ ] O código completo foi mostrado?
+- [ ] O usuário autorizou EXPLICITAMENTE?
+- [ ] Há backup ou forma de reverter?
+
+---
+
+## 🚨 VIOLAÇÕES
+
+Se o agente executar QUALQUER operação restrita sem autorização:
+- A operação será considerada uma **VIOLAÇÃO GRAVE**
+- O usuário deve ser informado imediatamente
+- Todas as ações devem ser documentadas
+- Medidas de reversão devem ser apresentadas
+
+---
+
+## 💡 EXEMPLOS
+
+### ❌ ERRADO (Sem autorização):
+```
+Vou criar um índice para melhorar a performance...
+[executa mcp_supabase_execute_sql com CREATE INDEX]
+```
+
+### ✅ CORRETO (Com solicitação):
+```
+Identifiquei que um índice melhoraria a performance.
+
+🔒 AUTORIZAÇÃO NECESSÁRIA
+
+Operação: Criar índice na tabela notifications
+Ferramenta: mcp_supabase_execute_sql
+Impacto: Melhora performance de queries, usa ~500KB de espaço
+Riscos: Lock temporário na tabela durante criação (~2-5 segundos)
+
+Código a ser executado:
+```sql
+CREATE INDEX idx_notifications_recipient_created 
+ON notifications (recipient_id, created_at DESC);
+```
+
+❓ Deseja autorizar esta operação?
+```
+
+---
+
+## 🎯 RESUMO
+
+**REGRA DE OURO:** 
+> "Quando em dúvida, PERGUNTE. Nunca execute operações de escrita no Supabase sem autorização explícita do usuário."
+
+**LEMBRE-SE:**
+- Análise e investigação = ✅ Permitido
+- Modificação e execução = ⛔ Requer autorização
+
+---
+
+**Última atualização:** 14 de Dezembro de 2025
+**Projeto:** Vigil (oprqgllsqtfdyjgvgovo)
+**Usuário:** Herbert Carlos
+
+

@@ -2250,6 +2250,7 @@ export const submitTimelineEventForModeration = async (eventData: {
   source_1?: string;
   source_2?: string;
   event_date?: string;
+  image_url?: string;
 }) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: new Error('Usuário não autenticado') };
@@ -2361,6 +2362,7 @@ export const approveTimelineEvent = async (queueItemId: string, moderatorId: str
       source_1: queueItem.source_1,
       source_2: queueItem.source_2,
       event_date: queueItem.event_date,
+      image_url: queueItem.image_url,
       x_position: 0,
       y_position: 0,
       created_by: queueItem.author_id
@@ -2468,6 +2470,7 @@ export const updateTimelineQueueItem = (queueItemId: string, updates: {
   source_1?: string;
   source_2?: string;
   event_date?: string;
+  image_url?: string;
 }) =>
   supabase
     .from('timeline_moderation_queue')
