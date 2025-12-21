@@ -269,6 +269,47 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           Cada plano desbloqueia um novo nível de liberdade, acesso e conexão. O despertar começa com uma escolha.
         </p>
 
+        {/* Banner de Trial Ativo */}
+        {user?.subscription_status === 'trialing' && user?.trial_ends_at && (
+          <div className="mt-8 mx-auto max-w-3xl">
+            <div className="bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 rounded-2xl p-1 shadow-2xl animate-pulse-glow">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl">🎉</span>
+                  <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400">
+                    Você está em Período de Teste!
+                  </h2>
+                  <span className="text-2xl">✨</span>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 text-lg font-semibold mb-1">
+                  Aproveite todos os recursos do plano {user.plan.toUpperCase()} gratuitamente
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                  Seu teste expira em: <span className="font-bold text-green-600 dark:text-green-400">
+                    {new Date(user.trial_ends_at).toLocaleDateString('pt-BR', { 
+                      day: '2-digit', 
+                      month: 'long', 
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-4 py-2 rounded-full text-sm font-bold">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>
+                      {Math.ceil((new Date(user.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} dias restantes
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Banner de Promoção */}
         {promotionActive && (
           <div className="mt-8 mx-auto max-w-3xl">

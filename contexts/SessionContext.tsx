@@ -57,6 +57,13 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         if (!profile) {
           setUser(null);
         } else {
+          // Buscar dados de subscription para verificar trial
+          const { data: subscription } = await supabase
+            .from('subscriptions')
+            .select('status, trial_ends_at')
+            .eq('user_id', currentSession.user.id)
+            .single();
+
           const dateSource = profile.created_at || profile.updated_at || currentSession.user.created_at;
           const createdAtDate = dateSource ? new Date(dateSource) : new Date();
 
@@ -79,6 +86,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
             profileViewMode: profile.profile_view_mode || 'list',
             role: profile.role || 'user',
             plan: profile.plan || 'free',
+            subscription_status: subscription?.status || 'active',
+            trial_ends_at: subscription?.trial_ends_at || null,
           };
 
           setUser(appUser);

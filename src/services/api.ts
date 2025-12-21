@@ -1497,6 +1497,7 @@ export const startTrial = async (userId: string, plan: 'pro' | 'premium') => {
       current_period_end: trialEndsAt.toISOString(),
     };
     
+    // 1. Criar/atualizar subscription
     const { data, error } = await supabase
       .from('subscriptions')
       .upsert(subscriptionData, { 
@@ -1506,7 +1507,36 @@ export const startTrial = async (userId: string, plan: 'pro' | 'premium') => {
       .select()
       .single();
     
-    return { data, error };
+    if (error) {
+      console.error('[startTrial] Erro ao criar subscription:', error);
+      return { data: null, error };
+    }
+    
+    // 2. Atualizar profile para ativar o plano premium
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ plan: plan })
+      .eq('id', userId);
+    
+    if (profileError) {
+      console.error('[startTrial] Erro ao atualizar profile:', profileError);
+      // Reverter subscription se falhar ao atualizar profile
+      await supabase
+        .from('subscriptions')
+        .delete()
+        .eq('user_id', userId);
+      
+      return { 
+        data: null, 
+        error: { 
+          message: 'Erro ao ativar plano premium. Tente novamente.',
+          code: profileError.code
+        } 
+      };
+    }
+    
+    console.log(`[startTrial] Trial iniciado com sucesso para usuário ${userId} no plano ${plan}`);
+    return { data, error: null };
   } catch (err: any) {
     console.error('[startTrial] Erro inesperado:', err);
     return { 

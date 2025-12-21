@@ -1,0 +1,400 @@
+═══════════════════════════════════════════════════════════════════════════════
+  GUIA DE CONFIGURAÇÃO DO SISTEMA DE TRIALS - VIGIL
+═══════════════════════════════════════════════════════════════════════════════
+
+📅 Data: 21 de Dezembro de 2025
+🎯 Objetivo: Configurar sistema de testes grátis (trials) completo e funcional
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 1: ALTERAÇÕES NO BANCO DE DADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+1.1 - ADICIONAR TIPO DE NOTIFICAÇÃO 'trial_expired' e 'trial_expiring'
+───────────────────────────────────────────────────────────────────────────────
+
+Execute no SQL Editor do Supabase:
+
+-- Remover constraint antiga
+ALTER TABLE notifications 
+DROP CONSTRAINT IF EXISTS notifications_type_check;
+
+-- Adicionar constraint com novos tipos
+ALTER TABLE notifications 
+ADD CONSTRAINT notifications_type_check 
+CHECK (type = ANY (ARRAY[
+  'like'::text, 
+  'comment'::text, 
+  'follow'::text, 
+  'comment_like'::text, 
+  'mention'::text, 
+  'message'::text, 
+  'ad_approval_pending'::text, 
+  'ad_approved'::text, 
+  'ad_rejected'::text, 
+  'chat_room_invitation'::text, 
+  'room_access_request'::text, 
+  'room_access_approved'::text, 
+  'room_access_rejected'::text, 
+  'timeline_moderation_pending'::text, 
+  'timeline_approved'::text, 
+  'timeline_rejected'::text,
+  'trial_expired'::text,
+  'trial_expiring'::text
+]));
+
+───────────────────────────────────────────────────────────────────────────────
+
+1.2 - CORRIGIR USUÁRIOS COM TRIALS EXPIRADOS
+───────────────────────────────────────────────────────────────────────────────
+
+Execute no SQL Editor do Supabase:
+
+-- Verificar trials expirados
+SELECT 
+  s.user_id,
+  p.username,
+  s.plan,
+  s.status,
+  s.trial_ends_at,
+  p.plan as profile_plan,
+  CASE 
+    WHEN s.trial_ends_at < NOW() THEN 'EXPIRADO'
+    ELSE 'ATIVO'
+  END as trial_status
+FROM subscriptions s
+JOIN profiles p ON s.user_id = p.id
+WHERE s.status = 'trialing';
+
+-- Corrigir trials expirados (atualizar status e reverter plano)
+UPDATE subscriptions 
+SET status = 'expired', end_date = NOW()
+WHERE status = 'trialing' 
+  AND trial_ends_at < NOW();
+
+UPDATE profiles 
+SET plan = 'free'
+WHERE id IN (
+  SELECT user_id 
+  FROM subscriptions 
+  WHERE status = 'expired'
+);
+
+-- Enviar notificações para usuários afetados
+INSERT INTO notifications (recipient_id, actor_id, type, metadata)
+SELECT 
+  s.user_id,
+  NULL,
+  'trial_expired',
+  jsonb_build_object(
+    'previous_plan', s.plan,
+    'expired_at', NOW(),
+    'message', 'Seu período de teste do plano ' || UPPER(s.plan) || ' expirou. Para continuar aproveitando os recursos premium, assine um plano.'
+  )
+FROM subscriptions s
+WHERE s.status = 'expired' 
+  AND s.trial_ends_at < NOW()
+  AND NOT EXISTS (
+    SELECT 1 FROM notifications n 
+    WHERE n.recipient_id = s.user_id 
+      AND n.type = 'trial_expired'
+  );
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 2: DEPLOY DAS EDGE FUNCTIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+2.1 - FAZER DEPLOY DA FUNÇÃO check-trial-expirations
+───────────────────────────────────────────────────────────────────────────────
+
+No terminal, execute:
+
+npx supabase functions deploy check-trial-expirations
+
+Ou se estiver usando Supabase CLI:
+
+supabase functions deploy check-trial-expirations
+
+───────────────────────────────────────────────────────────────────────────────
+
+2.2 - FAZER DEPLOY DA FUNÇÃO notify-trial-expiring
+───────────────────────────────────────────────────────────────────────────────
+
+No terminal, execute:
+
+npx supabase functions deploy notify-trial-expiring
+
+Ou:
+
+supabase functions deploy notify-trial-expiring
+
+───────────────────────────────────────────────────────────────────────────────
+
+2.3 - TESTAR AS EDGE FUNCTIONS
+───────────────────────────────────────────────────────────────────────────────
+
+Teste manualmente via curl ou Postman:
+
+# Testar check-trial-expirations
+curl -X POST \
+  https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/check-trial-expirations \
+  -H "Authorization: Bearer [ANON_KEY]" \
+  -H "Content-Type: application/json"
+
+# Testar notify-trial-expiring
+curl -X POST \
+  https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/notify-trial-expiring \
+  -H "Authorization: Bearer [ANON_KEY]" \
+  -H "Content-Type: application/json"
+
+Substitua [ANON_KEY] pela chave anônima do projeto Vigil.
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 3: CONFIGURAR CRON JOBS (AGENDAMENTO AUTOMÁTICO)
+═══════════════════════════════════════════════════════════════════════════════
+
+3.1 - INSTALAR EXTENSÃO pg_cron
+───────────────────────────────────────────────────────────────────────────────
+
+No SQL Editor do Supabase:
+
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+───────────────────────────────────────────────────────────────────────────────
+
+3.2 - CRIAR CRON JOB PARA VERIFICAR EXPIRAÇÕES (DIÁRIO)
+───────────────────────────────────────────────────────────────────────────────
+
+Execute no SQL Editor:
+
+-- Executar todo dia à meia-noite (00:00)
+SELECT cron.schedule(
+  'check-trial-expirations-daily',
+  '0 0 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/check-trial-expirations',
+    headers := '{"Authorization": "Bearer [SERVICE_ROLE_KEY]", "Content-Type": "application/json"}'::jsonb
+  ) AS request_id;
+  $$
+);
+
+IMPORTANTE: Substitua [SERVICE_ROLE_KEY] pela service role key do projeto.
+
+───────────────────────────────────────────────────────────────────────────────
+
+3.3 - CRIAR CRON JOB PARA NOTIFICAR TRIALS EXPIRANDO (DIÁRIO)
+───────────────────────────────────────────────────────────────────────────────
+
+Execute no SQL Editor:
+
+-- Executar todo dia às 10:00 da manhã
+SELECT cron.schedule(
+  'notify-trial-expiring-daily',
+  '0 10 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/notify-trial-expiring',
+    headers := '{"Authorization": "Bearer [SERVICE_ROLE_KEY]", "Content-Type": "application/json"}'::jsonb
+  ) AS request_id;
+  $$
+);
+
+IMPORTANTE: Substitua [SERVICE_ROLE_KEY] pela service role key do projeto.
+
+───────────────────────────────────────────────────────────────────────────────
+
+3.4 - VERIFICAR CRON JOBS CRIADOS
+───────────────────────────────────────────────────────────────────────────────
+
+SELECT * FROM cron.job;
+
+───────────────────────────────────────────────────────────────────────────────
+
+3.5 - REMOVER CRON JOB (SE NECESSÁRIO)
+───────────────────────────────────────────────────────────────────────────────
+
+SELECT cron.unschedule('check-trial-expirations-daily');
+SELECT cron.unschedule('notify-trial-expiring-daily');
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 4: VERIFICAÇÃO E TESTES
+═══════════════════════════════════════════════════════════════════════════════
+
+4.1 - VERIFICAR IMPLEMENTAÇÃO NO CÓDIGO
+───────────────────────────────────────────────────────────────────────────────
+
+✅ Arquivos modificados:
+  - src/services/api.ts (função startTrial corrigida)
+  - contexts/SessionContext.tsx (carrega subscription_status e trial_ends_at)
+  - src/pages/PremiumPage.tsx (banner visual de trial ativo)
+
+✅ Arquivos criados:
+  - supabase/functions/check-trial-expirations/index.ts
+  - supabase/functions/check-trial-expirations/deno.json
+  - supabase/functions/notify-trial-expiring/index.ts
+  - supabase/functions/notify-trial-expiring/deno.json
+
+───────────────────────────────────────────────────────────────────────────────
+
+4.2 - TESTAR FLUXO COMPLETO
+───────────────────────────────────────────────────────────────────────────────
+
+1. Login com usuário free
+2. Ir para página Premium
+3. Clicar em "Iniciar Teste Grátis" no plano Pro ou Premium
+4. Verificar que:
+   ✓ Banner verde de trial aparece no topo
+   ✓ Plano do usuário muda para Pro/Premium
+   ✓ Acesso aos recursos premium é liberado
+   ✓ Contador de dias restantes está correto
+
+5. Simular expiração (alterar trial_ends_at no banco):
+   UPDATE subscriptions 
+   SET trial_ends_at = NOW() - INTERVAL '1 day'
+   WHERE user_id = '[USER_ID]';
+
+6. Executar manualmente a edge function:
+   curl -X POST https://oprqgllsqtfdyjgvgovo.supabase.co/functions/v1/check-trial-expirations \
+     -H "Authorization: Bearer [ANON_KEY]"
+
+7. Verificar que:
+   ✓ Status muda para 'expired'
+   ✓ Plano volta para 'free'
+   ✓ Notificação é enviada
+   ✓ Acesso premium é removido
+
+───────────────────────────────────────────────────────────────────────────────
+
+4.3 - MONITORAR LOGS
+───────────────────────────────────────────────────────────────────────────────
+
+No Supabase Dashboard:
+1. Ir para "Edge Functions"
+2. Selecionar "check-trial-expirations" ou "notify-trial-expiring"
+3. Ver aba "Logs" para monitorar execuções
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 5: MANUTENÇÃO E TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+5.1 - QUERIES ÚTEIS PARA MONITORAMENTO
+───────────────────────────────────────────────────────────────────────────────
+
+-- Ver todos os trials ativos
+SELECT 
+  p.username,
+  s.plan,
+  s.status,
+  s.trial_ends_at,
+  EXTRACT(DAY FROM (s.trial_ends_at - NOW())) as dias_restantes
+FROM subscriptions s
+JOIN profiles p ON s.user_id = p.id
+WHERE s.status = 'trialing'
+ORDER BY s.trial_ends_at;
+
+-- Ver trials que expiram nos próximos 3 dias
+SELECT 
+  p.username,
+  s.plan,
+  s.trial_ends_at,
+  EXTRACT(DAY FROM (s.trial_ends_at - NOW())) as dias_restantes
+FROM subscriptions s
+JOIN profiles p ON s.user_id = p.id
+WHERE s.status = 'trialing'
+  AND s.trial_ends_at BETWEEN NOW() AND NOW() + INTERVAL '3 days'
+ORDER BY s.trial_ends_at;
+
+-- Ver histórico de trials (incluindo expirados)
+SELECT 
+  p.username,
+  s.plan,
+  s.status,
+  s.trial_ends_at,
+  s.created_at,
+  s.end_date
+FROM subscriptions s
+JOIN profiles p ON s.user_id = p.id
+WHERE s.trial_ends_at IS NOT NULL
+ORDER BY s.created_at DESC;
+
+-- Ver notificações de trial enviadas
+SELECT 
+  p.username,
+  n.type,
+  n.metadata->>'message' as mensagem,
+  n.created_at,
+  n.is_read
+FROM notifications n
+JOIN profiles p ON n.recipient_id = p.id
+WHERE n.type IN ('trial_expired', 'trial_expiring')
+ORDER BY n.created_at DESC;
+
+───────────────────────────────────────────────────────────────────────────────
+
+5.2 - PROBLEMAS COMUNS E SOLUÇÕES
+───────────────────────────────────────────────────────────────────────────────
+
+❌ PROBLEMA: Edge function não executa
+✅ SOLUÇÃO: 
+   - Verificar se foi feito deploy: supabase functions list
+   - Verificar logs de erro no Dashboard
+   - Testar manualmente com curl
+
+❌ PROBLEMA: Cron job não está rodando
+✅ SOLUÇÃO:
+   - Verificar se pg_cron está instalado: SELECT * FROM pg_extension WHERE extname = 'pg_cron';
+   - Verificar jobs ativos: SELECT * FROM cron.job;
+   - Verificar histórico: SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 10;
+
+❌ PROBLEMA: Usuário não recebe notificação
+✅ SOLUÇÃO:
+   - Verificar se tipo 'trial_expired' foi adicionado à constraint
+   - Verificar se edge function rodou com sucesso
+   - Verificar tabela notifications: SELECT * FROM notifications WHERE type = 'trial_expired';
+
+❌ PROBLEMA: Trial não ativa plano premium
+✅ SOLUÇÃO:
+   - Verificar se código atualizado foi deployado
+   - Verificar se profiles.plan foi atualizado: SELECT plan FROM profiles WHERE id = '[USER_ID]';
+   - Limpar cache do navegador e fazer refresh do usuário
+
+═══════════════════════════════════════════════════════════════════════════════
+  PARTE 6: MÉTRICAS E ANALYTICS
+═══════════════════════════════════════════════════════════════════════════════
+
+6.1 - DASHBOARD DE TRIALS
+───────────────────────────────────────────────────────────────────────────────
+
+-- Taxa de conversão de trials
+SELECT 
+  COUNT(CASE WHEN status = 'trialing' THEN 1 END) as trials_ativos,
+  COUNT(CASE WHEN status = 'expired' THEN 1 END) as trials_expirados,
+  COUNT(CASE WHEN status = 'active' AND trial_ends_at IS NOT NULL THEN 1 END) as convertidos,
+  ROUND(
+    COUNT(CASE WHEN status = 'active' AND trial_ends_at IS NOT NULL THEN 1 END)::numeric / 
+    NULLIF(COUNT(CASE WHEN trial_ends_at IS NOT NULL THEN 1 END), 0) * 100, 
+    2
+  ) as taxa_conversao_pct
+FROM subscriptions;
+
+-- Trials por plano
+SELECT 
+  plan,
+  COUNT(*) as total,
+  COUNT(CASE WHEN status = 'trialing' THEN 1 END) as ativos,
+  COUNT(CASE WHEN status = 'expired' THEN 1 END) as expirados,
+  COUNT(CASE WHEN status = 'active' THEN 1 END) as convertidos
+FROM subscriptions
+WHERE trial_ends_at IS NOT NULL
+GROUP BY plan;
+
+═══════════════════════════════════════════════════════════════════════════════
+  FIM DO GUIA
+═══════════════════════════════════════════════════════════════════════════════
+
+📧 Suporte: Em caso de dúvidas, consulte a documentação do Supabase ou abra um ticket.
+🔗 Documentação: https://supabase.com/docs/guides/functions
+🔗 Cron Jobs: https://supabase.com/docs/guides/database/extensions/pg_cron
+
+═══════════════════════════════════════════════════════════════════════════════
+

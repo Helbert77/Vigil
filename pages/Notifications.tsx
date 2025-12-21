@@ -57,6 +57,13 @@ const getNotificationText = (notification: Notification): string => {
             return 'rejeitou seu evento da timeline.';
         case 'timeline_moderation_pending':
             return 'submeteu um novo evento para moderação na timeline.';
+        case 'trial_expired':
+            // Usar mensagem do metadata se disponível, senão usar padrão
+            return notification.metadata?.message || 'seu período de teste expirou. Assine um plano para continuar com acesso premium.';
+        case 'trial_expiring':
+            // Usar mensagem do metadata se disponível, senão usar padrão
+            const daysRemaining = notification.metadata?.days_remaining || 3;
+            return notification.metadata?.message || `seu período de teste expira em ${daysRemaining} dia${daysRemaining > 1 ? 's' : ''}! Assine agora para manter o acesso premium.`;
         default:
             return '';
     }
@@ -65,6 +72,8 @@ const getNotificationText = (notification: Notification): string => {
 const CheckCircleIcon = () => <Icon className="h-6 w-6 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></Icon>;
 const XCircleIcon = () => <Icon className="h-6 w-6 text-red-500"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></Icon>;
 const AlertCircleIcon = () => <Icon className="h-6 w-6 text-yellow-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></Icon>;
+const StarIcon = () => <Icon className="h-6 w-6 text-yellow-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></Icon>;
+const ClockIcon = () => <Icon className="h-6 w-6 text-orange-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></Icon>;
 
 const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) => {
     if (type === 'like' || type === 'comment_like') return <HeartIcon />;
@@ -80,6 +89,8 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'timeline_approved') return <CheckCircleIcon />;
     if (type === 'timeline_rejected') return <XCircleIcon />;
     if (type === 'timeline_moderation_pending') return <AlertCircleIcon />;
+    if (type === 'trial_expired') return <XCircleIcon />;
+    if (type === 'trial_expiring') return <ClockIcon />;
     return <div className="h-6 w-6"></div>;
 };
 
