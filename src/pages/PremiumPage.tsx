@@ -21,6 +21,15 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  
+  // Estados para cupom de trial
+  const [couponCode, setCouponCode] = useState('');
+  const [couponValidation, setCouponValidation] = useState<{
+    valid: boolean;
+    coupon?: any;
+    error?: string;
+  } | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // Use the prop user instead of session user
   const user = propUser;
@@ -35,17 +44,45 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const checkoutStatus = urlParams.get('checkout');
+    const couponUsed = urlParams.get('coupon');
+    const planActivated = urlParams.get('plan');
 
     if (checkoutStatus === 'success') {
       addToast('Pagamento processado com sucesso! Aguarde a confirmação da assinatura.', 'success');
+      
+      // ✅ Registrar uso do cupom se foi usado
+      if (couponUsed && couponValidation?.valid && session?.user?.id && planActivated) {
+        api.recordCouponUsage({
+          couponId: couponValidation.coupon.id,
+          userId: session.user.id,
+          planActivated: planActivated,
+          trialDaysGranted: couponValidation.coupon.trialDays,
+        }).then(({ error }) => {
+          if (error) {
+            console.error('[PremiumPage] Error recording coupon usage:', error);
+          } else {
+            console.log('[PremiumPage] Coupon usage recorded successfully');
+          }
+        });
+      }
+      
       // Limpar parâmetro da URL
       window.history.replaceState({}, '', window.location.pathname);
+      
+      // ✅ CRÍTICO: Atualizar dados do usuário para carregar subscription atualizada
+      // Aguardar um pouco para o webhook processar, depois fazer múltiplas tentativas
+      const refreshWithRetry = async () => {
+        await refreshUser(); // Primeira tentativa imediata
+        setTimeout(() => refreshUser(), 2000); // Segunda tentativa após 2s
+        setTimeout(() => refreshUser(), 5000); // Terceira tentativa após 5s
+      };
+      refreshWithRetry();
     } else if (checkoutStatus === 'canceled') {
       addToast('Checkout cancelado. Você pode tentar novamente quando quiser.', 'info');
       // Limpar parâmetro da URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [addToast]);
+  }, [addToast, refreshUser, couponValidation, session]);
 
   // Verificar se promoção está ativa
   const promotionActive = isPromotionActive();
@@ -124,48 +161,36 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   const proAnnualBonus = calculateAnnualBonus('pro');
   const premiumAnnualBonus = calculateAnnualBonus('premium');
 
-  // Handler para iniciar trial
-  const handleStartTrial = async (plan: 'pro' | 'premium') => {
-    if (!session?.user) {
-      addToast('Você precisa estar logado para iniciar um teste.', 'error');
+  // Handler para validar cupom
+  const handleValidateCoupon = async () => {
+    if (!session?.user || !couponCode.trim()) {
+      addToast('Digite um código de cupom', 'error');
       return;
     }
 
+    setIsValidatingCoupon(true);
     try {
-      // Verificar se já usou trial
-      const { hasUsed, error: checkError } = await api.hasUsedTrial(session.user.id, plan);
+      const { data, error } = await api.validateTrialCoupon(
+        couponCode.trim().toUpperCase(),
+        session.user.id
+      );
 
-      if (checkError) {
-        console.error('Erro ao verificar trial:', checkError);
-        // Se a tabela não está configurada, mostrar mensagem apropriada
-        if (checkError.code === 'PGRST204' || checkError.code === '42P01') {
-          addToast('Sistema de trials ainda não está configurado. Use "Escolher Plano".', 'info');
-          return;
-        }
-      }
+      if (error) throw error;
 
-      if (hasUsed) {
-        addToast('Você já utilizou o período de teste para este plano.', 'info');
-        return;
-      }
+      setCouponValidation(data);
 
-      // Iniciar trial
-      const { error } = await api.startTrial(session.user.id, plan);
-
-      if (error) {
-        console.error('Erro ao iniciar trial:', error);
-        if (error.code === 'PGRST204' || error.code === '42P01') {
-          addToast('Sistema de trials ainda não está configurado. Use "Escolher Plano".', 'info');
-        } else {
-          addToast('Erro ao iniciar teste. Tente novamente.', 'error');
-        }
+      if (data.valid) {
+        // Forçar seleção do plano do cupom
+        setSelectedPlan(data.coupon.plan);
+        addToast(`✅ Cupom válido! ${data.coupon.trialDays} dias de teste do ${data.coupon.plan.toUpperCase()}`, 'success');
       } else {
-        addToast(`Teste de ${getTrialDays(plan)} dias iniciado com sucesso!`, 'success');
-        await refreshUser();
+        addToast(data.error || 'Cupom inválido', 'error');
       }
     } catch (err) {
-      console.error('Erro inesperado ao iniciar trial:', err);
-      addToast('Erro ao processar solicitação de teste.', 'error');
+      console.error('Erro ao validar cupom:', err);
+      addToast('Erro ao validar cupom', 'error');
+    } finally {
+      setIsValidatingCoupon(false);
     }
   };
 
@@ -186,11 +211,23 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       return;
     }
 
+    // Validar se cupom aplicado corresponde ao plano selecionado
+    if (couponValidation?.valid && couponValidation.coupon.plan !== selectedPlan) {
+      addToast(`Este cupom é válido apenas para o plano ${couponValidation.coupon.plan.toUpperCase()}. Por favor, selecione o plano correto.`, "error");
+      return;
+    }
+
     setIsUpdatingPlan(true);
     try {
       // Criar URLs de sucesso e cancelamento
       const baseUrl = window.location.origin;
-      const successUrl = `${baseUrl}/?page=Premium&checkout=success`;
+      
+      // Incluir trialDays e informações do cupom se válido
+      const trialDays = couponValidation?.valid ? couponValidation.coupon.trialDays : 0;
+      const couponParam = couponValidation?.valid ? `&coupon=${couponCode}` : '';
+      const planParam = `&plan=${selectedPlan}`;
+      
+      const successUrl = `${baseUrl}/?page=Premium&checkout=success${couponParam}${planParam}`;
       const cancelUrl = `${baseUrl}/?page=Premium&checkout=canceled`;
 
       // Criar sessão de checkout no Stripe
@@ -200,6 +237,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         billingCycle: billingCycle,
         successUrl,
         cancelUrl,
+        trialDays,
       });
 
       if (error) {
@@ -340,6 +378,70 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         )}
       </div>
 
+      {/* Campo de Cupom - Ocultar se usuário já tem trial ativo */}
+      {user?.subscription_status !== 'trialing' && (
+        <div className="max-w-md mx-auto mb-8">
+          <Card className="p-6">
+            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+              🎁 Tem um Cupom de Teste Grátis?
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => {
+                  setCouponCode(e.target.value.toUpperCase());
+                  setCouponValidation(null);
+                }}
+                placeholder="Digite o código"
+                className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white uppercase"
+                maxLength={50}
+              />
+              <button
+                onClick={handleValidateCoupon}
+                disabled={isValidatingCoupon || !couponCode.trim()}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
+              >
+                {isValidatingCoupon ? 'Validando...' : 'Aplicar'}
+              </button>
+            </div>
+            
+            {couponValidation && (
+              <div className={`mt-4 p-3 rounded-lg ${
+                couponValidation.valid 
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+              }`}>
+                {couponValidation.valid ? (
+                  <>
+                    <p className="font-bold">✅ Cupom Aplicado!</p>
+                    <p className="text-sm">{couponValidation.coupon.description}</p>
+                    <p className="text-sm font-semibold mt-1">
+                      {couponValidation.coupon.trialDays} dias grátis do plano {couponValidation.coupon.plan.toUpperCase()}
+                    </p>
+                    <p className="text-xs mt-2 opacity-80">
+                      ⚠️ Apenas o plano {couponValidation.coupon.plan.toUpperCase()} está disponível com este cupom
+                    </p>
+                    <button
+                      onClick={() => {
+                        setCouponCode('');
+                        setCouponValidation(null);
+                        addToast('Cupom removido. Agora você pode escolher qualquer plano.', 'info');
+                      }}
+                      className="mt-2 text-xs underline hover:no-underline"
+                    >
+                      Remover cupom e escolher outro plano
+                    </button>
+                  </>
+                ) : (
+                  <p className="font-bold">❌ {couponValidation.error}</p>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
       <div className="flex justify-center mb-12">
         <div className="inline-flex rounded-full bg-light-bg dark:bg-dark-bg p-1 shadow-sm border border-light-border dark:border-dark-border">
           <button
@@ -365,34 +467,56 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto items-start">
-        <PricingCard
-          title="Basic"
-          price={prices.basic[billingCycle].display}
-          originalPrice={prices.basic[billingCycle].original}
-          promotionalDiscount={prices.basic[billingCycle].discount}
-          features={[
-            "Acesso ilimitado a recursos básicos",
-            "Editar Post",
-            "Posts mais longos",
-          ]}
-          onSelect={() => setSelectedPlan("basic")}
-          onConfirm={handleConfirmPlan}
-          isSelected={selectedPlan === 'basic'}
-          currentPlan={currentPlan}
-          isUpdatingPlan={isUpdatingPlan}
-          billingCycle={billingCycle}
-          annualSavingsPercentage={basicSavings}
-          isPromotional={promotionActive}
-        />
+      <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto items-stretch">
+        {/* Basic Plan */}
+        <div className={`relative h-full ${couponValidation?.valid && couponValidation.coupon.plan !== 'basic' ? 'opacity-40 pointer-events-none' : ''}`}>
+          {couponValidation?.valid && couponValidation.coupon.plan !== 'basic' && (
+            <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
+              <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                Cupom não válido para este plano
+              </div>
+            </div>
+          )}
+          <PricingCard
+            title="Basic"
+            price={prices.basic[billingCycle].display}
+            originalPrice={prices.basic[billingCycle].original}
+            promotionalDiscount={prices.basic[billingCycle].discount}
+            features={[
+              "Acesso ilimitado a recursos básicos",
+              "Editar Post",
+              "Posts mais longos",
+            ]}
+            onSelect={() => {
+              if (!couponValidation?.valid || couponValidation.coupon.plan === 'basic') {
+                setSelectedPlan("basic");
+              }
+            }}
+            onConfirm={handleConfirmPlan}
+            isSelected={selectedPlan === 'basic'}
+            currentPlan={currentPlan}
+            isUpdatingPlan={isUpdatingPlan}
+            billingCycle={billingCycle}
+            annualSavingsPercentage={basicSavings}
+            isPromotional={promotionActive}
+          />
+        </div>
 
+        {/* Pro Plan */}
         <div className="relative h-full">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
             <span className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold inline-block">
               mais vantajoso
             </span>
           </div>
-          <div className="h-full">
+          <div className={`h-full relative ${couponValidation?.valid && couponValidation.coupon.plan !== 'pro' ? 'opacity-40 pointer-events-none' : ''}`}>
+            {couponValidation?.valid && couponValidation.coupon.plan !== 'pro' && (
+              <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
+                <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                  Cupom não válido para este plano
+                </div>
+              </div>
+            )}
             <PricingCard
               title="Pro"
               price={prices.pro[billingCycle].display}
@@ -405,50 +529,64 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 "Anúncios Reduzidos",
                 "Criar salas de chat Privativas",
               ]}
-              onSelect={() => setSelectedPlan("pro")}
+              onSelect={() => {
+                if (!couponValidation?.valid || couponValidation.coupon.plan === 'pro') {
+                  setSelectedPlan("pro");
+                }
+              }}
               onConfirm={handleConfirmPlan}
               isSelected={selectedPlan === 'pro'}
               currentPlan={currentPlan}
               isUpdatingPlan={isUpdatingPlan}
               billingCycle={billingCycle}
               annualSavingsPercentage={proSavings}
-              showTrialButton={currentPlan === 'free' || currentPlan === 'basic'}
-              trialDays={getTrialDays('pro')}
-              onStartTrial={() => handleStartTrial('pro')}
+              showTrialButton={false}
               annualBonus={billingCycle === 'annually' ? proAnnualBonus : undefined}
               isPromotional={promotionActive}
             />
           </div>
         </div>
 
-        <PricingCard
-          title="Premium"
-          price={prices.premium[billingCycle].display}
-          originalPrice={prices.premium[billingCycle].original}
-          promotionalDiscount={prices.premium[billingCycle].discount}
-          features={[
-            "Tudo do plano Pro",
-            "Sem anúncios",
-            "Criar novas comunidades",
-            "Acesso total a página E-Books",
-            "Atendimento e Suporte via chat",
-            "Acesso antecipado a novos recursos",
-            "Criar salas de chat Privativas",
-          ]}
-          highlighted
-          onSelect={() => setSelectedPlan("premium")}
-          onConfirm={handleConfirmPlan}
-          isSelected={selectedPlan === 'premium'}
-          currentPlan={currentPlan}
-          isUpdatingPlan={isUpdatingPlan}
-          billingCycle={billingCycle}
-          annualSavingsPercentage={premiumSavings}
-          showTrialButton={currentPlan === 'free' || currentPlan === 'basic' || currentPlan === 'pro'}
-          trialDays={getTrialDays('premium')}
-          onStartTrial={() => handleStartTrial('premium')}
-          annualBonus={billingCycle === 'annually' ? premiumAnnualBonus : undefined}
-          isPromotional={promotionActive}
-        />
+        {/* Premium Plan */}
+        <div className={`relative h-full ${couponValidation?.valid && couponValidation.coupon.plan !== 'premium' ? 'opacity-40 pointer-events-none' : ''}`}>
+          {couponValidation?.valid && couponValidation.coupon.plan !== 'premium' && (
+            <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
+              <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
+                Cupom não válido para este plano
+              </div>
+            </div>
+          )}
+          <PricingCard
+            title="Premium"
+            price={prices.premium[billingCycle].display}
+            originalPrice={prices.premium[billingCycle].original}
+            promotionalDiscount={prices.premium[billingCycle].discount}
+            features={[
+              "Tudo do plano Pro",
+              "Sem anúncios",
+              "Criar novas comunidades",
+              "Acesso total a página E-Books",
+              "Atendimento e Suporte via chat",
+              "Acesso antecipado a novos recursos",
+              "Criar salas de chat Privativas",
+            ]}
+            highlighted
+            onSelect={() => {
+              if (!couponValidation?.valid || couponValidation.coupon.plan === 'premium') {
+                setSelectedPlan("premium");
+              }
+            }}
+            onConfirm={handleConfirmPlan}
+            isSelected={selectedPlan === 'premium'}
+            currentPlan={currentPlan}
+            isUpdatingPlan={isUpdatingPlan}
+            billingCycle={billingCycle}
+            annualSavingsPercentage={premiumSavings}
+            showTrialButton={false}
+            annualBonus={billingCycle === 'annually' ? premiumAnnualBonus : undefined}
+            isPromotional={promotionActive}
+          />
+        </div>
       </div>
 
       <PricingComparisonTable currentPlan={currentPlan} />

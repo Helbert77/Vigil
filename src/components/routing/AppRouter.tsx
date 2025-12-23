@@ -26,6 +26,7 @@ import {
   LazyModeration,
   LazyDashboard,
   LazyAppeals,
+  LazyAdmin,
   LazyPremiumPage,
   LazyTrendingTopicsPage,
   LazyExploreUsers,
@@ -402,6 +403,7 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
         } />
 
         {/* Admin */}
+        <Route path="/admin" element={<LazyAdmin />} />
         <Route path="/moderation" element={
           <LazyModeration 
             queue={props.moderationQueue}

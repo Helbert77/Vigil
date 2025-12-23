@@ -26,6 +26,7 @@ export const LazyAccessibility = lazy(() => import('@/pages/Accessibility'));
 export const LazyModeration = lazy(() => import('@/pages/admin/Moderation'));
 export const LazyDashboard = lazy(() => import('@/components/admin/Dashboard'));
 export const LazyAppeals = lazy(() => import('@/pages/admin/Appeals'));
+export const LazyAdmin = lazy(() => import('@/pages/Admin'));
 
 // Lazy loading das páginas premium e especiais
 export const LazyPremiumPage = lazy(() => import('@/src/pages/PremiumPage'));

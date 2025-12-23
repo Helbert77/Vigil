@@ -91,6 +91,42 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           };
 
           setUser(appUser);
+          
+          // Gamificação: Verificar login diário
+          try {
+            const { data: gamification } = await supabase
+              .from('user_gamification')
+              .select('last_login_date')
+              .eq('user_id', appUser.id)
+              .single();
+            
+            const today = new Date().toISOString().split('T')[0];
+            const lastLogin = gamification?.last_login_date;
+            
+            // Se não logou hoje, processar ação de login
+            if (!lastLogin || lastLogin !== today) {
+              await supabase.functions.invoke('process-gamification-action', {
+                body: {
+                  userId: appUser.id,
+                  actionType: 'login',
+                  metadata: {
+                    description: 'Login diário',
+                  },
+                },
+              });
+              
+              // Atualizar data do último login
+              await supabase
+                .from('user_gamification')
+                .upsert({
+                  user_id: appUser.id,
+                  last_login_date: today,
+                }, { onConflict: 'user_id' });
+            }
+          } catch (gamError) {
+            // Não bloquear login se gamificação falhar
+            console.error('[SessionContext] Gamification error:', gamError);
+          }
         }
       } catch {
         // Silenciar erros de rede (ERR_ABORTED / Failed to fetch) sem quebrar fluxo

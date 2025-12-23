@@ -30,6 +30,8 @@ export interface User {
   subscription_started_at?: string | null;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  // Gamification fields
+  gamification?: UserGamification;
 }
 
 export interface Comment {
@@ -279,4 +281,102 @@ export interface AdComment {
   updated_at: string;
   replies?: AdComment[];
   parent_comment_id?: string;
+}
+
+// ============================================
+// GAMIFICATION TYPES
+// ============================================
+
+export interface UserGamification {
+  user_id: string;
+  total_xp: number;
+  current_level: number;
+  xp_to_next_level: number;
+  daily_login_streak: number;
+  last_login_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Achievement {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+  xp_reward: number;
+  category: 'social' | 'content' | 'engagement' | 'special';
+  requirement_type: 'count' | 'streak' | 'time' | 'special';
+  requirement_value?: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  achievement?: Achievement;
+}
+
+export interface Mission {
+  id: string;
+  name: string;
+  description: string;
+  mission_type: 'daily' | 'weekly';
+  action_type: string;
+  target_count: number;
+  xp_reward: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UserMissionProgress {
+  id: string;
+  user_id: string;
+  mission_id: string;
+  current_count: number;
+  completed: boolean;
+  reset_date: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+  mission?: Mission;
+}
+
+export interface XPHistory {
+  id: string;
+  user_id: string;
+  xp_amount: number;
+  source_type: 'post' | 'like' | 'comment' | 'login' | 'achievement' | 'mission' | 'level_up';
+  source_id?: string;
+  description?: string;
+  created_at: string;
+}
+
+// ============================================
+// ANALYTICS TYPES
+// ============================================
+
+export interface ConversionEvent {
+  id: string;
+  user_id: string;
+  event_type: 'trial_started' | 'trial_day_3' | 'trial_day_7' | 'trial_expiring_soon' | 'trial_expired' | 'converted_to_paid' | 'canceled_trial' | 'churned';
+  event_data?: Record<string, any>;
+  created_at: string;
+}
+
+export interface ConversionMetrics {
+  id: string;
+  date: string;
+  plan: 'basic' | 'pro' | 'premium';
+  trials_started: number;
+  trials_converted: number;
+  trials_expired: number;
+  trials_canceled: number;
+  conversion_rate: number;
+  revenue: number;
+  created_at: string;
+  updated_at: string;
 }

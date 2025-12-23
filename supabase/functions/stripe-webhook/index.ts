@@ -306,23 +306,60 @@ serve(async (req: Request) => {
         }
 
         if (userId && subscriptionId) {
-          // Pagamento de assinatura (código existente)
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          try {
+            console.log(`[webhook] Processing subscription for user: ${userId}, subscription: ${subscriptionId}`);
+            
+            // Pagamento de assinatura (código existente)
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            console.log(`[webhook] Subscription retrieved:`, JSON.stringify({
+              id: subscription.id,
+              status: subscription.status,
+              trial_end: subscription.trial_end,
+              current_period_start: subscription.current_period_start,
+              current_period_end: subscription.current_period_end
+            }));
 
-          await supabase.from('subscriptions').upsert({
-            user_id: userId,
-            plan: session.metadata?.plan || 'basic',
-            status: 'active',
-            billing_cycle: session.metadata?.billingCycle || 'monthly',
-            stripe_customer_id: session.customer as string,
-            stripe_subscription_id: subscriptionId,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          }, { onConflict: 'user_id' });
+            // Determinar status e trial_ends_at
+            const status = subscription.status; // 'trialing', 'active', etc
+            const trialEnd = subscription.trial_end 
+              ? new Date(subscription.trial_end * 1000).toISOString() 
+              : null;
 
-          await supabase.from('profiles').update({
-            plan: session.metadata?.plan || 'basic',
-          }).eq('id', userId);
+            console.log(`[webhook] Upserting subscription to database...`);
+            const { error: subError } = await supabase.from('subscriptions').upsert({
+              user_id: userId,
+              plan: session.metadata?.plan || 'basic',
+              status: status,
+              billing_cycle: session.metadata?.billingCycle || 'monthly',
+              stripe_customer_id: session.customer as string,
+              stripe_subscription_id: subscriptionId,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              trial_ends_at: trialEnd,
+            }, { onConflict: 'user_id' });
+
+            if (subError) {
+              console.error(`[webhook] Error upserting subscription:`, subError);
+              throw subError;
+            }
+
+            console.log(`[webhook] Updating profile plan...`);
+            const { error: profileError } = await supabase.from('profiles').update({
+              plan: session.metadata?.plan || 'basic',
+            }).eq('id', userId);
+
+            if (profileError) {
+              console.error(`[webhook] Error updating profile:`, profileError);
+              throw profileError;
+            }
+
+            console.log(`[webhook] SUCCESS: Subscription created/updated: ${subscriptionId}, status: ${status}, trial_ends_at: ${trialEnd}`);
+          } catch (error) {
+            console.error(`[webhook] FATAL ERROR processing subscription:`, error);
+            throw error; // Re-throw para retornar 500
+          }
+        } else {
+          console.log(`[webhook] Skipping subscription processing: userId=${userId}, subscriptionId=${subscriptionId}`);
         }
         break;
       }

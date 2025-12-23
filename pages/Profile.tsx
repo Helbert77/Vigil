@@ -12,6 +12,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
+import { GamificationTab } from '@/src/components/gamification/GamificationTab';
 
 const CalendarIcon = () => <Icon className="h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></Icon>;
 const ListIcon = () => <Icon className="h-5 w-5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></Icon>;
@@ -52,7 +53,7 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostIds, onToggleSave, onUpdateUser, onViewPost, currentUser, onUpdateCurrentUser, followedUserIds, onFollowToggle, blockedUserIds, onBlockToggle, onToggleLike, onIncrementView, onDeletePost, shareableUsers, onSendMessage, onViewProfile, onOpenFollowModal, onVoteOnPoll, allUsers }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUser, setEditedUser] = useState<Partial<User>>({});
-  const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'moderation'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'gamification' | 'moderation'>('posts');
   const [selectedRole, setSelectedRole] = useState(user.role || 'user');
   const { addToast } = useToast();
   
@@ -390,10 +391,11 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
         </Card>
       )}
 
-      <div className="flex border-b border-light-border dark:border-dark-border mb-4">
-        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Posts</button>
-        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Mídia</button>
-        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}><ShieldIcon /> Moderação</button>}
+      <div className="flex border-b border-light-border dark:border-dark-border mb-4 overflow-x-auto">
+        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Posts</button>
+        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Mídia</button>
+        <button onClick={() => setActiveTab('gamification')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'gamification' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Seu Progresso</button>
+        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 whitespace-nowrap ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}><ShieldIcon /> Moderação</button>}
       </div>
 
       {activeTab === 'posts' && (
@@ -461,6 +463,10 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 </Card>
             )}
         </div>
+      )}
+
+      {activeTab === 'gamification' && (
+        <GamificationTab userId={user.id} isOwnProfile={isCurrentUserProfile} />
       )}
 
       {activeTab === 'moderation' && isModerator && (

@@ -60,6 +60,7 @@ import Library from '@/pages/Library';
 import { ChevronLeftIcon } from './components/icons/ChevronLeftIcon';
 import Moderation from '@/pages/admin/Moderation';
 import Dashboard from '@/components/admin/Dashboard';
+import Admin from '@/pages/Admin';
 import AdsDashboard from '@/pages/advertising/AdsDashboard';
 import MyAds from '@/pages/advertising/MyAds';
 import SelectAdPlan from '@/pages/advertising/SelectAdPlan';
@@ -1056,6 +1057,8 @@ const App: React.FC = () => {
         return <Accessibility />;
       case 'Moderation':
         return <Moderation queue={moderationQueue} onDataChange={refetchModerationData} isLoading={isLoadingModeration} />;
+      case 'Admin':
+        return <Admin />;
       case 'Dashboard':
         return <Dashboard />;
       case 'AdsDashboard':

@@ -27,7 +27,7 @@ serve(async (req) => {
     const body = await req.json();
     console.log('[create-checkout-session] Body received:', JSON.stringify(body));
     
-    const { userId, plan, billingCycle, successUrl, cancelUrl } = body;
+    const { userId, plan, billingCycle, successUrl, cancelUrl, trialDays = 0 } = body;
 
     // Validar parâmetros
     if (!userId || !plan || !billingCycle || !successUrl || !cancelUrl) {
@@ -97,6 +97,21 @@ serve(async (req) => {
     formData.append('metadata[userId]', userId);
     formData.append('metadata[plan]', plan);
     formData.append('metadata[billingCycle]', billingCycle);
+    
+    // Adicionar trial se especificado
+    if (trialDays > 0) {
+      formData.append('subscription_data[trial_period_days]', trialDays.toString());
+      formData.append('metadata[trialDays]', trialDays.toString());
+      
+      // CRÍTICO: Configurar para NÃO cobrar durante o trial
+      // payment_behavior = 'default_incomplete' garante que não haverá cobrança até o fim do trial
+      formData.append('subscription_data[trial_settings][end_behavior][missing_payment_method]', 'cancel');
+      
+      // Permite que o Stripe processe o pagamento após o trial
+      formData.append('payment_method_collection', 'always');
+      
+      console.log(`[create-checkout-session] Trial configured: ${trialDays} days (no immediate charge)`);
+    }
     
     console.log('[create-checkout-session] Form data prepared');
     

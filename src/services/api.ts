@@ -1593,8 +1593,8 @@ export const createStripeCheckoutSession = async (params: {
   billingCycle: 'monthly' | 'annually';
   successUrl: string;
   cancelUrl: string;
+  trialDays?: number;
 }) => {
-  // Placeholder para integração futura com Stripe
   return supabase.functions.invoke('create-checkout-session', {
     body: params,
   });
@@ -1607,9 +1607,211 @@ export const createStripePortalSession = async (userId: string, returnUrl: strin
   });
 };
 
+// --- Trial Coupons API ---
+
+// Validar cupom de trial
+export const validateTrialCoupon = async (code: string, userId: string) => {
+  return supabase.functions.invoke('validate-trial-coupon', {
+    body: { code, userId },
+  });
+};
+
+// Registrar uso de cupom
+export const recordCouponUsage = async (params: {
+  couponId: string;
+  userId: string;
+  planActivated: string;
+  trialDaysGranted: number;
+  stripeSessionId?: string;
+}) => {
+  const { data, error } = await supabase
+    .from('trial_coupon_usage')
+    .insert({
+      coupon_id: params.couponId,
+      user_id: params.userId,
+      plan_activated: params.planActivated,
+      trial_days_granted: params.trialDaysGranted,
+      stripe_session_id: params.stripeSessionId,
+    });
+
+  // Incrementar contador de uso
+  if (!error) {
+    await supabase.rpc('increment_coupon_usage', { coupon_id_param: params.couponId });
+  }
+
+  return { data, error };
+};
+
 // Salvar assinatura de Web Push
 export const savePushSubscription = async (userId: string, subscription: any) => {
   return supabase.from('push_subscriptions').upsert({ user_id: userId, subscription });
+};
+
+// ============================================
+// GAMIFICATION API
+// ============================================
+
+// Buscar dados de gamificação do usuário
+export const fetchUserGamification = async (userId: string) => {
+  return supabase
+    .from('user_gamification')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+};
+
+// Adicionar XP ao usuário
+export const addXPToUser = async (params: {
+  userId: string;
+  xpAmount: number;
+  sourceType: string;
+  sourceId?: string;
+  description?: string;
+}) => {
+  return supabase.rpc('add_xp_to_user', {
+    p_user_id: params.userId,
+    p_xp_amount: params.xpAmount,
+    p_source_type: params.sourceType,
+    p_source_id: params.sourceId,
+    p_description: params.description,
+  });
+};
+
+// Desbloquear conquista
+export const unlockAchievement = async (userId: string, achievementCode: string) => {
+  return supabase.rpc('unlock_achievement', {
+    p_user_id: userId,
+    p_achievement_code: achievementCode,
+  });
+};
+
+// Buscar conquistas do usuário
+export const fetchUserAchievements = async (userId: string) => {
+  return supabase
+    .from('user_achievements')
+    .select(`
+      *,
+      achievement:achievements(*)
+    `)
+    .eq('user_id', userId)
+    .order('unlocked_at', { ascending: false });
+};
+
+// Buscar todas as conquistas
+export const fetchAllAchievements = async () => {
+  return supabase
+    .from('achievements')
+    .select('*')
+    .eq('is_active', true)
+    .order('category', { ascending: true });
+};
+
+// Buscar missões ativas
+export const fetchActiveMissions = async () => {
+  return supabase
+    .from('missions')
+    .select('*')
+    .eq('is_active', true)
+    .order('mission_type', { ascending: true });
+};
+
+// Buscar progresso de missões do usuário
+export const fetchUserMissionProgress = async (userId: string) => {
+  const today = new Date().toISOString().split('T')[0];
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  return supabase
+    .from('user_mission_progress')
+    .select(`
+      *,
+      mission:missions(*)
+    `)
+    .eq('user_id', userId)
+    .gte('reset_date', weekStartStr)
+    .order('created_at', { ascending: false });
+};
+
+// Atualizar progresso de missão
+export const updateMissionProgress = async (userId: string, missionId: string, increment: number = 1) => {
+  return supabase.rpc('update_mission_progress', {
+    p_user_id: userId,
+    p_mission_id: missionId,
+    p_increment: increment,
+  });
+};
+
+// Buscar histórico de XP
+export const fetchXPHistory = async (userId: string, limit: number = 50) => {
+  return supabase
+    .from('xp_history')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+};
+
+// Buscar ranking de usuários por XP
+export const fetchXPLeaderboard = async (limit: number = 100) => {
+  return supabase
+    .from('user_gamification')
+    .select(`
+      *,
+      profile:profiles(id, username, avatar_url, plan)
+    `)
+    .order('total_xp', { ascending: false })
+    .limit(limit);
+};
+
+// Processar ação de gamificação (via Edge Function)
+export const processGamificationAction = async (params: {
+  userId: string;
+  actionType: 'post_created' | 'like_received' | 'comment_made' | 'comment_received' | 'login' | 'profile_completed';
+  metadata?: Record<string, any>;
+}) => {
+  return supabase.functions.invoke('process-gamification-action', {
+    body: params,
+  });
+};
+
+// ============================================
+// ANALYTICS API
+// ============================================
+
+// Registrar evento de conversão
+export const trackConversionEvent = async (params: {
+  userId: string;
+  eventType: string;
+  eventData?: Record<string, any>;
+}) => {
+  return supabase.from('conversion_events').insert({
+    user_id: params.userId,
+    event_type: params.eventType,
+    event_data: params.eventData,
+  });
+};
+
+// Buscar métricas de conversão (admin)
+export const fetchConversionMetrics = async (startDate: string, endDate: string) => {
+  return supabase
+    .from('conversion_metrics')
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: false });
+};
+
+// Buscar eventos de conversão (admin)
+export const fetchConversionEvents = async (limit: number = 100) => {
+  return supabase
+    .from('conversion_events')
+    .select(`
+      *,
+      profile:profiles(id, username, plan)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit);
 };
 
 // Enviar push (admin/teste)

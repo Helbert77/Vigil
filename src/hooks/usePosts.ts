@@ -205,6 +205,24 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
       setPosts(prevPosts => prevPosts.map(p => (p.id === tempId ? finalPost : p)));
       fetchTrendingTopics();
       await sendMentionNotifications(text, newDbPost.id);
+      
+      // Gamificação: Processar ação de criar post
+      try {
+        // Contar total de posts do usuário
+        const userPostsCount = posts.filter(p => p.user.id === appUser.id).length + 1;
+        await api.processGamificationAction({
+          userId: appUser.id,
+          actionType: 'post_created',
+          metadata: {
+            sourceId: newDbPost.id,
+            post_count: userPostsCount,
+            description: 'Post criado',
+          },
+        });
+      } catch (gamError) {
+        // Não bloquear o fluxo se gamificação falhar
+        console.error('[usePosts] Gamification error:', gamError);
+      }
     } catch (error) {
       addToast('Erro ao criar postagem.', 'error');
       setPosts(prevPosts => prevPosts.filter(p => p.id !== tempId));
@@ -265,6 +283,22 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         const post = posts.find(p => p.id === postId);
         if (post && post.user.id !== appUser.id) {
           await api.createNotification({ recipient_id: post.user.id, actor_id: appUser.id, type: 'like', post_id: postId });
+          
+          // Gamificação: Usuário recebeu um like
+          try {
+            const userPostsLikes = posts.filter(p => p.user.id === post.user.id).reduce((sum, p) => sum + p.likes, 0) + 1;
+            await api.processGamificationAction({
+              userId: post.user.id,
+              actionType: 'like_received',
+              metadata: {
+                sourceId: postId,
+                likes_count: userPostsLikes,
+                description: 'Like recebido',
+              },
+            });
+          } catch (gamError) {
+            console.error('[usePosts] Gamification error on like:', gamError);
+          }
         }
       }
     } catch (error) {
@@ -396,7 +430,45 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
       }
       if (recipientId && recipientId !== appUser.id) {
         await api.createNotification({ recipient_id: recipientId, actor_id: appUser.id, type: 'comment', post_id: postId });
+        
+        // Gamificação: Usuário recebeu um comentário
+        try {
+          const post = posts.find(p => p.id === postId);
+          if (post) {
+            const userCommentsReceived = posts.filter(p => p.user.id === recipientId).reduce((sum, p) => sum + p.commentsCount, 0) + 1;
+            await api.processGamificationAction({
+              userId: recipientId,
+              actionType: 'comment_received',
+              metadata: {
+                sourceId: postId,
+                comments_received_count: userCommentsReceived,
+                description: 'Comentário recebido',
+              },
+            });
+          }
+        } catch (gamError) {
+          console.error('[usePosts] Gamification error on comment received:', gamError);
+        }
       }
+      
+      // Gamificação: Usuário fez um comentário
+      try {
+        const userCommentsMade = posts.reduce((sum, p) => {
+          return sum + p.comments.filter(c => c.user.id === appUser.id).length;
+        }, 0) + 1;
+        await api.processGamificationAction({
+          userId: appUser.id,
+          actionType: 'comment_made',
+          metadata: {
+            sourceId: postId,
+            comments_count: userCommentsMade,
+            description: 'Comentário criado',
+          },
+        });
+      } catch (gamError) {
+        console.error('[usePosts] Gamification error on comment made:', gamError);
+      }
+      
       await sendMentionNotifications(commentText, postId);
     } catch (error) {
       // Error log removed for production

@@ -64,6 +64,11 @@ const getNotificationText = (notification: Notification): string => {
             // Usar mensagem do metadata se disponível, senão usar padrão
             const daysRemaining = notification.metadata?.days_remaining || 3;
             return notification.metadata?.message || `seu período de teste expira em ${daysRemaining} dia${daysRemaining > 1 ? 's' : ''}! Assine agora para manter o acesso premium.`;
+        case 'trial_coupon_offer':
+            const couponCode = notification.metadata?.coupon_code || '';
+            const trialDays = notification.metadata?.trial_days || 7;
+            const couponPlan = notification.metadata?.plan || 'premium';
+            return `você ganhou ${trialDays} dias grátis do plano ${couponPlan.toUpperCase()}! Use o cupom: ${couponCode}`;
         default:
             return '';
     }
@@ -91,6 +96,7 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'timeline_moderation_pending') return <AlertCircleIcon />;
     if (type === 'trial_expired') return <XCircleIcon />;
     if (type === 'trial_expiring') return <ClockIcon />;
+    if (type === 'trial_coupon_offer') return <Icon className="h-6 w-6 text-yellow-500"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></Icon>;
     return <div className="h-6 w-6"></div>;
 };
 
