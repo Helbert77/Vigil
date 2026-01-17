@@ -310,7 +310,7 @@ PASSO 5.1: Verificar se as Functions Existem
 
 No seu projeto, você deve ter:
 
-vigil-main/
+Vigil/
 └── supabase/
     └── functions/
         ├── create-checkout-session/
@@ -362,7 +362,7 @@ Se você tem o Supabase CLI instalado:
 
 ```bash
 # No diretório raiz do projeto
-cd C:\Users\Herbert Carlos\Downloads\Cursor\Vigil-main
+cd C:\Users\Herbert Carlos\Downloads\Cursor\Vigil
 
 # Deploy de todas as functions
 supabase functions deploy
