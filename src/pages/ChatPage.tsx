@@ -104,6 +104,7 @@ const LoadingSpinner = () => (
 interface ChatPageProps {
   user: User;
   onUpdateUser: (updates: Partial<User>) => Promise<void>;
+  onNavigateToMessages?: () => void;
 }
 
 interface Buddy {
@@ -125,7 +126,7 @@ interface Buddy {
 }
 
 // Componente interno que usa o contexto de geolocalização
-function ChatPageContent({ user, onUpdateUser }: ChatPageProps) {
+function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageProps) {
   const { session } = useSession();
   const { addToast } = useToast();
   
@@ -1337,10 +1338,20 @@ function ChatPageContent({ user, onUpdateUser }: ChatPageProps) {
 
   // Radar functions
   const handleRadarUserClick = (radarUser: any) => {
-    const buddy = buddies.find(b => b.id === radarUser.id);
-    if (buddy) {
-      setSelectedBuddy(buddy);
-      // Chat view removida - manter no radar
+    // Simplesmente navegar para a página Mensagens
+    // O sistema de mensagens já tem toda a lógica para criar conversas
+    if (onNavigateToMessages) {
+      // Armazenar o ID do usuário alvo no localStorage para a página Mensagens usar
+      localStorage.setItem('radarTargetUserId', radarUser.id);
+      localStorage.setItem('radarTargetUser', JSON.stringify({
+        id: radarUser.id,
+        name: radarUser.name,
+        username: radarUser.username,
+        avatarUrl: radarUser.avatarUrl
+      }));
+      
+      onNavigateToMessages();
+      addToast(`💬 Abrindo conversa com ${radarUser.name}...`, 'success');
     }
   };
 

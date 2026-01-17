@@ -1076,7 +1076,7 @@ const App: React.FC = () => {
       case 'Premium':
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'Chat':
-        return <ChatPage user={appUser} onUpdateUser={handleUpdateUser} />;
+        return <ChatPage user={appUser} onUpdateUser={handleUpdateUser} onNavigateToMessages={() => handleNavigation('Messages')} />;
       case 'TrendingTopics':
         return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => handleNavigation('Home')} />;
       case 'ExploreUsers':

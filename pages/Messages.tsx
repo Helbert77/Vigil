@@ -35,6 +35,27 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
 
+  // Check for radar target user from localStorage
+  useEffect(() => {
+    const radarTargetUserId = localStorage.getItem('radarTargetUserId');
+    const radarTargetUserStr = localStorage.getItem('radarTargetUser');
+    
+    if (radarTargetUserId && radarTargetUserStr) {
+      try {
+        const radarTargetUser = JSON.parse(radarTargetUserStr);
+        
+        // Clear localStorage
+        localStorage.removeItem('radarTargetUserId');
+        localStorage.removeItem('radarTargetUser');
+        
+        // Start new chat with radar user
+        handleStartNewChat(radarTargetUser);
+      } catch (error) {
+        console.error('Error parsing radar target user:', error);
+      }
+    }
+  }, []); // Run once on mount
+
   // Auto-select first conversation only if no new chat is being created
   useEffect(() => {
     if (!selectedConversationId && conversations.length > 0 && !newChatTargetUser) {

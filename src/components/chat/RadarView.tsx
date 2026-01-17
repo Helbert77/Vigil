@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { formatDistance } from '@/src/utils/geoCalculations';
+import { formatDistance, calculateBearing, type Coordinates } from '@/src/utils/geoCalculations';
+import { useGeolocationPresence } from '@/src/contexts/GeolocationPresenceContext';
 
 interface User {
   id: string;
@@ -16,6 +17,7 @@ interface RadarUser extends User {
   similarity_score?: number;
   distance?: number; // em km
   position?: { x: number; y: number };
+  bearing?: number; // ângulo em graus
 }
 
 interface RadarViewProps {
@@ -30,35 +32,50 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
   const [radarSize, setRadarSize] = useState<number>(500);
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Obter localização do usuário atual para calcular bearing
+  const { currentUserLocation, maxDistance } = useGeolocationPresence();
 
   useEffect(() => {
-    // Calculate positions based on similarity score (from distance calculation)
-    const mappedUsers = users.slice(0, 20).map((user, index) => {
-      // Get similarity score from user data (calculated from distance)
+    // Calculate positions based on real geographic coordinates
+    const mappedUsers = users.slice(0, 20).map((user) => {
+      // Get similarity score and distance from user data
       const similarity = (user as any).similarity_score || (user as any).similarityScore || 0.5;
-      const distance = (user as any).distance;
+      const distance = (user as any).distance || 0;
+      const userCoordinates = (user as any).coordinates as Coordinates | undefined;
 
-      // Calculate angle: distribute users around the circle
-      // Add some randomness to angle to avoid perfect lines
-      const angle = (index / Math.min(users.length, 20)) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
+      // Calculate bearing (angle) based on real coordinates
+      let bearing = 0;
+      if (currentUserLocation && userCoordinates) {
+        bearing = calculateBearing(currentUserLocation, userCoordinates);
+      } else {
+        // Fallback: distribute evenly if no coordinates
+        bearing = Math.random() * 360;
+      }
 
-      // Radius is inverse to similarity (more similar/closer = closer to center)
-      // Max radius is 45% (leaving 5% padding)
-      const radius = (1 - similarity) * 45;
+      // Convert bearing to radians (0° = North, clockwise)
+      // Adjust for screen coordinates (0° = East, counter-clockwise)
+      const angleRad = ((90 - bearing) * Math.PI) / 180;
+
+      // Calculate radius based on distance and maxDistance
+      // Normalize distance to 0-1 range, then scale to 10-45% of radar
+      const normalizedDistance = Math.min(distance / maxDistance, 1);
+      const radius = 10 + normalizedDistance * 35; // 10% min, 45% max
 
       // Convert polar to cartesian (center is 50, 50)
-      const x = 50 + radius * Math.cos(angle);
-      const y = 50 + radius * Math.sin(angle);
+      const x = 50 + radius * Math.cos(angleRad);
+      const y = 50 - radius * Math.sin(angleRad); // Subtract because Y increases downward
 
       return {
         ...user,
         similarity_score: similarity,
         distance: distance,
+        bearing: bearing,
         position: { x, y }
       };
     });
     setRadarUsers(mappedUsers);
-  }, [users]);
+  }, [users, currentUserLocation, maxDistance]);
 
   useEffect(() => {
     // Calcular tamanho do radar garantindo formato circular - 95% do container pai
@@ -234,9 +251,15 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
                 </div>
               )}
 
-              <div className="mt-1.5 md:mt-3 text-[9px] md:text-xs text-center text-blue-500 font-semibold">
-                Click to chat
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUserClick(user);
+                }}
+                className="mt-1.5 md:mt-3 w-full px-2 md:px-3 py-1 md:py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-[9px] md:text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                💬 Ir para Chat
+              </button>
             </div>
           </div>
         ))}

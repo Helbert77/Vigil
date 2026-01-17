@@ -138,6 +138,11 @@ export const fetchMessages = async (conversationId: string, limit: number = 50) 
       .limit(limit);
 
     if (error) {
+      // Se o erro for 400 e a conversa não existir ainda, retornar array vazio
+      // Isso é esperado quando criamos um novo buddy pelo radar
+      if (error.code === 'PGRST116' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        return { data: [], error: null };
+      }
       handleApiError(error, 'fetchMessages', { conversationId, limit });
       return { data: null, error };
     }
