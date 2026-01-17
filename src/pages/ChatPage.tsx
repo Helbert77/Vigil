@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/useToast';
 import RadarView from '@/src/components/chat/RadarView';
 import { ChevronLeftIcon } from '@/components/icons/ChevronLeftIcon';
 import { supabase } from '@/integrations/supabase/client';
+import { GeolocationPresenceProvider, useGeolocationPresence } from '@/src/contexts/GeolocationPresenceContext';
+import LocationPermissionModal from '@/src/components/chat/LocationPermissionModal';
 import {
   fetchChatRooms,
   fetchChatBuddies,
@@ -118,11 +120,27 @@ interface Buddy {
   interests?: string[];
   age?: number;
   location?: string;
+  similarity_score?: number;
+  distance?: number;
 }
 
-export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
+// Componente interno que usa o contexto de geolocalização
+function ChatPageContent({ user, onUpdateUser }: ChatPageProps) {
   const { session } = useSession();
   const { addToast } = useToast();
+  
+  // Hook de geolocalização em tempo real
+  const {
+    nearbyUsers,
+    isLocationSharingEnabled,
+    enableLocationSharing,
+    disableLocationSharing,
+    permissionStatus,
+    locationError,
+    locationLoading,
+    maxDistance,
+    setMaxDistance
+  } = useGeolocationPresence();
 
   // Estilos para barras de rolagem finas e discretas
   const scrollbarStyles = `
@@ -245,8 +263,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     };
   }, []);
   const [activeAccordion, setActiveAccordion] = useState<string>('');
-  const [currentView, setCurrentView] = useState<'radar' | 'room'>('radar');
-
   const [roomCategoryFilter, setRoomCategoryFilter] = useState<string>('');
 
   // Data states
@@ -300,6 +316,7 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
   const [showEditRoomModal, setShowEditRoomModal] = useState(false);
   const [showDeleteRoomModal, setShowDeleteRoomModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showLocationPermissionModal, setShowLocationPermissionModal] = useState(false);
   const [showConversationsDropdown, setShowConversationsDropdown] = useState(false);
   const [roomToEdit, setRoomToEdit] = useState<ChatRoomType | null>(null);
   const [roomToDelete, setRoomToDelete] = useState<ChatRoomType | null>(null);
@@ -338,11 +355,11 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
 
   // Scroll instantâneo ao carregar mensagens - SEM animação, igual à página Messages
   useEffect(() => {
-    if (currentView === 'room' && selectedRoom && messages.length > 0 && !loadingMessages && messagesContainerRef.current) {
+    if (selectedRoom && messages.length > 0 && !loadingMessages && messagesContainerRef.current) {
       // Scroll direto sem delays ou animações - igual à página Messages
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [messages.length, loadingMessages, currentView, selectedRoom]);
+  }, [messages.length, loadingMessages, selectedRoom]);
 
 
   // Fechar menu de opções ao clicar fora
@@ -646,7 +663,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
         // If currently in a room that user is no longer part of, exit
         if (selectedRoom && !joinedSet.has(selectedRoom.id)) {
           setSelectedRoom(null);
-          setCurrentView('radar');
           setMessages([]);
         }
       }
@@ -1328,11 +1344,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     }
   };
 
-  const handleViewToggle = (view: 'radar') => {
-    setCurrentView(view);
-  };
-
-
   const handleSelectBuddy = (buddy: Buddy) => {
     setSelectedBuddy(buddy);
     setSelectedRoom(null);
@@ -1477,7 +1488,6 @@ export default function ChatPage({ user, onUpdateUser }: ChatPageProps) {
     
     setSelectedRoom(room);
     setSelectedBuddy(null);
-    setCurrentView('room');
     const now = Date.now();
     lastActivityTimeRef.current = now;
     setUserActivityStatus('online');
@@ -2115,23 +2125,20 @@ Recarregue esta página após ativar.`);
             // Show room participants
             <>
               <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-gray-50 dark:bg-gray-800/50">
+                {/* Botão Voltar ao Radar */}
+                <button
+                  onClick={() => setSelectedRoom(null)}
+                  className="w-full mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xs md:text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                >
+                  <span className="text-base">🎯</span>
+                  <span>Voltar ao Radar</span>
+                </button>
+                
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 border-r border-light-border dark:border-dark-border pr-3 md:pr-4">
+                  <div className="flex-1">
                     <h3 className="font-semibold text-xs md:text-sm text-gray-900 dark:text-white">
                       👥 Participantes Online ({participantsCount})
                     </h3>
-                  </div>
-                  {/* Botão Radar removido no mobile */}
-                  <div className="hidden md:flex flex-shrink-0">
-                    <button
-                      onClick={() => handleViewToggle('radar')}
-                      className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold transition-colors ${currentView === 'radar'
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                        }`}
-                    >
-                      🎯 <span className="hidden sm:inline">Radar</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -2246,48 +2253,44 @@ Recarregue esta página após ativar.`);
         )}
       </div>
 
-      {/* Middle Panel - Chat/Radar */}
+      {/* Middle Panel - Radar (sempre visível) */}
       <div className={`
         ${mobileView === 'center' ? 'flex' : 'hidden'} md:flex
-        flex-1 flex-col min-w-0
+        flex-1 flex-col min-w-0 relative
       `}>
 
-        {/* Radar Header - Exibido apenas quando radar está ativo */}
-        {currentView === 'radar' && (
-          <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card">
-            <div className="text-center">
-              <h3 className="font-orbitron text-base md:text-xl font-bold text-blue-500 mb-2">
+        {/* Radar Header */}
+        <div className={`p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card ${selectedRoom ? 'hidden' : ''}`}>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h3 className="font-orbitron text-base md:text-xl font-bold text-blue-500">
                 🎯 Radar Discovery
               </h3>
-              <p className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600'}`}>
-                Scanning for people nearby with similar interests...
-                <br />
-                <span className="text-[10px] md:text-xs opacity-75 mt-1 block">
-                  {buddies.length} users found in your area{' '}
-                  <button
-                    onClick={() => setShowLocationModal(true)}
-                    className="text-blue-500 hover:text-blue-600 underline text-[10px] md:text-xs"
-                  >
-                    Saiba mais
-                  </button>
-                </span>
-              </p>
+              <button
+                onClick={() => setShowLocationPermissionModal(true)}
+                className="text-xs text-blue-500 hover:text-blue-600 underline"
+              >
+                ⚙️ Configurar
+              </button>
             </div>
+            <p className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600'}`}>
+              {nearbyUsers.length} users found in your area (within {maxDistance}km)
+            </p>
           </div>
-        )}
+        </div>
 
-        {/* Radar View */}
-        {currentView === 'radar' && (
+        {/* Radar View - SEMPRE VISÍVEL mas oculto quando sala está ativa */}
+        <div className={selectedRoom ? 'hidden' : 'flex-1 flex flex-col'}>
           <RadarView
-            users={buddies}
+            users={nearbyUsers}
             onUserClick={handleRadarUserClick}
             isDarkMode={isDarkMode}
           />
-        )}
+        </div>
 
-        {/* Room View */}
-        {currentView === 'room' && selectedRoom && (
-          <div className="flex flex-col h-full min-h-0" style={{ height: '100%' }}>
+        {/* Room View - Sobreposto quando sala selecionada */}
+        {selectedRoom && (
+          <div className="absolute inset-0 flex flex-col h-full min-h-0 bg-light-bg dark:bg-dark-bg z-10" style={{ height: '100%' }}>
             {/* Room Header */}
             <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card flex items-center justify-between gap-2 flex-shrink-0">
               <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
@@ -3173,6 +3176,31 @@ Recarregue esta página após ativar.`);
       )}
 
     </div>
+
+    {/* Location Permission Modal */}
+    <LocationPermissionModal
+      isOpen={showLocationPermissionModal}
+      onClose={() => setShowLocationPermissionModal(false)}
+      onEnableLocation={() => {
+        enableLocationSharing();
+        setShowLocationPermissionModal(false);
+      }}
+      permissionStatus={permissionStatus}
+      locationError={locationError}
+      maxDistance={maxDistance}
+      onMaxDistanceChange={setMaxDistance}
+      isLocationEnabled={isLocationSharingEnabled}
+      onDisableLocation={disableLocationSharing}
+    />
     </>
+  );
+}
+
+// Componente wrapper que fornece o contexto de geolocalização
+export default function ChatPage(props: ChatPageProps) {
+  return (
+    <GeolocationPresenceProvider channelName="chat-geolocation" updateInterval={60000}>
+      <ChatPageContent {...props} />
+    </GeolocationPresenceProvider>
   );
 }

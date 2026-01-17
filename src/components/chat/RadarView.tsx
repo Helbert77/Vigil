@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { formatDistance } from '@/src/utils/geoCalculations';
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
 
 interface RadarUser extends User {
   similarity_score?: number;
+  distance?: number; // em km
   position?: { x: number; y: number };
 }
 
@@ -27,18 +29,20 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
   const [hoveredUser, setHoveredUser] = useState<string | null>(null);
   const [radarSize, setRadarSize] = useState<number>(500);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Calculate positions based on similarity (mocked if not present) or random distribution
+    // Calculate positions based on similarity score (from distance calculation)
     const mappedUsers = users.slice(0, 20).map((user, index) => {
-      // Mock similarity score if not present (0.1 to 0.9)
-      const similarity = (user as any).similarity_score || Math.random() * 0.8 + 0.1;
+      // Get similarity score from user data (calculated from distance)
+      const similarity = (user as any).similarity_score || (user as any).similarityScore || 0.5;
+      const distance = (user as any).distance;
 
       // Calculate angle: distribute users around the circle
       // Add some randomness to angle to avoid perfect lines
       const angle = (index / Math.min(users.length, 20)) * 2 * Math.PI + (Math.random() * 0.5 - 0.25);
 
-      // Radius is inverse to similarity (more similar = closer to center)
+      // Radius is inverse to similarity (more similar/closer = closer to center)
       // Max radius is 45% (leaving 5% padding)
       const radius = (1 - similarity) * 45;
 
@@ -49,6 +53,7 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
       return {
         ...user,
         similarity_score: similarity,
+        distance: distance,
         position: { x, y }
       };
     });
@@ -104,6 +109,21 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
         width: `${radarSize}px`,
         height: `${radarSize}px`
       }}>
+        
+        {/* Mensagem quando não há usuários - OVERLAY sobre o radar */}
+        {users.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl text-center max-w-xs">
+              <div className="text-4xl mb-3">🔍</div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                Escaneando...
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Aguardando usuários próximos entrarem online
+              </p>
+            </div>
+          </div>
+        )}
         {/* Radar Circles */}
         {[20, 40, 60, 80, 100].map((size) => (
           <div
@@ -134,8 +154,18 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
               transition: 'all 0.5s ease-out'
             }}
             onClick={() => onUserClick(user)}
-            onMouseEnter={() => setHoveredUser(user.id)}
-            onMouseLeave={() => setHoveredUser(null)}
+            onMouseEnter={() => {
+              if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+              }
+              setHoveredUser(user.id);
+            }}
+            onMouseLeave={() => {
+              // Delay para permitir mover o mouse para o card
+              hoverTimeoutRef.current = setTimeout(() => {
+                setHoveredUser(null);
+              }, 300);
+            }}
           >
             {/* User Avatar/Dot */}
             <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs md:text-sm shadow-lg transition-transform duration-300 ${hoveredUser === user.id ? 'scale-125 ring-2 ring-white z-30' : 'scale-100'
@@ -149,8 +179,21 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
             </div>
 
             {/* Hover Card */}
-            <div className={`absolute left-full md:left-full right-auto md:right-auto ml-2 md:ml-3 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-2 md:p-4 w-48 md:w-64 max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-8rem)] pointer-events-none transition-all duration-300 origin-left z-40 ${hoveredUser === user.id ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-              }`}>
+            <div 
+              className={`absolute left-full md:left-full right-auto md:right-auto ml-2 md:ml-3 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-xl shadow-xl p-2 md:p-4 w-48 md:w-64 max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-8rem)] transition-all duration-300 origin-left z-40 ${hoveredUser === user.id ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+              }`}
+              onMouseEnter={() => {
+                if (hoverTimeoutRef.current) {
+                  clearTimeout(hoverTimeoutRef.current);
+                }
+                setHoveredUser(user.id);
+              }}
+              onMouseLeave={() => {
+                hoverTimeoutRef.current = setTimeout(() => {
+                  setHoveredUser(null);
+                }, 200);
+              }}
+            >
               <div className="flex items-center justify-between mb-1 md:mb-2 gap-1">
                 <h3 className="font-bold text-[10px] md:text-sm text-gray-900 dark:text-white truncate">{user.name}</h3>
                 <span className="text-[9px] md:text-xs font-mono bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
@@ -158,15 +201,21 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
                 </span>
               </div>
 
+              {user.distance !== undefined && (
+                <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
+                  📍 {formatDistance(user.distance)} de distância
+                </p>
+              )}
+
               {user.location && (
                 <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
-                  📍 {user.location}
+                  🌍 {user.location}
                 </p>
               )}
 
               {user.age && (
                 <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
-                  🎂 {user.age} years old
+                  🎂 {user.age} anos
                 </p>
               )}
 
