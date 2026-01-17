@@ -68,6 +68,10 @@ serve(async (req: Request) => {
 
     console.log('Processing Stripe event:', event.type);
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:69',message:'WEBHOOK EVENT RECEIVED',data:{eventType:event.type,eventId:event.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
     // Processar eventos do Stripe
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -75,6 +79,10 @@ serve(async (req: Request) => {
         const userId = session.client_reference_id;
         const subscriptionId = session.subscription as string;
         const paymentIntentId = session.payment_intent as string;
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:78',message:'CHECKOUT SESSION COMPLETED',data:{userId,subscriptionId,paymentIntentId,hasMetadata:!!session.metadata,metadata:session.metadata},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
 
         // Verificar se é pagamento de anúncio
         // Verificar metadata com diferentes formatos de chave
@@ -307,6 +315,10 @@ serve(async (req: Request) => {
 
         if (userId && subscriptionId) {
           try {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:308',message:'SUBSCRIPTION PROCESSING START',data:{userId,subscriptionId,sessionMetadata:session.metadata},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+
             console.log(`[webhook] Processing subscription for user: ${userId}, subscription: ${subscriptionId}`);
             
             // Pagamento de assinatura (código existente)
@@ -354,6 +366,136 @@ serve(async (req: Request) => {
             }
 
             console.log(`[webhook] SUCCESS: Subscription created/updated: ${subscriptionId}, status: ${status}, trial_ends_at: ${trialEnd}`);
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:357',message:'BEFORE notification/email logic',data:{userId,plan:session.metadata?.plan,status,trialEnd,shouldSendNotification:true,shouldSendEmail:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+
+            // ✅ CORREÇÃO: Enviar notificação e email ao usuário
+            const plan = session.metadata?.plan || 'basic';
+            const periodEnd = new Date(subscription.current_period_end * 1000);
+            const formattedDate = periodEnd.toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: 'long',
+              year: 'numeric'
+            });
+
+            // Determinar tipo de email baseado no status
+            const emailType = status === 'trialing' ? 'trial' : 'new';
+            const trialDays = trialEnd ? Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
+            // 1. Enviar notificação no app
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:373',message:'BEFORE inserting notification',data:{userId,plan,status,emailType,trialDays},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+
+            const notificationMessage = status === 'trialing' 
+              ? `Seu período de teste de ${trialDays} dias do plano ${plan.toUpperCase()} foi ativado! Aproveite todos os recursos até ${formattedDate}.`
+              : `Sua assinatura do plano ${plan.toUpperCase()} foi ativada com sucesso! Próxima cobrança em ${formattedDate}.`;
+
+            const { error: notifError } = await supabase.from('notifications').insert({
+              recipient_id: userId,
+              actor_id: userId,
+              type: status === 'trialing' ? 'subscription_trial_started' : 'subscription_activated',
+              metadata: {
+                plan: plan,
+                status: status,
+                next_billing_date: subscription.current_period_end,
+                next_billing_date_formatted: formattedDate,
+                trial_days: trialDays > 0 ? trialDays : undefined,
+                message: notificationMessage,
+                title: status === 'trialing' ? 'Período de Teste Ativado' : 'Assinatura Ativada',
+              }
+            });
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:397',message:'AFTER inserting notification',data:{notifError:notifError?JSON.stringify(notifError):null,success:!notifError},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+
+            if (notifError) {
+              console.error(`[webhook] Error inserting notification:`, notifError);
+            } else {
+              console.log(`[webhook] Notification sent to user ${userId}`);
+            }
+
+            // 2. Buscar dados do usuário para o email
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:410',message:'BEFORE fetching user profile',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, first_name, last_name')
+              .eq('id', userId)
+              .single();
+
+            const userName = profile?.first_name || profile?.username || 'Usuário';
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:424',message:'AFTER fetching user profile',data:{userName,hasProfile:!!profile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+
+            // 3. Buscar email do usuário
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:430',message:'BEFORE fetching user email',data:{userId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+
+            const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(userId);
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:437',message:'AFTER fetching user email',data:{authError:authError?JSON.stringify(authError):null,hasAuthUser:!!authUser,userEmail:authUser?.user?.email||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+
+            if (authError) {
+              console.error(`[webhook] Error fetching user email:`, authError);
+            }
+
+            const userEmail = authUser?.user?.email;
+
+            // 4. Enviar email (assíncrono, não aguardar)
+            if (userEmail) {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:451',message:'BEFORE invoking send-subscription-email',data:{userId,userName,userEmail,plan,emailType,trialDays,currentPeriodEnd:subscription.current_period_end},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
+
+              // Validar e formatar nextBillingDate
+              const nextBillingDate = subscription.current_period_end 
+                ? new Date(subscription.current_period_end * 1000).toISOString()
+                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // Fallback: 30 dias no futuro
+
+              supabase.functions.invoke('send-subscription-email', {
+                body: {
+                  userId,
+                  userName,
+                  userEmail,
+                  plan,
+                  type: emailType,
+                  trialDays: trialDays > 0 ? trialDays : undefined,
+                  nextBillingDate: nextBillingDate,
+                }
+              }).then(({ error: emailError, data: emailData }) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:468',message:'AFTER send-subscription-email invocation',data:{emailError:emailError?JSON.stringify(emailError):null,emailData:emailData?JSON.stringify(emailData):null,success:!emailError&&emailData?.success!==false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
+
+                if (emailError || emailData?.success === false) {
+                  console.error(`[webhook] Error sending subscription email:`, emailError || emailData?.error);
+                } else {
+                  console.log(`[webhook] Subscription email sent successfully to ${userEmail}`);
+                }
+              }).catch((err) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe-webhook/index.ts:480',message:'send-subscription-email invocation CATCH',data:{error:err.toString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
+
+                console.error(`[webhook] Email invocation failed:`, err);
+              });
+
+              console.log(`[webhook] Email dispatch initiated for ${userEmail}`);
+            } else {
+              console.log(`[webhook] No email found for user ${userId}, skipping email`);
+            }
+
           } catch (error) {
             console.error(`[webhook] FATAL ERROR processing subscription:`, error);
             throw error; // Re-throw para retornar 500

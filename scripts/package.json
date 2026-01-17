@@ -1,0 +1,15 @@
+{
+  "name": "vigil-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Scripts de utilidade para o projeto Vigil",
+  "scripts": {
+    "import-pdfs": "node import-pdfs-to-library.js",
+    "extract-covers": "node extract-pdf-covers.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "canvas": "^2.11.2"
+  }
+}

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useSession } from '@/contexts/SessionContext';
+import { useSession } from '../contexts/SessionContext';
 import { Navigate } from 'react-router-dom';
-import { AnalyticsDashboard } from '@/src/components/admin/AnalyticsDashboard';
-import Card from '@/components/common/Card';
+import { AnalyticsDashboard } from '../src/components/admin/AnalyticsDashboard';
+import CouponManagement from '../src/components/admin/CouponManagement';
+import Card from '../components/common/Card';
 
 const Admin: React.FC = () => {
   const { session, user } = useSession();
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'content'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'content' | 'coupons'>('analytics');
 
   // Verificar se o usuário é admin
   // TODO: Adicionar verificação de role admin no banco de dados
@@ -78,6 +79,16 @@ const Admin: React.FC = () => {
             >
               📝 Conteúdo
             </button>
+            <button
+              onClick={() => setActiveTab('coupons')}
+              className={`px-4 py-3 font-semibold whitespace-nowrap transition-colors ${
+                activeTab === 'coupons'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              🎟️ Cupons
+            </button>
           </div>
         </div>
       </div>
@@ -109,6 +120,12 @@ const Admin: React.FC = () => {
                 Em desenvolvimento...
               </p>
             </Card>
+          </div>
+        )}
+
+        {activeTab === 'coupons' && (
+          <div className="p-4 md:p-6">
+            <CouponManagement />
           </div>
         )}
       </div>

@@ -10,33 +10,84 @@ interface CancellationFeedbackCardProps {
 const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ feedback }) => {
   const userProfile = feedback.profile;
 
+  // Mapear razões para ícones e cores
+  const reasonConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
+    'É muito caro': { icon: '💰', color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/20' },
+    'Não uso os recursos premium': { icon: '📦', color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-50 dark:bg-orange-900/20' },
+    'Encontrei uma alternativa melhor': { icon: '🔄', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/20' },
+    'Estou dando um tempo da plataforma': { icon: '⏸️', color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
+    'Problemas técnicos': { icon: '⚠️', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-900/20' },
+  };
+
+  const config = reasonConfig[feedback.reason] || { icon: '❓', color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-900/20' };
+
   return (
-    <div className="bg-light-bg dark:bg-dark-bg p-4 rounded-lg border border-light-border dark:border-dark-border">
+    <div className="bg-light-bg dark:bg-dark-bg p-4 rounded-lg border border-light-border dark:border-dark-border hover:shadow-md transition-shadow">
       <div className="flex items-start space-x-3">
         <Avatar src={userProfile?.avatar_url} alt={userProfile?.username} size="md" />
-        <div className="flex-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="font-bold text-gray-900 dark:text-white">{userProfile?.username || 'Usuário Anônimo'}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 dark:text-white truncate">
+                {userProfile?.username || 'Usuário Anônimo'}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Cancelado {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true, locale: ptBR })}
               </p>
             </div>
-            <span className="px-2 py-1 text-xs font-semibold bg-gray-200 dark:bg-gray-700 rounded-full">
-              Plano Anterior: {feedback.previous_plan.toUpperCase()}
+            <span className="px-3 py-1 text-xs font-semibold bg-gray-200 dark:bg-gray-700 rounded-full whitespace-nowrap">
+              {feedback.previous_plan.toUpperCase()}
             </span>
           </div>
-          <div className="mt-3 space-y-2">
-            <div>
-              <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400">Motivo</h4>
-              <p className="text-sm p-2 bg-gray-200 dark:bg-gray-700/50 rounded-md mt-1">{feedback.reason}</p>
+
+          <div className="mt-3 space-y-3">
+            {/* Motivo com ícone e cor */}
+            <div className={`${config.bgColor} rounded-lg p-3 border-l-4 ${config.color.replace('text-', 'border-')}`}>
+              <div className="flex items-start gap-2">
+                <span className="text-xl flex-shrink-0">{config.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">
+                    Motivo do Cancelamento
+                  </h4>
+                  <p className={`text-sm font-medium ${config.color}`}>
+                    {feedback.reason}
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Detalhes adicionais */}
             {feedback.details && (
-              <div>
-                <h4 className="font-semibold text-sm text-gray-600 dark:text-gray-400">Detalhes</h4>
-                <p className="text-sm p-2 bg-gray-200 dark:bg-gray-700/50 rounded-md mt-1 whitespace-pre-wrap">{feedback.details}</p>
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+                <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <span>💬</span>
+                  Detalhes Adicionais
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+                  {feedback.details}
+                </p>
               </div>
             )}
+
+            {/* Metadata */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <span>📅</span>
+                {new Date(feedback.created_at).toLocaleDateString('pt-BR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              {userProfile?.id && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                  <span>🆔</span>
+                  {userProfile.id.substring(0, 8)}...
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

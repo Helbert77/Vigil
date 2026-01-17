@@ -150,8 +150,48 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Analytics de Cancelamento */}
+      {feedback.length > 0 && (
+        <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md mb-6">
+          <h3 className="font-bold mb-4 text-xl">📊 Analytics de Cancelamento</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+              <div className="text-3xl mb-2">📉</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                {feedback.length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total de Cancelamentos</div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+              <div className="text-3xl mb-2">💰</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {feedback.filter((f: any) => f.reason === 'É muito caro').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Preço Alto</div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+              <div className="text-3xl mb-2">📦</div>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                {feedback.filter((f: any) => f.reason === 'Não uso os recursos premium').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Não Usa Recursos</div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+              <div className="text-3xl mb-2">⚠️</div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {feedback.filter((f: any) => f.reason === 'Problemas técnicos').length}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Problemas Técnicos</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-md">
-        <h3 className="font-bold mb-4 text-xl">Feedback de Cancelamento Recente</h3>
+        <h3 className="font-bold mb-4 text-xl">💬 Feedback de Cancelamento Recente</h3>
         {feedback.length > 0 ? (
           <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
             {feedback.map(item => (

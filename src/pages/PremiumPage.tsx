@@ -7,6 +7,7 @@ import { User } from "@/types";
 import PricingComparisonTable from "@/src/components/premium/PricingComparisonTable";
 import * as api from '@/src/services/api';
 import CancellationModal from "@/src/components/premium/CancellationModal";
+import CancellationConfirmationModal from "@/src/components/premium/CancellationConfirmationModal";
 import { getCurrentPrice, isPromotionActive, getTrialDays, calculateAnnualBonus, formatPrice } from '@/src/utils/pricingUtils';
 
 interface PremiumPageProps {
@@ -20,7 +21,10 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annually'>('monthly');
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isConfirmCancelModalOpen, setIsConfirmCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellationDetails, setCancellationDetails] = useState('');
   
   // Estados para cupom de trial
   const [couponCode, setCouponCode] = useState('');
@@ -48,6 +52,10 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
     const planActivated = urlParams.get('plan');
 
     if (checkoutStatus === 'success') {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PremiumPage.tsx:54',message:'CHECKOUT SUCCESS - User returned from Stripe',data:{userId:session?.user?.id,planActivated,couponUsed,hasSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       addToast('Pagamento processado com sucesso! Aguarde a confirmação da assinatura.', 'success');
       
       // ✅ Registrar uso do cupom se foi usado
@@ -260,13 +268,18 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
     }
   };
 
+  // Primeiro modal: coleta feedback
   const handleCancelSubscription = async (reason: string, details: string) => {
     if (!session?.user || !user) {
       addToast("Você precisa estar logado.", "error");
       return;
     }
 
-    setIsCancelling(true);
+    // Salvar feedback para usar depois
+    setCancellationReason(reason);
+    setCancellationDetails(details);
+
+    // Salvar feedback no banco
     try {
       const { error: feedbackError } = await api.submitCancellationFeedback({
         user_id: session.user.id,
@@ -276,18 +289,58 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       });
 
       if (feedbackError) {
-        console.error("PremiumPage: Error submitting cancellation feedback:", feedbackError);
+        console.error("PremiumPage: Error submitting feedback:", feedbackError);
       }
+    } catch (error) {
+      console.error("PremiumPage: Error submitting feedback:", error);
+    }
 
-      const { error } = await api.upsertSubscription(session.user.id, 'free');
+    // Fechar modal de feedback e abrir modal de confirmação
+    setIsCancelModalOpen(false);
+    setIsConfirmCancelModalOpen(true);
+  };
 
-      if (error) {
-        console.error("PremiumPage: Error cancelling subscription:", error);
+  // Segundo modal: confirma cancelamento com explicações
+  const handleConfirmCancellation = async () => {
+    if (!session?.user || !user) {
+      addToast("Você precisa estar logado.", "error");
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      console.log('[PremiumPage] Calling cancel-subscription function...');
+      
+      // ✅ CANCELAR NO STRIPE via Edge Function
+      const { data, error } = await api.cancelSubscription(
+        session.user.id,
+        cancellationReason,
+        cancellationDetails
+      );
+
+      console.log('[PremiumPage] Cancel response:', { data, error });
+
+      if (error || (data && !data.success)) {
+        const errorMessage = error?.message || data?.error || 'Erro desconhecido';
+        console.error("PremiumPage: Error cancelling subscription:", errorMessage);
         addToast("Erro ao cancelar a assinatura. Tente novamente.", "error");
       } else {
-        addToast("Sua assinatura foi cancelada com sucesso.", "success");
+        // Sucesso!
+        const activeUntilFormatted = data.activeUntilFormatted || '';
+        addToast(
+          `Assinatura cancelada! Você pode continuar usando até ${activeUntilFormatted}.`,
+          "success"
+        );
+        
+        // Refresh user data
         await refreshUser();
-        setIsCancelModalOpen(false);
+        
+        // Fechar modal
+        setIsConfirmCancelModalOpen(false);
+        
+        // Limpar estados
+        setCancellationReason('');
+        setCancellationDetails('');
       }
     } catch (error) {
       console.error("PremiumPage: Unexpected error during cancellation:", error);
@@ -614,7 +667,16 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleCancelSubscription}
-        isCancelling={isCancelling}
+        isCancelling={false}
+      />
+
+      <CancellationConfirmationModal
+        isOpen={isConfirmCancelModalOpen}
+        onClose={() => setIsConfirmCancelModalOpen(false)}
+        onConfirm={handleConfirmCancellation}
+        isProcessing={isCancelling}
+        plan={user?.plan || 'free'}
+        activeUntil={user?.trial_ends_at || null}
       />
     </div>
   );

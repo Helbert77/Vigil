@@ -17,15 +17,45 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
     try {
       const { data, error } = await api.fetchNotifications(appUser.id);
       if (error) throw error;
-      const formattedNotifications: AppNotification[] = data.filter((n: any) => n.actor).map((n: any) => ({
-        id: n.id, type: n.type, post_id: n.post_id, is_read: n.is_read, created_at: n.created_at,
-        metadata: n.metadata || undefined,
-        actor: {
-          id: n.actor.id, name: `${n.actor.first_name || ''} ${n.actor.last_name || ''}`.trim() || n.actor.username,
-          username: n.actor.username, avatarUrl: n.actor.avatar_url || `https://picsum.photos/seed/${n.actor.id}/100/100`,
-          joinDate: '', followingCount: 0, followersCount: 0, plan: n.actor.plan || 'free', role: n.actor.role || 'user',
-        }
-      }));
+      const formattedNotifications: AppNotification[] = data
+        .map((n: any) => {
+          // Para notificações sem actor (sistema), usar o próprio usuário
+          let actor = n.actor;
+          if (!actor && n.actor_id === appUser.id) {
+            actor = {
+              id: appUser.id,
+              first_name: appUser.name.split(' ')[0],
+              last_name: appUser.name.split(' ').slice(1).join(' '),
+              username: appUser.username,
+              avatar_url: appUser.avatarUrl,
+              plan: appUser.plan,
+              role: appUser.role || 'user',
+            };
+          }
+          
+          if (!actor) return null; // Pular notificações sem actor válido
+          
+          return {
+            id: n.id, 
+            type: n.type, 
+            post_id: n.post_id, 
+            is_read: n.is_read, 
+            created_at: n.created_at,
+            metadata: n.metadata || undefined,
+            actor: {
+              id: actor.id, 
+              name: `${actor.first_name || ''} ${actor.last_name || ''}`.trim() || actor.username,
+              username: actor.username, 
+              avatarUrl: actor.avatar_url || `https://picsum.photos/seed/${actor.id}/100/100`,
+              joinDate: '', 
+              followingCount: 0, 
+              followersCount: 0, 
+              plan: actor.plan || 'free', 
+              role: actor.role || 'user',
+            }
+          };
+        })
+        .filter((n: any) => n !== null); // Remover nulls
       setNotifications(formattedNotifications);
     } catch (error) {
       // Error log removed for production
@@ -61,6 +91,21 @@ export const useNotifications = (appUser: User | null, allUsers: User[]) => {
                   role: actorProfile.role || 'user',
                 };
               }
+            }
+
+            // Para notificações de sistema (assinatura, etc), usar o próprio usuário como actor se não encontrado
+            if (!actor && payload.new.actor_id === appUser.id) {
+              actor = {
+                id: appUser.id,
+                name: appUser.name,
+                username: appUser.username,
+                avatarUrl: appUser.avatarUrl,
+                joinDate: appUser.joinDate,
+                followingCount: appUser.followingCount,
+                followersCount: appUser.followersCount,
+                plan: appUser.plan,
+                role: appUser.role || 'user',
+              };
             }
 
             if (!actor) return;

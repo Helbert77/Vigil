@@ -30,6 +30,9 @@ export interface User {
   subscription_started_at?: string | null;
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  cancel_at_period_end?: boolean;
+  current_period_end?: string | null;
+  canceled_at?: string | null;
   // Gamification fields
   gamification?: UserGamification;
 }
@@ -92,7 +95,7 @@ export interface Post {
 export interface Notification {
   id: string;
   actor: User; // O usuário que realizou a ação
-  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected' | 'timeline_approved' | 'timeline_rejected' | 'timeline_moderation_pending';
+  type: 'like' | 'comment' | 'follow' | 'comment_like' | 'mention' | 'message' | 'ad_approval_pending' | 'ad_approved' | 'ad_rejected' | 'chat_room_invitation' | 'room_access_request' | 'room_access_approved' | 'room_access_rejected' | 'timeline_approved' | 'timeline_rejected' | 'timeline_moderation_pending' | 'subscription_activated' | 'subscription_trial_started' | 'subscription_canceled' | 'subscription_upgraded' | 'subscription_downgraded' | 'subscription_payment_failed' | 'subscription_renewed';
   post_id?: string;
   is_read: boolean;
   created_at: string;
@@ -103,6 +106,16 @@ export interface Notification {
     room_id?: string;
     room_name?: string;
     request_id?: string;
+    plan?: string;
+    status?: string;
+    next_billing_date?: number;
+    next_billing_date_formatted?: string;
+    active_until?: string;
+    active_until_formatted?: string;
+    trial_days?: number;
+    can_reactivate?: boolean;
+    message?: string;
+    title?: string;
     [key: string]: any;
   };
 }

@@ -57,10 +57,10 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         if (!profile) {
           setUser(null);
         } else {
-          // Buscar dados de subscription para verificar trial
+          // Buscar dados de subscription para verificar trial e cancelamento
           const { data: subscription } = await supabase
             .from('subscriptions')
-            .select('status, trial_ends_at')
+            .select('status, trial_ends_at, cancel_at_period_end, current_period_end, canceled_at')
             .eq('user_id', currentSession.user.id)
             .single();
 
@@ -88,6 +88,9 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
             plan: profile.plan || 'free',
             subscription_status: subscription?.status || 'active',
             trial_ends_at: subscription?.trial_ends_at || null,
+            cancel_at_period_end: subscription?.cancel_at_period_end || false,
+            current_period_end: subscription?.current_period_end || null,
+            canceled_at: subscription?.canceled_at || null,
           };
 
           setUser(appUser);

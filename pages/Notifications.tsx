@@ -69,6 +69,20 @@ const getNotificationText = (notification: Notification): string => {
             const trialDays = notification.metadata?.trial_days || 7;
             const couponPlan = notification.metadata?.plan || 'premium';
             return `você ganhou ${trialDays} dias grátis do plano ${couponPlan.toUpperCase()}! Use o cupom: ${couponCode}`;
+        case 'subscription_activated':
+            return notification.metadata?.message || 'sua assinatura foi ativada com sucesso!';
+        case 'subscription_trial_started':
+            return notification.metadata?.message || 'seu período de teste foi ativado!';
+        case 'subscription_canceled':
+            return notification.metadata?.message || 'sua assinatura foi cancelada.';
+        case 'subscription_upgraded':
+            return notification.metadata?.message || 'sua assinatura foi atualizada!';
+        case 'subscription_downgraded':
+            return notification.metadata?.message || 'sua assinatura foi alterada.';
+        case 'subscription_payment_failed':
+            return notification.metadata?.message || 'falha no pagamento da sua assinatura.';
+        case 'subscription_renewed':
+            return notification.metadata?.message || 'sua assinatura foi renovada!';
         default:
             return '';
     }
@@ -97,6 +111,9 @@ const NotificationIcon: React.FC<{ type: Notification['type'] }> = ({ type }) =>
     if (type === 'trial_expired') return <XCircleIcon />;
     if (type === 'trial_expiring') return <ClockIcon />;
     if (type === 'trial_coupon_offer') return <Icon className="h-6 w-6 text-yellow-500"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></Icon>;
+    if (type === 'subscription_activated' || type === 'subscription_trial_started' || type === 'subscription_renewed') return <CheckCircleIcon />;
+    if (type === 'subscription_canceled' || type === 'subscription_payment_failed') return <XCircleIcon />;
+    if (type === 'subscription_upgraded' || type === 'subscription_downgraded') return <StarIcon />;
     return <div className="h-6 w-6"></div>;
 };
 

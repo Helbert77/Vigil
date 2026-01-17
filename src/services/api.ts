@@ -591,6 +591,92 @@ export const updateUserRole = (userId: string, role: 'user' | 'moderator' | 'adm
 
 // Removido: API da Library e mapeamentos
 
+// --- Trial Coupons API ---
+export const fetchTrialCoupons = () =>
+  supabase
+    .from('trial_coupons')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+export const createTrialCoupon = async (couponData: {
+  code: string;
+  plan: 'basic' | 'pro' | 'premium';
+  trial_days: number;
+  max_uses: number | null;
+  valid_from: string | null;
+  valid_until: string | null;
+}) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('create-trial-coupon', {
+      body: couponData
+    });
+
+    if (error) {
+      // Criar objeto de erro mais detalhado
+      const enhancedError: any = new Error(error.message || 'Erro ao criar cupom');
+      enhancedError.code = error.name || 'FUNCTION_ERROR';
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
+
+    // Verificar se a resposta indica erro
+    if (data && !data.success) {
+      const apiError: any = new Error(data.error || 'Erro ao criar cupom');
+      apiError.code = data.code || 'API_ERROR';
+      apiError.details = data.details;
+      throw apiError;
+    }
+
+    return { data: data?.coupon || data, error: null };
+  } catch (error: any) {
+    // Re-throw com informações adicionais se necessário
+    if (error.message && error.code) {
+      throw error;
+    }
+    
+    // Criar erro padronizado
+    const standardError: any = new Error(
+      error.message || 'Erro desconhecido ao criar cupom'
+    );
+    standardError.code = error.code || 'UNKNOWN_ERROR';
+    standardError.originalError = error;
+    throw standardError;
+  }
+};
+
+export const toggleCouponStatus = async (couponId: string, isActive: boolean) => {
+  const { data, error } = await supabase.functions.invoke('manage-trial-coupon', {
+    body: {
+      couponId,
+      action: 'toggle_status',
+      isActive
+    }
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to toggle coupon status');
+  }
+
+  return { data: data.result, error: null };
+};
+
+export const fetchCouponUsages = (couponId: string) =>
+  supabase
+    .from('trial_coupon_usage')
+    .select(`
+      *,
+      profiles:user_id (
+        username,
+        email
+      )
+    `)
+    .eq('coupon_id', couponId)
+    .order('used_at', { ascending: false });
+
 // --- User Data API ---
 export const fetchInitialData = async (user: User) => {
   try {
@@ -1368,6 +1454,17 @@ export const submitCancellationFeedback = (feedbackData: { user_id: string; prev
 
 export const fetchCancellationFeedback = () =>
   supabase.rpc('get_cancellation_feedback_with_profiles');
+
+// Cancelar assinatura via Stripe
+export const cancelSubscription = async (userId: string, reason?: string, details?: string) => {
+  return supabase.functions.invoke('cancel-subscription', {
+    body: {
+      userId,
+      reason,
+      details,
+    },
+  });
+};
 
 // Alternative function to check for pending operations without status column dependency
 export const getPendingOperationsSafe = async (userId: string) => {
