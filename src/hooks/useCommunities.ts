@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Community, TrendingTopic, User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { NewCommunityData } from '@/components/communities/CreateCommunityModal';
+import { UpdateCommunityData } from '@/components/communities/EditCommunityModal';
 import * as api from '@/src/services/api';
 import { canAccessCommunity, getAccessDeniedMessage } from '@/src/utils/communityAccess';
 import { supabase } from '@/integrations/supabase/client';
@@ -187,6 +188,39 @@ export const useCommunities = (appUser: User | null) => {
     }
   }, [appUser, addToast, fetchInitialData, fetchJoinedCommunities]);
 
+  const handleUpdateCommunity = useCallback(async (communityId: string, communityData: UpdateCommunityData) => {
+    if (!appUser) return;
+    
+    try {
+      const { error } = await api.updateCommunity(communityId, {
+        name: communityData.name,
+        description: communityData.description,
+        rules: communityData.rules,
+        banner_url: communityData.bannerUrl,
+        required_plan: communityData.requiredPlan
+      });
+      
+      if (error) throw error;
+      
+      // Atualizar localmente
+      setCommunities(prev => prev.map(c => 
+        c.id === communityId ? {
+          ...c,
+          name: communityData.name,
+          description: communityData.description,
+          rules: communityData.rules,
+          bannerUrl: communityData.bannerUrl || c.bannerUrl,
+          requiredPlan: communityData.requiredPlan || c.requiredPlan
+        } : c
+      ));
+      
+      addToast('Comunidade atualizada com sucesso!', 'success');
+    } catch (error) {
+      addToast('Erro ao atualizar comunidade.', 'error');
+      throw error;
+    }
+  }, [appUser, addToast]);
+
   const handleUpdateCommunityPlan = useCallback(async (communityId: string, requiredPlan: 'all' | 'basic+' | 'pro+' | 'premium') => {
     if (!appUser) return;
     
@@ -206,5 +240,5 @@ export const useCommunities = (appUser: User | null) => {
     }
   }, [appUser, addToast]);
 
-  return { communities, setCommunities, joinedCommunityIds, trendingTopics, setTrendingTopics, handleJoinCommunityToggle, handleCreateCommunity, handleUpdateCommunityPlan, fetchTrendingTopics };
+  return { communities, setCommunities, joinedCommunityIds, trendingTopics, setTrendingTopics, handleJoinCommunityToggle, handleCreateCommunity, handleUpdateCommunity, handleUpdateCommunityPlan, fetchTrendingTopics };
 };

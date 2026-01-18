@@ -10,6 +10,7 @@ import Tooltip from '../common/Tooltip';
 import { useSimpleTimeAgo } from '../../hooks/useTimeAgoOptimized';
 import ResilientVideo from '@/src/components/common/ResilientVideo';
 import ReportModal from '@/src/components/post/ReportModal';
+import MediaViewer from '@/src/components/common/MediaViewer';
 import * as api from '@/src/services/api';
 
 // Ícones
@@ -79,6 +80,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const { addToast } = useToast();
   const hasTrackedImpression = useRef(false);
   const shareContainerRef = useRef<HTMLDivElement>(null);
@@ -419,12 +421,32 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                 <img 
                   src={ad.image_url} 
                   alt={ad.title} 
-                  className="w-full h-auto object-cover rounded-lg"
+                  className="w-full h-auto object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                   style={{ maxHeight: window.innerWidth < 768 ? '256px' : '384px' }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    // Só abre em tela cheia se não tiver onViewAd (não está no feed)
+                    if (!onViewAd) {
+                      setIsMediaViewerOpen(true);
+                    } else {
+                      onViewAd(ad.id);
+                    }
+                  }}
                 />
               )}
               {ad.video_url && (
-                <div onClick={(e) => e.stopPropagation()}>
+                <div 
+                  className="cursor-pointer"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    // Só abre em tela cheia se não tiver onViewAd (não está no feed)
+                    if (!onViewAd) {
+                      setIsMediaViewerOpen(true);
+                    } else {
+                      onViewAd(ad.id);
+                    }
+                  }}
+                >
                   <ResilientVideo
                     src={ad.video_url}
                     controls
@@ -544,6 +566,17 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
         onSubmit={handleSubmitReport}
         isSubmitting={isSubmittingReport}
       />
+
+      {/* Visualizador de mídia */}
+      {(ad.image_url || ad.video_url) && (
+        <MediaViewer
+          isOpen={isMediaViewerOpen}
+          onClose={() => setIsMediaViewerOpen(false)}
+          mediaUrl={ad.image_url || ad.video_url || ''}
+          mediaType={ad.image_url ? 'image' : 'video'}
+          alt={ad.title}
+        />
+      )}
     </>
   );
 };

@@ -590,10 +590,9 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
                 return newSet;
               });
 
-              // If it's the currently selected room, go back to radar
+              // If it's the currently selected room, clear selection
               if (selectedRoom?.id === roomId) {
                 setSelectedRoom(null);
-                setCurrentView('radar');
                 setMessages([]);
               }
             }
@@ -630,7 +629,6 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         const roomToSelect = chatRooms.find(r => r.id === roomIdToOpen);
         if (roomToSelect) {
           setSelectedRoom(roomToSelect);
-          setCurrentView('room');
           // Join the room if not already joined
           if (!joinedRoomIds.has(roomIdToOpen)) {
             handleJoinRoom(roomToSelect);
@@ -861,19 +859,44 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
     };
   }, [selectedRoom?.id]);
 
-  // Cleanup on page unload - DISABLED to keep users in rooms
-  // Users will only leave when they explicitly click "Sair"
+  // Cleanup on page unload - Remove user from all joined rooms
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
       isPageUnloadingRef.current = true;
+      
+      // Leave all joined rooms when closing the page
+      const roomsToLeave = Array.from(joinedRoomIds);
+      for (const roomId of roomsToLeave) {
+        try {
+          // Use navigator.sendBeacon for more reliable cleanup on page unload
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            // Fallback to synchronous deletion
+            await leaveChatRoom(roomId);
+          }
+        } catch (error) {
+          // Silently fail - backend cleanup will handle it
+        }
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
+    // Cleanup on component unmount (when navigating away)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Leave all joined rooms when component unmounts
+      if (!isPageUnloadingRef.current) {
+        const roomsToLeave = Array.from(joinedRoomIds);
+        roomsToLeave.forEach(roomId => {
+          leaveChatRoom(roomId).catch(() => {
+            // Silently fail - backend cleanup will handle it
+          });
+        });
+      }
     };
-  }, []);
+  }, [joinedRoomIds]);
 
   // Load chat rooms
   const loadChatRooms = async () => {
@@ -1466,7 +1489,6 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         setSelectedRoom(updatedRoom);
 
         setSelectedBuddy(null);
-        setCurrentView('room');
 
         // Switch to center view on mobile when entering a room
         setMobileView('center');
@@ -1539,10 +1561,9 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
           return newMap;
         });
         
-        // If leaving the currently selected room, go back to radar view
+        // If leaving the currently selected room, clear selection
         if (selectedRoom?.id === room.id) {
           setSelectedRoom(null);
-          setCurrentView('radar');
           setMessages([]);
           // Unsubscribe from messages
           if (messageSubscription) {
@@ -1837,7 +1858,6 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         // Clear selected room if it was deleted
         if (selectedRoom?.id === roomToDelete.id) {
           setSelectedRoom(null);
-          setCurrentView('radar');
         }
         
         // Otimização: remover sala da lista local em vez de recarregar tudo

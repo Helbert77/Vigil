@@ -11,6 +11,7 @@ import ConfirmationModal from '../common/ConfirmationModal';
 import { renderTextWithMentions } from '@/src/utils/textUtils';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import MediaViewer from '@/src/components/common/MediaViewer';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => <Icon className={`h-4 w-4 ${filled ? 'text-red-500' : ''}`} fill={filled ? 'currentColor' : 'none'}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></Icon>;
 const BookmarkIcon = ({ filled }: { filled: boolean }) => <Icon className={`h-4 w-4 ${filled ? 'text-yellow-500' : ''}`} fill={filled ? 'currentColor' : 'none'}><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></Icon>;
@@ -42,6 +43,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(comment.text);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const { addToast } = useToast();
   const hasBeenViewed = useRef(false);
 
@@ -91,6 +93,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
 
   const isFollowing = followedUserIds.includes(comment.user.id);
   const isCurrentUser = comment.user.id === currentUser.id;
+
+  const handleMediaClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMediaViewerOpen(true);
+  };
 
   return (
     <>
@@ -158,7 +165,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
                 <>
                   {comment.text && <p className="text-sm mt-1 whitespace-pre-wrap text-gray-900 dark:text-gray-200">{renderTextWithMentions(comment.text, allUsers, currentUser, followedUserIds, onFollowToggle, onViewProfile, onOpenFollowModal)}</p>}
                   {comment.imageUrl && (
-                    <img src={comment.imageUrl} alt="Comment media" className="mt-2 rounded-lg max-h-64 w-full object-cover" />
+                    <img 
+                      src={comment.imageUrl} 
+                      alt="Comment media" 
+                      className="mt-2 rounded-lg max-h-64 w-full object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                      onClick={handleMediaClick}
+                    />
                   )}
                 </>
               )}
@@ -215,6 +227,15 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId, currentUser,
         confirmText="Sim, apagar"
         isDestructive={true}
       />
+      {comment.imageUrl && (
+        <MediaViewer
+          isOpen={isMediaViewerOpen}
+          onClose={() => setIsMediaViewerOpen(false)}
+          mediaUrl={comment.imageUrl}
+          mediaType="image"
+          alt="Imagem do comentário"
+        />
+      )}
     </>
   );
 };

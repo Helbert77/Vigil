@@ -68,16 +68,7 @@ export const GeolocationPresenceProvider: React.FC<GeolocationPresenceProviderPr
 
   // Mostrar popup quando localização for obtida pela primeira vez
   useEffect(() => {
-    console.log('🔍 Verificando popup:', {
-      currentUserLocation,
-      isLocationSharingEnabled,
-      hasShownLocationToast,
-      latitude: geolocation.latitude,
-      longitude: geolocation.longitude
-    });
-    
     if (currentUserLocation && isLocationSharingEnabled && !hasShownLocationToast) {
-      console.log('✅ Mostrando popup de localização!');
       setHasShownLocationToast(true);
       
       // Criar popup customizado
@@ -136,7 +127,6 @@ export const GeolocationPresenceProvider: React.FC<GeolocationPresenceProviderPr
 
   // Habilitar compartilhamento de localização
   const enableLocationSharing = useCallback(() => {
-    console.log('🎯 Ativando compartilhamento de localização...');
     setIsLocationSharingEnabled(true);
     setHasShownLocationToast(false); // Reset para mostrar popup novamente
   }, []);

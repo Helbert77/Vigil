@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Community, User } from '../types';
 import CommunityCard from '../components/communities/CommunityCard';
 import CreateCommunityModal, { NewCommunityData } from '@/components/communities/CreateCommunityModal';
+import EditCommunityModal, { UpdateCommunityData } from '@/components/communities/EditCommunityModal';
 import { Icon } from '../components/icons/Icon';
 
 const PlusIcon = () => <Icon className="h-5 w-5 mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></Icon>;
@@ -12,19 +13,36 @@ interface CommunitiesProps {
   onViewCommunity: (communityId: string) => void;
   onJoinCommunityToggle: (communityId: string) => void;
   onCreateCommunity: (communityData: NewCommunityData) => Promise<void>;
+  onUpdateCommunity: (communityId: string, communityData: UpdateCommunityData) => Promise<void>;
   user: User; // Adicionado: objeto de usuário para verificar o plano
   setCurrentPage: (page: any) => void; // Adicionado: para redirecionar para a página Premium
 }
 
-const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityIds, onViewCommunity, onJoinCommunityToggle, onCreateCommunity, user, setCurrentPage }) => {
+const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityIds, onViewCommunity, onJoinCommunityToggle, onCreateCommunity, onUpdateCommunity, user, setCurrentPage }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [communityToEdit, setCommunityToEdit] = useState<Community | null>(null);
 
   const handleCreateCommunity = async (communityData: NewCommunityData) => {
     setIsCreating(true);
     await onCreateCommunity(communityData);
     setIsCreating(false);
     setIsCreateModalOpen(false);
+  };
+
+  const handleUpdateCommunity = async (communityId: string, communityData: UpdateCommunityData) => {
+    setIsUpdating(true);
+    await onUpdateCommunity(communityId, communityData);
+    setIsUpdating(false);
+    setIsEditModalOpen(false);
+    setCommunityToEdit(null);
+  };
+
+  const handleOpenEditModal = (community: Community) => {
+    setCommunityToEdit(community);
+    setIsEditModalOpen(true);
   };
 
   const handleOpenCreateModal = () => {
@@ -60,6 +78,8 @@ const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityI
               onViewCommunity={onViewCommunity} 
               isJoined={joinedCommunityIds.includes(community.id)}
               onJoinToggle={onJoinCommunityToggle}
+              currentUser={user}
+              onEdit={handleOpenEditModal}
             />
           ))}
         </div>
@@ -70,6 +90,18 @@ const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityI
         onCreate={handleCreateCommunity}
         isCreating={isCreating}
       />
+      {communityToEdit && (
+        <EditCommunityModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setCommunityToEdit(null);
+          }}
+          onUpdate={handleUpdateCommunity}
+          community={communityToEdit}
+          isUpdating={isUpdating}
+        />
+      )}
     </>
   );
 };

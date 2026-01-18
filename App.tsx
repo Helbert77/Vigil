@@ -115,7 +115,7 @@ const App: React.FC = () => {
 
   // Custom Hooks for data logic
   const { allUsers, followedUserIds, blockedUserIds, blockedUsersList, usersToFollow, handleFollowToggle, handleBlockToggle, handleUpdateUser } = useUserData(appUser, refreshUser);
-  const { communities, setCommunities, joinedCommunityIds, trendingTopics, handleJoinCommunityToggle, handleCreateCommunity, handleUpdateCommunityPlan, fetchTrendingTopics } = useCommunities(appUser);
+  const { communities, setCommunities, joinedCommunityIds, trendingTopics, handleJoinCommunityToggle, handleCreateCommunity, handleUpdateCommunity, handleUpdateCommunityPlan, fetchTrendingTopics } = useCommunities(appUser);
   const { posts, isPostsLoading, savedPostIds, handleAddPost, handleDeletePost, handleUpdatePost, handleToggleLike, handleToggleCommentLike, handleToggleSavePost, handleVoteOnPoll, handleAddComment, handleUpdateComment, handleDeleteComment, handleIncrementView } = usePosts(appUser, allUsers, setCommunities, fetchTrendingTopics);
   const { notifications, unreadNotificationsCount, handleClearNotifications, markNotificationsAsRead } = useNotifications(appUser, allUsers);
   const { conversations, unreadMessagesCount, handleSendMessage, isLoading: isConversationsLoading, markMessagesAsRead, handleDeleteConversation } = useConversations(appUser);
@@ -858,6 +858,7 @@ const App: React.FC = () => {
           joinedCommunityIds={joinedCommunityIds}
           onJoinCommunityToggle={handleJoinCommunityToggle}
           onCreateCommunity={handleCreateCommunity}
+          onUpdateCommunity={handleUpdateCommunity}
           onViewCommunity={handleViewCommunity}
           user={appUser}
           setCurrentPage={handleNavigation}

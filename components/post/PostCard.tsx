@@ -15,6 +15,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useSimpleTimeAgo } from '../../hooks/useTimeAgoOptimized';
 import ResilientVideo from '@/src/components/common/ResilientVideo';
+import MediaViewer from '@/src/components/common/MediaViewer';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Icon className={filled ? 'text-red-500' : ''} fill={filled ? 'currentColor' : 'none'}>
@@ -144,9 +145,18 @@ const PollDisplay: React.FC<PollDisplayProps> = ({ poll, postId, userVotedOption
 
 interface EvidenceBoardDisplayProps {
   items: EvidenceItem[];
+  isClickable: boolean;
+  onViewPost?: () => void;
 }
 
-const EvidenceBoardDisplay: React.FC<EvidenceBoardDisplayProps> = ({ items }) => {
+const EvidenceBoardDisplay: React.FC<EvidenceBoardDisplayProps> = ({ items, isClickable, onViewPost }) => {
+  const [viewerState, setViewerState] = React.useState<{ isOpen: boolean; mediaUrl: string; mediaType: 'image' | 'video'; alt: string }>({
+    isOpen: false,
+    mediaUrl: '',
+    mediaType: 'image',
+    alt: ''
+  });
+
   const renderIcon = (type: EvidenceItem['type']) => {
     switch (type) {
       case 'text': return <FileTextIcon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />;
@@ -157,23 +167,61 @@ const EvidenceBoardDisplay: React.FC<EvidenceBoardDisplayProps> = ({ items }) =>
     }
   };
 
+  const handleMediaClick = (url: string, type: 'image' | 'video', title: string) => {
+    // Só abre em tela cheia se não estiver no feed (isClickable = false)
+    if (!isClickable) {
+      setViewerState({
+        isOpen: true,
+        mediaUrl: url,
+        mediaType: type,
+        alt: title
+      });
+    } else if (onViewPost) {
+      // Se estiver no feed, redireciona para o post
+      onViewPost();
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-      {items.map(item => (
-        <div key={item.id} className="bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg p-3 md:p-4 flex flex-col">
-          <div className="flex items-center mb-2 min-w-0">
-            {renderIcon(item.type)}
-            <h4 className="font-bold ml-2 truncate text-sm md:text-base">{item.title}</h4>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        {items.map(item => (
+          <div key={item.id} className="bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg p-3 md:p-4 flex flex-col">
+            <div className="flex items-center mb-2 min-w-0">
+              {renderIcon(item.type)}
+              <h4 className="font-bold ml-2 truncate text-sm md:text-base">{item.title}</h4>
+            </div>
+            <div className="flex-grow">
+              {item.type === 'text' && <p className="text-xs md:text-sm whitespace-pre-wrap">{item.content}</p>}
+              {item.type === 'image' && (
+                <img 
+                  src={item.content} 
+                  alt={item.title} 
+                  className="rounded-md w-full h-auto object-cover max-h-32 md:max-h-48 cursor-pointer hover:opacity-90 transition-opacity" 
+                  onClick={() => handleMediaClick(item.content, 'image', item.title)}
+                />
+              )}
+              {item.type === 'video' && (
+                <video 
+                  src={item.content} 
+                  controls 
+                  className="rounded-md w-full h-auto max-h-32 md:max-h-48 cursor-pointer" 
+                  onClick={() => handleMediaClick(item.content, 'video', item.title)}
+                />
+              )}
+              {item.type === 'link' && <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm text-secondary hover:underline break-all">{item.content}</a>}
+            </div>
           </div>
-          <div className="flex-grow">
-            {item.type === 'text' && <p className="text-xs md:text-sm whitespace-pre-wrap">{item.content}</p>}
-            {item.type === 'image' && <img src={item.content} alt={item.title} className="rounded-md w-full h-auto object-cover max-h-32 md:max-h-48" />}
-            {item.type === 'video' && <video src={item.content} controls className="rounded-md w-full h-auto max-h-32 md:max-h-48" />}
-            {item.type === 'link' && <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm text-secondary hover:underline break-all">{item.content}</a>}
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <MediaViewer
+        isOpen={viewerState.isOpen}
+        onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+        mediaUrl={viewerState.mediaUrl}
+        mediaType={viewerState.mediaType}
+        alt={viewerState.alt}
+      />
+    </>
   );
 };
 
@@ -210,6 +258,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
   const [editedText, setEditedText] = useState(post.text);
   const [isMediaVisible, setIsMediaVisible] = useState(false);
   const [showDateTime, setShowDateTime] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const { addToast } = useToast();
   const hasBeenViewed = useRef(false);
 
@@ -371,6 +420,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
     [post.media_is_sensitive, user.showSensitiveContent, isMediaVisible]
   );
 
+  const handleMediaClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Só abre em tela cheia se não estiver no feed (isClickable = false)
+    if (!isClickable && !showSensitiveWarning) {
+      setIsMediaViewerOpen(true);
+    } else if (isClickable && !isEditing) {
+      // Se estiver no feed, redireciona para o post
+      onViewPost(post.id);
+    }
+  };
+
   return (
     <>
       <Card
@@ -494,19 +554,25 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                       <img 
                         src={post.imageUrl} 
                         alt="Post content" 
-                        className={`rounded-lg w-full object-contain transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : ''}`} 
+                        className={`rounded-lg w-full object-contain transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : 'cursor-pointer hover:opacity-90'}`} 
                         onLoad={onMediaLoad} 
                         style={{ maxHeight: window.innerWidth < 768 ? '256px' : '384px' }}
+                        onClick={handleMediaClick}
                       />
                     )}
                     {post.videoUrl && (
-                      <ResilientVideo
-                        src={post.videoUrl}
-                        controls={!showSensitiveWarning}
-                        className={`rounded-lg w-full bg-dark-bg transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : ''}`}
-                        onLoadedData={onMediaLoad}
-                        style={{ maxHeight: window.innerWidth < 768 ? '256px' : '384px' }}
-                      />
+                      <div 
+                        className={`relative ${showSensitiveWarning ? '' : 'cursor-pointer'}`}
+                        onClick={handleMediaClick}
+                      >
+                        <ResilientVideo
+                          src={post.videoUrl}
+                          controls={!showSensitiveWarning}
+                          className={`rounded-lg w-full bg-dark-bg transition-all duration-300 ${showSensitiveWarning ? 'blur-xl' : ''}`}
+                          onLoadedData={onMediaLoad}
+                          style={{ maxHeight: window.innerWidth < 768 ? '256px' : '384px' }}
+                        />
+                      </div>
                     )}
                     {showSensitiveWarning && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-lg" onClick={(e) => e.stopPropagation()}>
@@ -533,7 +599,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
               )}
               {post.evidenceBoard && post.evidenceBoard.length > 0 && (
                 <div onClick={(e) => e.stopPropagation()} className="evidence-board-mobile mt-3 md:mt-4">
-                  <EvidenceBoardDisplay items={post.evidenceBoard} />
+                  <EvidenceBoardDisplay 
+                    items={post.evidenceBoard} 
+                    isClickable={isClickable}
+                    onViewPost={() => onViewPost(post.id)}
+                  />
                 </div>
               )}
             </div>
@@ -627,6 +697,15 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
         confirmText="Sim, apagar"
         isDestructive={true}
       />
+      {(post.imageUrl || post.videoUrl) && (
+        <MediaViewer
+          isOpen={isMediaViewerOpen}
+          onClose={() => setIsMediaViewerOpen(false)}
+          mediaUrl={post.imageUrl || post.videoUrl || ''}
+          mediaType={post.imageUrl ? 'image' : 'video'}
+          alt="Conteúdo do post"
+        />
+      )}
     </>
   );
 };

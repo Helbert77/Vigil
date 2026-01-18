@@ -1,8 +1,9 @@
 import React from 'react'; // Removed useState as isJoined is now a prop
-import { Community } from '../../types';
+import { Community, User } from '../../types';
 import Card from '../common/Card';
 import { Icon } from '../icons/Icon';
 import { getRequiredPlanLabel, getRequiredPlanColor } from '@/src/utils/communityAccess';
+import CommunityActionsMenu from './CommunityActionsMenu';
 
 const UsersIcon = () => <Icon className="h-3 w-3 md:h-4 md:w-4 mr-1 flex-shrink-0"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
 const MessageSquareIcon = () => <Icon className="h-3 w-3 md:h-4 md:w-4 mr-1 flex-shrink-0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></Icon>;
@@ -12,9 +13,11 @@ interface CommunityCardProps {
   onViewCommunity: (communityId: string) => void;
   isJoined: boolean; // New prop: indicates if the current user has joined this community
   onJoinToggle: (communityId: string) => void; // New prop: function to join/leave
+  currentUser: User;
+  onEdit: (community: Community) => void;
 }
 
-const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunity, isJoined, onJoinToggle }) => {
+const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunity, isJoined, onJoinToggle, currentUser, onEdit }) => {
   // Removed local useState for isJoined, now controlled by props
 
   const handleJoinToggle = (e: React.MouseEvent) => {
@@ -28,10 +31,17 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunit
         <div className="relative">
           <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-20 md:h-24 w-full object-cover" />
           {community.requiredPlan && community.requiredPlan !== 'all' && (
-            <div className={`absolute top-2 right-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg`}>
+            <div className={`absolute top-2 left-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg`}>
               {getRequiredPlanLabel(community.requiredPlan)}
             </div>
           )}
+          <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+            <CommunityActionsMenu
+              community={community}
+              currentUser={currentUser}
+              onEdit={() => onEdit(community)}
+            />
+          </div>
         </div>
         <div className="p-3 md:p-4 flex-grow flex flex-col">
             <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{community.name}</h3>

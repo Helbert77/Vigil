@@ -1050,6 +1050,27 @@ export const leaveCommunity = (userId: string, communityId: string) =>
 export const createCommunity = (communityData: { id: string; name: string; description: string; rules: string[]; tag: string; banner_url: string; required_plan?: string; creator_id?: string; }) =>
   supabase.from('communities').insert(communityData).select().single();
 
+export const updateCommunity = async (communityId: string, updates: {
+  name?: string;
+  description?: string;
+  rules?: string[];
+  banner_url?: string;
+  required_plan?: string;
+}) => {
+  try {
+    const { data, error } = await supabase
+      .from('communities')
+      .update(updates)
+      .eq('id', communityId)
+      .select()
+      .single();
+    
+    return { data, error };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
 export const updateCommunityPlan = async (communityId: string, requiredPlan: string) => {
   try {
     // Buscar a comunidade atual para verificar permissões
