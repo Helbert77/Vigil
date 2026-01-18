@@ -146,6 +146,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     
     // Verificar se estamos em um fluxo de recuperação de senha
     const isPasswordRecovery = () => {
+      // Primeiro, verificar parâmetros salvos (antes do hash ser limpo)
+      if ((window as any).__supabaseHashParams?.type === 'recovery') {
+        return true;
+      }
+      
+      // Fallback: verificar hash atual
       const hash = window.location.hash;
       const params = new URLSearchParams(hash.substring(1));
       return params.get('type') === 'recovery';
@@ -163,15 +169,20 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       
       // Durante recuperação de senha, não fazer login automático no SIGNED_IN inicial
       if (isPasswordRecovery() && _event === 'SIGNED_IN') {
+        // Limpar parâmetros salvos após usar
+        if ((window as any).__supabaseHashParams) {
+          delete (window as any).__supabaseHashParams;
+        }
+        
         setLoading(false);
         return;
       }
       
-      // Para USER_UPDATED durante password recovery, fazer login automático
-      if (_event === 'USER_UPDATED' && isPasswordRecovery()) {
-        // Limpar o hash de recovery da URL para permitir login normal
-        window.history.replaceState({}, document.title, window.location.pathname);
-        getSessionAndProfile();
+      // Durante recuperação de senha, não fazer login automático no USER_UPDATED
+      // O UpdatePassword.tsx vai fazer logout e redirecionar para login
+      const isInPasswordRecoveryFlow = (window as any).__isPasswordRecoveryFlow;
+      if (_event === 'USER_UPDATED' && isInPasswordRecoveryFlow) {
+        setLoading(false);
         return;
       }
       

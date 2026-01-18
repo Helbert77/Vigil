@@ -360,9 +360,19 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Tentar ler hash atual (pode estar vazio se Supabase já consumiu)
     const hash = window.location.hash.substring(1);
     const params = new URLSearchParams(hash);
-    if (params.get('type') === 'recovery') {
+    
+    let typeParam = params.get('type');
+    
+    // Se hash está vazio, tentar ler parâmetros salvos pelo client.ts
+    if (!typeParam && (window as any).__supabaseHashParams) {
+      const savedParams = (window as any).__supabaseHashParams;
+      typeParam = savedParams.type;
+    }
+    
+    if (typeParam === 'recovery') {
       setCurrentPage('UpdatePassword');
     }
   }, []);

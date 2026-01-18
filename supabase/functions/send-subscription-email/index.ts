@@ -432,7 +432,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Vigil <onboarding@resend.dev>',
+        from: 'Vigil <suporte@myvigil.co>',
         to: [testEmail], // Usando email de teste até verificar domínio
         subject: `[TESTE - ${finalEmail}] ${subjectMap[type] || '✨ Atualização de Assinatura - Vigil'}`,
         html: htmlContent,

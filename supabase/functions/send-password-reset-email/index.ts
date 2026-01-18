@@ -6,8 +6,8 @@ const APP_URL = Deno.env.get('APP_URL') || 'https://vigil.app';
 
 interface PasswordResetRequest {
   email: string;
-  resetLink: string;
   userName?: string;
+  redirectTo?: string;
 }
 
 /**
@@ -150,13 +150,39 @@ serve(async (req) => {
       );
     }
 
-    const { email, resetLink, userName }: PasswordResetRequest = await req.json();
+    const { email, userName, redirectTo }: PasswordResetRequest = await req.json();
 
-    if (!email || !resetLink) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ error: 'Email e resetLink são obrigatórios' }),
+        JSON.stringify({ error: 'Email é obrigatório' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Gerar link de recuperação com tokens usando Supabase Admin
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: redirectTo || APP_URL,
+      },
+    });
+
+    if (linkError || !linkData) {
+      console.error('Erro ao gerar link de recuperação:', linkError);
+      throw new Error('Falha ao gerar link de recuperação');
+    }
+
+    // O link gerado contém os tokens necessários
+    const resetLink = linkData.properties?.action_link || '';
+
+    if (!resetLink) {
+      throw new Error('Link de recuperação não foi gerado');
     }
 
     // Gerar HTML do email
@@ -171,7 +197,7 @@ serve(async (req) => {
           'Authorization': `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: 'Vigil <noreply@vigil.app>',
+          from: 'Vigil <suporte@myvigil.co>',
           to: [email],
           subject: '🔐 Recuperação de Senha - Vigil',
           html: emailHtml,
@@ -195,37 +221,9 @@ serve(async (req) => {
         }
       );
     } else {
-      // Fallback: usar Supabase Auth para enviar email
-      const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-
-      // Nota: O Supabase Auth não permite customizar completamente o template,
-      // mas podemos usar o método admin para enviar email customizado
-      const { error } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'recovery',
-        email: email,
-        options: {
-          redirectTo: resetLink,
-        },
-      });
-
-      if (error) {
-        console.error('Erro ao gerar link de recuperação:', error);
-        throw error;
-      }
-
-      return new Response(
-        JSON.stringify({ success: true, message: 'Link de recuperação gerado' }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
+      // Se não há RESEND_API_KEY, retornar erro
+      // (o frontend deve usar resetPasswordForEmail do Supabase como fallback)
+      throw new Error('RESEND_API_KEY não configurado');
     }
   } catch (error) {
     console.error('Erro ao processar recuperação de senha:', error);

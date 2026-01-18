@@ -101,19 +101,51 @@ const Login: React.FC = () => {
     setLoading(true);
     setError(null);
     setResetMessage(null);
+    
+    const redirectUrl = `${window.location.origin}/`;
+    
+    try {
+      // Tentar usar edge function para email personalizado
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, username')
+        .eq('email', resetEmail)
+        .single();
+      
+      const userName = profile 
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username
+        : undefined;
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/update-password`,
-    });
+      const { error: edgeError } = await supabase.functions.invoke('send-password-reset-email', {
+        body: {
+          email: resetEmail,
+          userName,
+          redirectTo: redirectUrl,
+        },
+      });
 
-    if (resetError) {
-      setError(resetError.message);
-      addToast(resetError.message, 'error');
-    } else {
+      if (edgeError) {
+        // Se edge function falhar, usar método padrão do Supabase
+        console.warn('Edge function falhou, usando método padrão:', edgeError);
+        
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+          redirectTo: redirectUrl,
+        });
+
+        if (resetError) {
+          throw resetError;
+        }
+      }
+
+      // Sucesso!
       setResetMessage('Link de redefinição de senha enviado para o seu e-mail!');
       addToast('Link de redefinição de senha enviado!', 'success');
       setIsResettingPassword(false);
+    } catch (error: any) {
+      setError(error.message || 'Erro ao enviar email de recuperação');
+      addToast(error.message || 'Erro ao enviar email', 'error');
     }
+    
     setLoading(false);
   };
 

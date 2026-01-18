@@ -19,11 +19,10 @@ const About: React.FC = () => {
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
             Acreditamos no poder da curiosidade e na busca incessante pelo conhecimento. 
             Aqui, você pode postar suas próprias teorias, discutir as de outros, 
-            participar de comunidades temáticas e até mesmo usar nossa IA para 
-            analisar criticamente diferentes perspectivas.
+            participar de comunidades temáticas e interagir em todos os conteúdos disponíveis.
           </p>
           <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-            Junte-se a nós na jornada para desvendar os segredos do universo e da sociedade. 
+            Junte-se à nossa jornada para desvendar os segredos do universo e da sociedade. 
             Mantenha-se vigilante.
           </p>
         </div>

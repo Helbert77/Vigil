@@ -29,6 +29,33 @@ const UpdatePassword: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Inicialização do componente
+  useEffect(() => {
+    // Marcar que estamos em fluxo de recuperação de senha
+    (window as any).__isPasswordRecoveryFlow = true;
+    
+    // Verificar se há erro de auth capturado
+    const authError = (window as any).__supabaseAuthError;
+    if (authError) {
+      // Mostrar mensagem de erro apropriada
+      if (authError.errorCode === 'otp_expired') {
+        setErrors(['O link de recuperação expirou. Por favor, solicite um novo link.']);
+        addToast('Link de recuperação expirado', 'error');
+      } else {
+        setErrors([authError.errorDescription || 'Erro ao processar link de recuperação']);
+        addToast('Erro no link de recuperação', 'error');
+      }
+      
+      // Limpar o erro
+      delete (window as any).__supabaseAuthError;
+      
+      // Redirecionar para login após 3 segundos
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    }
+  }, [addToast]);
+
   // Função para calcular a força da senha
   const calculatePasswordStrength = (password: string): PasswordStrength => {
     const requirements = {
@@ -113,36 +140,75 @@ const UpdatePassword: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('👂 [UPDATE_PASSWORD] Registrando listener de mudança de auth');
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      console.log('🔔 [UPDATE_PASSWORD] Auth state changed!');
+      console.log('📢 [UPDATE_PASSWORD] Evento:', event);
+      console.log('👤 [UPDATE_PASSWORD] Sessão:', session ? 'EXISTE' : 'NULL');
+      
       if (event === 'USER_UPDATED') {
+        console.log('✅ [UPDATE_PASSWORD] USER_UPDATED detectado!');
+        
         if (session) {
-          addToast('Senha atualizada com sucesso! Você será redirecionado automaticamente.', 'success');
+          console.log('✅ [UPDATE_PASSWORD] Sessão válida após update');
+          console.log('👤 [UPDATE_PASSWORD] User:', session.user?.email);
+          
+          addToast('Senha atualizada com sucesso! Faça login com sua nova senha.', 'success');
           setSuccess(true);
           
-          // Usar navegação programática sem recarregamento
-          setTimeout(() => {
+          console.log('⏰ [UPDATE_PASSWORD] Aguardando 2s para redirecionar...');
+          
+          // Fazer logout e redirecionar para login
+          setTimeout(async () => {
+            console.log('🔄 [UPDATE_PASSWORD] Fazendo logout e redirecionando para Login...');
+            
+            // Limpar flag de recovery
+            delete (window as any).__isPasswordRecoveryFlow;
+            console.log('🧹 [UPDATE_PASSWORD] Flag de recovery removida');
+            
+            // Fazer logout para forçar novo login com nova senha
+            await supabase.auth.signOut({ scope: 'local' });
+            
             // Limpar o hash de recovery da URL
             window.history.replaceState({}, document.title, window.location.pathname);
             
-            // Disparar evento customizado para notificar o App.tsx sobre mudança de página
-            const event = new CustomEvent('navigate', { detail: { page: 'Home' } });
-            window.dispatchEvent(event);
+            // Redirecionar para página de login
+            window.location.href = '/';
+            
+            console.log('✅ [UPDATE_PASSWORD] Redirecionamento concluído');
           }, 2000);
+        } else {
+          console.warn('⚠️ [UPDATE_PASSWORD] USER_UPDATED mas sessão é NULL!');
         }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🔇 [UPDATE_PASSWORD] Removendo listener de auth');
+      subscription.unsubscribe();
+    };
   }, [addToast]);
 
   const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     setLoading(true);
     setErrors([]);
 
     const validationErrors = validatePassword();
     if (validationErrors.length > 0) {
       setErrors(validationErrors);
+      setLoading(false);
+      return;
+    }
+    
+    // Verificar sessão antes de tentar atualizar
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    
+    if (!currentSession) {
+      setErrors(['Sessão expirada. Por favor, solicite um novo link de recuperação.']);
+      addToast('Sessão expirada', 'error');
       setLoading(false);
       return;
     }
@@ -154,7 +220,7 @@ const UpdatePassword: React.FC = () => {
         setErrors([error.message]);
         addToast('Erro ao atualizar senha: ' + error.message, 'error');
       }
-    } catch (error) {
+    } catch (error: any) {
       setErrors(['Erro inesperado ao atualizar senha.']);
       addToast('Erro inesperado ao atualizar senha.', 'error');
     }

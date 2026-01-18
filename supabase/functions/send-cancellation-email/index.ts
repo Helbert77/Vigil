@@ -346,7 +346,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Vigil <onboarding@resend.dev>',
+        from: 'Vigil <suporte@myvigil.co>',
         to: [email],
         subject: '🔔 Assinatura Cancelada - Vigil',
         html: htmlContent,

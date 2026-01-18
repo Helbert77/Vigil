@@ -327,7 +327,7 @@ serve(async (req) => {
 
     // Enviar email via Resend
     const emailBody: any = {
-      from: 'onboarding@resend.dev', // Domínio de teste do Resend (já verificado)
+      from: 'suporte@myvigil.co', // Domínio personalizado do Vigil
       to: [SUPPORT_EMAIL],
       subject: `[${ticket.userPlan.toUpperCase()}] ${priorityEmoji} ${ticket.subject} - #${ticketNumber}`,
       html: emailHtml,
