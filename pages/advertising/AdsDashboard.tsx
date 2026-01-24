@@ -23,6 +23,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<number>(7);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedAdId, setSelectedAdId] = useState<string>('all'); // 'all' ou ID do anúncio específico
 
   // Estados para métricas
   const [aggregatedMetrics, setAggregatedMetrics] = useState<any>(null);
@@ -57,10 +58,74 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
     fetchAllMetrics();
   }, [timeframe, user.id]);
 
-  // Calcular custo total e CPC médio
-  const totalCost = adsPerformance.reduce((sum, ad) => sum + ad.cost, 0);
-  const totalClicks = aggregatedMetrics?.total_clicks || 0;
-  const avgCpc = totalClicks > 0 ? totalCost / totalClicks : 0;
+  // Filtrar métricas baseado no anúncio selecionado
+  const filteredMetrics = React.useMemo(() => {
+    if (selectedAdId === 'all') {
+      return {
+        aggregated: aggregatedMetrics,
+        daily: dailyMetrics,
+        performance: adsPerformance
+      };
+    }
+
+    // Encontrar o anúncio específico
+    const selectedAd = adsPerformance.find(ad => ad.id === selectedAdId);
+    
+    if (!selectedAd) {
+      return {
+        aggregated: aggregatedMetrics,
+        daily: dailyMetrics,
+        performance: adsPerformance
+      };
+    }
+
+    // Criar métricas agregadas apenas para o anúncio selecionado
+    const filteredAggregated = {
+      total_impressions: selectedAd.impressions,
+      total_clicks: selectedAd.clicks,
+      total_engagement: selectedAd.engagement,
+      total_likes: 0, // Não temos esse detalhe por anúncio nas métricas atuais
+      total_shares: 0,
+      total_saves: 0,
+      ctr: selectedAd.ctr,
+      engagement_rate: selectedAd.impressions > 0 
+        ? ((selectedAd.engagement / selectedAd.impressions) * 100).toFixed(2)
+        : 0
+    };
+
+    // Filtrar métricas diárias para o anúncio selecionado
+    // Como não temos métricas diárias por anúncio específico da API,
+    // vamos criar uma distribuição proporcional baseada nas métricas do anúncio
+    const filteredDaily = dailyMetrics.map(day => {
+      if (!aggregatedMetrics || aggregatedMetrics.total_impressions === 0) {
+        return day;
+      }
+      
+      // Calcular proporção deste anúncio no total
+      const adProportion = selectedAd.impressions / aggregatedMetrics.total_impressions;
+      
+      return {
+        date: day.date,
+        impressions: Math.round(day.impressions * adProportion),
+        clicks: Math.round(day.clicks * adProportion),
+        engagement: Math.round(day.engagement * adProportion)
+      };
+    });
+
+    // Filtrar tabela de performance para mostrar apenas o anúncio selecionado
+    const filteredPerformance = adsPerformance.filter(ad => ad.id === selectedAdId);
+
+    return {
+      aggregated: filteredAggregated,
+      daily: filteredDaily,
+      performance: filteredPerformance
+    };
+  }, [selectedAdId, aggregatedMetrics, dailyMetrics, adsPerformance]);
+
+  // Calcular custo total e CPC médio baseado nas métricas filtradas
+  const totalCost = filteredMetrics.performance.reduce((sum, ad) => sum + ad.cost, 0);
+  const totalClicks = filteredMetrics.aggregated?.total_clicks || 0;
+  const avgCpc = totalClicks > 0 ? totalCost / totalClicks : null;
 
   return (
     <div className="space-y-6">
@@ -76,7 +141,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
         </div>
 
         {/* Botão Criar Anúncio e Seletor de período */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
@@ -101,6 +166,26 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
         </div>
       </div>
 
+      {/* Filtro por Anúncio */}
+      <div className="flex items-center gap-3">
+        <label htmlFor="ad-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Filtrar por anúncio:
+        </label>
+        <select
+          id="ad-filter"
+          value={selectedAdId}
+          onChange={(e) => setSelectedAdId(e.target.value)}
+          className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary min-w-[250px]"
+        >
+          <option value="all">Todos os anúncios</option>
+          {adsPerformance.map((ad) => (
+            <option key={ad.id} value={ad.id}>
+              {ad.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Modal de Criar Anúncio */}
       <CreateAdModal
         isOpen={isCreateModalOpen}
@@ -119,29 +204,29 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <AdMetricsCard
               title="Impressões"
-              value={aggregatedMetrics?.total_impressions?.toLocaleString('pt-BR') || '0'}
+              value={filteredMetrics.aggregated?.total_impressions?.toLocaleString('pt-BR') || '0'}
               description="Total de visualizações"
               icon={<EyeIcon />}
             />
 
             <AdMetricsCard
               title="Cliques"
-              value={aggregatedMetrics?.total_clicks?.toLocaleString('pt-BR') || '0'}
-              description={`CTR: ${aggregatedMetrics?.ctr?.toFixed(2) || '0.00'}%`}
+              value={filteredMetrics.aggregated?.total_clicks?.toLocaleString('pt-BR') || '0'}
+              description={`CTR: ${filteredMetrics.aggregated?.ctr?.toFixed(2) || '0.00'}%`}
               icon={<MousePointerIcon />}
             />
 
             <AdMetricsCard
               title="Engajamento"
-              value={aggregatedMetrics?.total_engagement?.toLocaleString('pt-BR') || '0'}
-              description={`Taxa: ${aggregatedMetrics?.engagement_rate?.toFixed(2) || '0.00'}%`}
+              value={filteredMetrics.aggregated?.total_engagement?.toLocaleString('pt-BR') || '0'}
+              description={`Taxa: ${filteredMetrics.aggregated?.engagement_rate || '0.00'}%`}
               icon={<HeartIcon />}
             />
 
             <AdMetricsCard
               title="Custo Total"
               value={`€ ${totalCost.toFixed(2)}`}
-              description={`CPC médio: € ${avgCpc.toFixed(2)}`}
+              description={avgCpc !== null ? `CPC médio: € ${avgCpc.toFixed(2)}` : 'CPC médio: Sem cliques'}
               icon={<TrendingUpIcon />}
             />
           </div>
@@ -151,31 +236,31 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
               <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Curtidas</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {aggregatedMetrics?.total_likes?.toLocaleString('pt-BR') || '0'}
+                {filteredMetrics.aggregated?.total_likes?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
               <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Compartilhamentos</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {aggregatedMetrics?.total_shares?.toLocaleString('pt-BR') || '0'}
+                {filteredMetrics.aggregated?.total_shares?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
               <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Salvamentos</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {aggregatedMetrics?.total_saves?.toLocaleString('pt-BR') || '0'}
+                {filteredMetrics.aggregated?.total_saves?.toLocaleString('pt-BR') || '0'}
               </p>
             </div>
           </div>
 
           {/* Gráfico de Performance */}
-          <AdPerformanceChart data={dailyMetrics} isLoading={false} />
+          <AdPerformanceChart data={filteredMetrics.daily} isLoading={false} />
 
           {/* Tabela de Performance por Anúncio */}
           <AdsPerformanceTable
-            ads={adsPerformance}
+            ads={filteredMetrics.performance}
             isLoading={false}
             onViewDetails={(adId) => {
               // TODO: Implementar navegação para página de detalhes do anúncio
@@ -184,7 +269,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           />
 
           {/* Mensagem se não houver dados */}
-          {!isLoading && aggregatedMetrics?.total_impressions === 0 && (
+          {!isLoading && filteredMetrics.aggregated?.total_impressions === 0 && (
             <div className="bg-light-card dark:bg-dark-card p-8 rounded-lg shadow-sm border border-light-border dark:border-dark-border text-center">
               <div className="max-w-md mx-auto">
                 <div className="text-6xl mb-4">📊</div>
@@ -207,6 +292,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           )}
         </>
       )}
+
     </div>
   );
 };

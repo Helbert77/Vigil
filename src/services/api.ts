@@ -2481,7 +2481,7 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
   }));
 };
 /**
- * Processar reembolso de an�ncio rejeitado
+ * Processar reembolso de anúncio rejeitado
  */
 export const processAdRefund = async (adId: string, userId: string) => {
   const { data, error } = await supabase.functions.invoke('process-ad-refund', {

@@ -82,6 +82,9 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
   
   // Verificar se o usuário tem acesso à comunidade
   const hasAccess = React.useMemo(() => {
+    // Admin tem acesso irrestrito a todas as comunidades
+    if (user.role === 'admin') return true;
+    
     if (!community.requiredPlan || community.requiredPlan === 'all') return true;
     
     const planHierarchy: Record<string, number> = {
@@ -99,7 +102,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
       case 'premium': return userPlanLevel >= planHierarchy.premium;
       default: return true;
     }
-  }, [community.requiredPlan, user.plan]);
+  }, [community.requiredPlan, user.plan, user.role]);
   
   // Filtrar posts apenas se o usuário tiver acesso à comunidade
   const communityPosts = hasAccess 

@@ -132,7 +132,7 @@ async function getWikipediaImage(pageTitle) {
         const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodedTitle}`;
         const options = {
           headers: {
-            'User-Agent': 'TimelineEnrichmentBot/1.0 (https://vigil.app)'
+            'User-Agent': 'TimelineEnrichmentBot/1.0 (https://myvigil.co)'
           }
         };
         

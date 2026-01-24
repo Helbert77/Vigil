@@ -8,7 +8,7 @@ const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!;
 const VAPID_PUBLIC_KEY = Deno.env.get('VITE_VAPID_PUBLIC_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-webpush.setVapidDetails('mailto:admin@vigil.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+webpush.setVapidDetails('mailto:admin@myvigil.co', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

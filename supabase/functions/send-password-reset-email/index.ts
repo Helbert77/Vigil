@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const APP_URL = Deno.env.get('APP_URL') || 'https://vigil.app';
+const APP_URL = Deno.env.get('APP_URL') || 'https://myvigil.co';
 
 interface PasswordResetRequest {
   email: string;
@@ -27,6 +27,14 @@ function generatePasswordResetEmailHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Recuperação de Senha - Vigil</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
@@ -36,10 +44,21 @@ function generatePasswordResetEmailHtml(
           
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 48px 32px; text-align: center; position: relative;">
-              <div style="font-size: 64px; margin-bottom: 16px;">🔐</div>
-              <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Recuperação de Senha</h1>
-              <p style="margin: 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">Vigil</p>
+            <td style="background-color: #667eea; padding: 48px 32px; text-align: center;">
+              <!--[if gte mso 9]>
+              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:200px;">
+                <v:fill type="gradient" color="#667eea" color2="#764ba2" angle="135" />
+                <v:textbox inset="0,0,0,0">
+              <![endif]-->
+              <div>
+                <img src="https://myvigil.co/logo.png" alt="Vigil Logo" style="width: 80px; height: 80px; margin: 0 auto 16px; display: block;" />
+                <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Recuperação de Senha</h1>
+                <p style="margin: 0; color: #ffffff; font-size: 16px;">Vigil</p>
+              </div>
+              <!--[if gte mso 9]>
+                </v:textbox>
+              </v:rect>
+              <![endif]-->
             </td>
           </tr>
 
@@ -58,15 +77,23 @@ function generatePasswordResetEmailHtml(
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
                 <tr>
                   <td align="center">
-                    <table cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                    <!--[if mso]>
+                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${resetLink}" style="height:54px;v-text-anchor:middle;width:300px;" arcsize="22%" strokecolor="#667eea" fillcolor="#667eea">
+                      <w:anchorlock/>
+                      <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">Redefinir Minha Senha</center>
+                    </v:roundrect>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <table cellpadding="0" cellspacing="0" style="background-color: #667eea; border-radius: 12px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
                       <tr>
-                        <td align="center" style="padding: 18px 48px;">
+                        <td align="center" style="padding: 18px 48px; background-color: #667eea; border-radius: 12px;">
                           <a href="${resetLink}" style="display: inline-block; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: 0.3px;">
                             Redefinir Minha Senha
                           </a>
                         </td>
                       </tr>
                     </table>
+                    <!--<![endif]-->
                   </td>
                 </tr>
               </table>
@@ -80,21 +107,25 @@ function generatePasswordResetEmailHtml(
               </p>
 
               <!-- Security Notice -->
-              <div style="margin-top: 32px; padding: 20px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
-                <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #92400e;">
-                  🔒 Segurança
-                </p>
-                <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #78350f;">
-                  Este link expira em <strong>1 hora</strong>. Por segurança, não compartilhe este link com ninguém. A equipe do Vigil nunca solicitará sua senha por email.
-                </p>
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px;">
+                <tr>
+                  <td style="padding: 20px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px;">
+                    <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #92400e;">
+                      🔒 Segurança
+                    </p>
+                    <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #78350f;">
+                      Este link expira em <strong>1 hora</strong>. Por segurança, não compartilhe este link com ninguém. A equipe do Vigil nunca solicitará sua senha por email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 32px 40px; text-align: center; border-top: 2px solid #e5e7eb;">
-              <div style="font-size: 32px; margin-bottom: 12px;">⚡</div>
+              <img src="https://myvigil.co/logo.png" alt="Vigil Logo" style="width: 48px; height: 48px; margin: 0 auto 12px; display: block; object-fit: contain;" />
               <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #111827;">Vigil</p>
               <p style="margin: 0 0 4px 0; font-size: 14px; color: #6b7280;">
                 A plataforma para compartilhar e discutir teorias

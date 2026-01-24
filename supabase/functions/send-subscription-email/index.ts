@@ -3,13 +3,13 @@
  * IMPORTANTE: Esta função está configurada para modo de TESTE do Resend.
  * 
  * LIMITAÇÃO ATUAL:
- * - Resend em modo de teste só permite enviar emails para: helbertcarlos@hotmail.com
+ * - Resend em modo de teste só permite enviar emails para: suporte@myvigil.co
  * - Todos os emails serão enviados para este endereço até que um domínio seja verificado
  * 
  * PARA PRODUÇÃO:
  * 1. Acesse: https://resend.com/domains
- * 2. Adicione e verifique seu domínio (ex: vigil.com.br)
- * 3. Altere o 'from' de 'onboarding@resend.dev' para 'noreply@seudominio.com'
+ * 2. Adicione e verifique seu domínio (ex: myvigil.co)
+ * 3. Altere o 'from' de 'onboarding@resend.dev' para 'noreply@myvigil.co'
  * 4. Remova a variável 'testEmail' e use 'email' diretamente no 'to'
  */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -414,9 +414,9 @@ serve(async (req: Request) => {
       trial: '🎁 Período de Teste Ativado!'
     };
 
-    // IMPORTANTE: Resend em modo de teste só permite enviar para helbertcarlos@hotmail.com
+    // IMPORTANTE: Resend em modo de teste só permite enviar para suporte@myvigil.co
     // Para produção, verifique um domínio em resend.com/domains
-    const testEmail = 'helbertcarlos@hotmail.com';
+    const testEmail = 'suporte@myvigil.co';
     const finalEmail = email.includes('@') ? email : testEmail;
     
     console.log(`[send-subscription-email] Original email: ${email}, Final email: ${finalEmail}`);

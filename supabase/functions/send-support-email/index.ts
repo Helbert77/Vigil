@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const SUPPORT_EMAIL = 'helbertcarlos@hotmail.com';
+const SUPPORT_EMAIL = 'suporte@myvigil.co';
 
 interface SupportTicketRequest {
   userId: string;
@@ -132,6 +132,14 @@ serve(async (req) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ticket de Suporte - Vigil</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f3f4f6;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 20px 0;">
@@ -141,20 +149,30 @@ serve(async (req) => {
           
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); padding: 48px 32px; text-align: center; border-radius: 16px 16px 0 0;">
-              <div style="font-size: 48px; margin-bottom: 16px;">🎫</div>
+            <td style="background-color: #7c3aed; padding: 48px 32px; text-align: center; border-radius: 16px 16px 0 0;">
+              <img src="https://myvigil.co/logo.png" alt="Vigil Logo" style="width: 80px; height: 80px; margin: 0 auto 16px; display: block;" />
               <h1 style="margin: 0 0 16px 0; color: #ffffff; font-size: 36px; font-weight: 700;">Novo Ticket de Suporte</h1>
-              <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); color: #ffffff; padding: 8px 24px; border-radius: 24px; font-size: 14px; font-weight: 600; letter-spacing: 1px;">#${ticketNumber}</div>
+              <table cellpadding="0" cellspacing="0" align="center" style="background-color: rgba(255, 255, 255, 0.2); border-radius: 24px;">
+                <tr>
+                  <td style="padding: 8px 24px; color: #ffffff; font-size: 14px; font-weight: 600; letter-spacing: 1px;">
+                    #${ticketNumber}
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Status Badge -->
           <tr>
             <td style="background-color: #ffffff; padding: 32px 32px 0 32px;">
-              <div style="display: inline-block; background: linear-gradient(to right, #10b981, #059669); color: #ffffff; padding: 10px 20px; border-radius: 24px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                <span style="display: inline-block; width: 8px; height: 8px; background: #ffffff; border-radius: 50%; margin-right: 8px;"></span>
-                Ticket Recebido
-              </div>
+              <table cellpadding="0" cellspacing="0" style="background-color: #10b981; border-radius: 24px;">
+                <tr>
+                  <td style="padding: 10px 20px; color: #ffffff; font-size: 14px; font-weight: 600;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background-color: #ffffff; border-radius: 50%; margin-right: 8px; vertical-align: middle;"></span>
+                    Ticket Recebido
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -227,10 +245,10 @@ serve(async (req) => {
           <!-- Subject Section -->
           <tr>
             <td style="background-color: #ffffff; padding: 24px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #7c3aed, #6d28d9); border-radius: 16px; padding: 32px; box-shadow: 0 4px 16px rgba(124, 58, 237, 0.2);">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #7c3aed; border-radius: 16px;">
                 <tr>
-                  <td style="text-align: center;">
-                    <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.8);">📋 Assunto</p>
+                  <td style="padding: 32px; text-align: center;">
+                    <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #ffffff;">📋 Assunto</p>
                     <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; line-height: 1.4;">${ticket.subject}</h2>
                   </td>
                 </tr>
@@ -241,9 +259,9 @@ serve(async (req) => {
           <!-- Description Section -->
           <tr>
             <td style="background-color: #ffffff; padding: 24px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 16px; padding: 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 2px solid #e5e7eb; border-radius: 16px;">
                 <tr>
-                  <td>
+                  <td style="padding: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #111827;">💬 Descrição Detalhada</h3>
                     <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #374151; white-space: pre-wrap;">${ticket.description}</p>
                   </td>
@@ -256,17 +274,21 @@ serve(async (req) => {
           <!-- Attachments Section -->
           <tr>
             <td style="background-color: #ffffff; padding: 24px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background: #eff6ff; border-radius: 16px; padding: 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #eff6ff; border-radius: 16px;">
                 <tr>
-                  <td>
+                  <td style="padding: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1e40af;">📎 Anexos (${ticket.attachments.length})</h3>
                     ${ticket.attachments.map(att => `
-                      <table width="100%" cellpadding="0" cellspacing="0" style="background: #ffffff; border: 2px solid #dbeafe; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 2px solid #dbeafe; border-radius: 12px; margin-bottom: 12px;">
                         <tr>
-                          <td style="width: 40px; vertical-align: middle;">
-                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #7c3aed, #6d28d9); border-radius: 10px; text-align: center; line-height: 40px; font-size: 20px;">📄</div>
+                          <td style="padding: 16px; width: 40px; vertical-align: middle;">
+                            <table cellpadding="0" cellspacing="0" style="width: 40px; height: 40px; background-color: #7c3aed; border-radius: 10px;">
+                              <tr>
+                                <td style="text-align: center; vertical-align: middle; font-size: 20px;">📄</td>
+                              </tr>
+                            </table>
                           </td>
-                          <td style="padding-left: 12px; vertical-align: middle;">
+                          <td style="padding: 16px 16px 16px 0; vertical-align: middle;">
                             <p style="margin: 0; font-size: 14px; font-weight: 600; color: #111827;">${att.name}</p>
                           </td>
                         </tr>
@@ -282,9 +304,9 @@ serve(async (req) => {
           <!-- Technical Info Section -->
           <tr>
             <td style="background-color: #ffffff; padding: 24px 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background: #111827; border-radius: 16px; padding: 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #111827; border-radius: 16px;">
                 <tr>
-                  <td>
+                  <td style="padding: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #d1d5db;">🖥️ Informações Técnicas</h3>
                     <p style="margin: 0 0 8px 0; font-family: 'Courier New', monospace; font-size: 12px; color: #9ca3af;">
                       <span style="color: #e5e7eb; font-weight: 600;">User ID:</span> ${ticket.userId}
@@ -304,10 +326,10 @@ serve(async (req) => {
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 32px; text-align: center; border-top: 2px solid #e5e7eb; border-radius: 0 0 16px 16px;">
-              <div style="font-size: 32px; margin-bottom: 12px;">⚡</div>
+              <img src="https://myvigil.co/logo.png" alt="Vigil Logo" style="width: 48px; height: 48px; margin: 0 auto 12px; display: block; object-fit: contain;" />
               <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #111827;">Vigil Support System</p>
               <p style="margin: 0 0 4px 0; font-size: 14px; color: #6b7280;">Este é um email automático do sistema de suporte.</p>
-              <p style="margin: 0; font-size: 14px; color: #6b7280;">Para responder, envie um email para <a href="mailto:${ticket.userEmail}" style="color: #7c3aed; font-weight: 600; text-decoration: none;">${ticket.userEmail}</a></p>
+              <p style="margin: 0; font-size: 14px; color: #6b7280;">Para responder, envie um email para <a href="mailto:suporte@myvigil.co" style="color: #7c3aed; font-weight: 600; text-decoration: none;">suporte@myvigil.co</a></p>
             </td>
           </tr>
 
@@ -328,7 +350,7 @@ serve(async (req) => {
     // Enviar email via Resend
     const emailBody: any = {
       from: 'suporte@myvigil.co', // Domínio personalizado do Vigil
-      to: [SUPPORT_EMAIL],
+      to: [ticket.userEmail], // Email do usuário que abriu o ticket
       subject: `[${ticket.userPlan.toUpperCase()}] ${priorityEmoji} ${ticket.subject} - #${ticketNumber}`,
       html: emailHtml,
     };

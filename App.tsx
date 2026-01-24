@@ -675,6 +675,11 @@ const App: React.FC = () => {
       if (p.communityId) {
         const community = communities.find(c => c.id === p.communityId);
         if (community && community.requiredPlan && community.requiredPlan !== 'all') {
+          // Admin tem acesso irrestrito a todas as comunidades
+          if (appUser?.role === 'admin') {
+            return true;
+          }
+
           // Importar a função de verificação de acesso
           const canAccessCommunity = (userPlan: string, requiredPlan: string): boolean => {
             const planHierarchy: Record<string, number> = {

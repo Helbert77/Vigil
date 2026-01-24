@@ -505,6 +505,15 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
               </div>
             ))}
             <button onClick={addEvidenceItem} className="text-sm text-primary font-semibold">+ Adicionar Evidência</button>
+            <div className="mt-2">
+              <button 
+                onClick={handleRemoveMedia}
+                className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-md border border-light-border dark:border-dark-border hover:border-red-500 dark:hover:border-red-400"
+                style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
+              >
+                Cancelar Quadro de Evidências
+              </button>
+            </div>
           </div>
         )}
       </div>
