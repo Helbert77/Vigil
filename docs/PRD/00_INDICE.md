@@ -60,6 +60,18 @@ Esta biblioteca contém a documentação completa de Product Requirements Docume
 - **[19 - Componentes Comuns](19_COMPONENTES_COMUNS.md)**
   - Avatar, Card, Tooltip, Modal, componentes reutilizáveis
 
+### 🎧 Suporte e Atendimento
+- **[20 - Sistema de Suporte](20_SUPORTE.md)**
+  - Tickets, categorização, emails, anexos, prioridades
+
+### 📄 Compliance e Legal
+- **[21 - Páginas Legais e Políticas](21_PAGINAS_LEGAIS.md)**
+  - Privacidade, Termos, Cookies, Acessibilidade, Disclaimer
+
+### 🎯 Recursos Especiais
+- **[22 - Páginas Adicionais](22_PAGINAS_ADICIONAIS.md)**
+  - Posts Salvos, Tópicos em Alta, Detalhe de Tópico, Splash Screen
+
 ---
 
 ## 🎯 Público-Alvo
@@ -197,6 +209,20 @@ Cada PRD segue uma estrutura padronizada:
 | Versão | Data | Alterações |
 |--------|------|------------|
 | 1.0.0 | 2024-12-12 | Criação inicial da biblioteca de PRDs |
+| 1.1.0 | 2026-01-24 | Atualização de PRDs existentes + 3 novos documentos |
+
+### Detalhes da Versão 1.1.0
+
+**PRDs Atualizados:**
+- **04 - Posts** (v1.1.0): Adicionado botões de cancelamento para enquetes e evidências
+- **05 - Comunidades** (v1.1.0): Adicionado acesso irrestrito para admins
+- **07 - Chat Rooms** (v2.0.0): Indicadores de salas (Nova/Hot), sistema de geolocalização, funções detalhadas do chatService
+- **14 - Publicidade** (v2.0.0): Filtro de anúncios, cálculo de CPC, inclusão de anúncios encerrados
+
+**Novos PRDs Criados:**
+- **20 - Sistema de Suporte**: Tickets, categorização, emails, prioridades
+- **21 - Páginas Legais**: Privacidade, Termos, Cookies, Acessibilidade, Disclaimer
+- **22 - Páginas Adicionais**: Posts Salvos, Tópicos em Alta, Detalhe de Tópico, Splash Screen
 
 ---
 

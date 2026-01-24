@@ -17,6 +17,7 @@ interface RightbarProps {
   onNavigateTerms: () => void;
   onNavigatePrivacy: () => void;
   onNavigateCookies: () => void;
+  onNavigateHelp: () => void;
   onNavigateDisclaimer: () => void;
   onNavigateAccessibility: () => void;
   trendingTopics: TrendingTopic[];
@@ -90,7 +91,8 @@ const Rightbar: React.FC<RightbarProps> = ({
   onNavigateAbout, 
   onNavigateTerms, 
   onNavigatePrivacy, 
-  onNavigateCookies, 
+  onNavigateCookies,
+  onNavigateHelp,
   onNavigateDisclaimer, 
   onNavigateAccessibility, 
   currentUser, 
@@ -238,6 +240,10 @@ const Rightbar: React.FC<RightbarProps> = ({
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateCookies} className="hover:underline cursor-pointer transition-colors">
             Cookies
+          </a>
+          <span className="hidden md:inline">|</span>
+          <a onClick={onNavigateHelp} className="hover:underline cursor-pointer transition-colors">
+            Ajuda
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateAccessibility} className="hover:underline cursor-pointer transition-colors">

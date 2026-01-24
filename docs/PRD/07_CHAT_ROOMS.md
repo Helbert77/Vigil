@@ -5,8 +5,9 @@
 | Campo | Valor |
 |-------|-------|
 | **Nome** | Sistema de Chat Rooms Vigil |
-| **Versão** | 1.0.0 |
+| **Versão** | 2.0.0 |
 | **Data** | 12/12/2024 |
+| **Última Atualização** | 24/01/2026 |
 | **Responsável** | Equipe de Desenvolvimento Vigil |
 | **Tipo** | PRD - Funcionalidade Avançada |
 
@@ -34,10 +35,54 @@ O sistema de Chat Rooms oferece salas de bate-papo em tempo real para usuários 
 ## 🏗️ Arquitetura Técnica
 
 ### Componentes Principais
-- **ChatPage.tsx** - Página principal do chat
+- **ChatPage.tsx** - Página principal do chat (3200+ linhas)
 - **RadarView.tsx** - Visualização de atividade das salas
 - **chatService.ts** - Serviços de chat em tempo real
-- **Chat Room Components** - Interface de salas individuais
+- **LocationPermissionModal.tsx** - Modal de permissão de localização
+- **GeolocationPresenceContext.tsx** - Contexto de presença geográfica
+
+### Serviços e APIs (chatService.ts)
+
+**Gestão de Salas:**
+- `fetchChatRooms()` - Buscar todas as salas disponíveis
+- `createChatRoom()` - Criar nova sala
+- `updateChatRoom()` - Atualizar configurações da sala
+- `deleteChatRoom()` - Deletar sala
+- `joinChatRoom()` - Entrar em uma sala
+- `leaveChatRoom()` - Sair de uma sala
+- `isUserInRoom()` - Verificar se usuário está na sala
+- `getUserJoinedRooms()` - Buscar salas que o usuário participa
+
+**Mensagens:**
+- `fetchMessages()` - Buscar mensagens de chat 1:1
+- `sendMessage()` - Enviar mensagem privada
+- `fetchRoomMessages()` - Buscar mensagens de uma sala
+- `sendRoomMessage()` - Enviar mensagem em sala
+- `clearRoomMessages()` - Limpar histórico de mensagens
+
+**Real-time:**
+- `subscribeToMessages()` - Inscrever em mensagens privadas
+- `subscribeToRoomMessages()` - Inscrever em mensagens da sala
+- `subscribeToChatRooms()` - Inscrever em mudanças de salas
+- `subscribeToRoomParticipants()` - Inscrever em participantes
+
+**Métricas e Atividade:**
+- `updateRoomActivity()` - Atualizar última atividade
+- `updateRoomLastRead()` - Marcar mensagens como lidas
+- `fetchRoomUnreadCounts()` - Buscar contagem de não lidas
+- `fetchRoomsParticipantCounts()` - Contar participantes por sala
+- `fetchRoomsMessageCountsLastHour()` - Mensagens na última hora (para badge 🔥)
+- `fetchRoomParticipants()` - Listar participantes da sala
+
+**Convites e Acesso:**
+- `fetchUserInvitations()` - Buscar convites pendentes
+- `requestRoomAccess()` - Solicitar acesso a sala privada
+
+**Busca e Descoberta:**
+- `searchUsers()` - Buscar usuários para chat
+- `fetchNewUsers()` - Buscar novos usuários
+- `fetchChatBuddies()` - Buscar contatos frequentes
+- `fetchFollowersWithProfiles()` - Buscar seguidores
 
 ### Funcionalidades Principais
 - **Salas Públicas e Privadas**: Diferentes níveis de acesso
@@ -74,10 +119,54 @@ interface ChatMessage {
 ## ⚙️ Funcionalidades Detalhadas
 
 ### 1. Radar de Atividade
-- **Visualização em Tempo Real**: Mostra atividade de todas as salas
-- **Indicadores Visuais**: Salas "quentes" (>50 mensagens/hora) e "novas" (<24h)
-- **Filtragem**: Por tipo de sala e nível de atividade
-- **Navegação Rápida**: Acesso direto às salas mais ativas
+
+#### Visualização em Tempo Real
+O Radar mostra todas as salas disponíveis com indicadores visuais de atividade:
+
+**Indicadores Implementados:**
+
+🌟 **Sala "Nova" (Badge Verde)**
+```typescript
+const isRoomNew = (createdAt: string): boolean => {
+  if (!createdAt) return false;
+  
+  const createdDate = new Date(createdAt);
+  const now = new Date();
+  const hoursSinceCreation = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
+  
+  // Considera nova se foi criada há menos de 24 horas
+  return hoursSinceCreation < 24;
+};
+```
+- Ícone: Estrela verde (⭐)
+- Critério: Sala criada há menos de 24 horas
+- Propósito: Destacar salas recém-criadas para atrair participantes iniciais
+
+🔥 **Sala "Hot/Quente" (Badge Vermelho)**
+```typescript
+const isRoomHot = (roomId: string, messageCountsMap: Map<string, number>): boolean => {
+  if (!roomId || !messageCountsMap) return false;
+  
+  const messageCount = messageCountsMap.get(roomId) || 0;
+  
+  // Sala é hot se tem mais de 50 mensagens na última hora (já filtradas)
+  return messageCount > 50;
+};
+```
+- Ícone: Fogo (🔥)
+- Critério: Mais de 50 mensagens na última hora
+- Propósito: Indicar salas com alta atividade em tempo real
+- **Importante**: Contagem exclui mensagens deletadas pelo usuário atual
+
+#### Funcionalidades do Radar
+- **Atualização em Tempo Real**: Indicadores atualizam automaticamente
+- **Contadores Dinâmicos**: 
+  - Número de participantes online
+  - Mensagens na última hora
+  - Total de mensagens não lidas
+- **Filtragem**: Por tipo de sala (pública/privada) e nível de atividade
+- **Navegação Rápida**: Clique para entrar diretamente na sala
+- **Geolocalização**: Integração com sistema de presença geográfica (opcional)
 
 ### 2. Gestão de Salas
 - **Criação**: Usuários Premium podem criar salas
@@ -95,6 +184,34 @@ interface ChatMessage {
 - **Apenas Premium**: Funcionalidade exclusiva
 - **Verificação Contínua**: Validação de plano em tempo real
 - **Degradação Graceful**: Acesso limitado para usuários que fazem downgrade
+
+### 5. Sistema de Geolocalização (Radar)
+
+#### Integração com GeolocationPresenceContext
+```typescript
+import { GeolocationPresenceProvider, useGeolocationPresence } from '@/src/contexts/GeolocationPresenceContext';
+```
+
+**Funcionalidades:**
+- **Descoberta por Proximidade**: Encontrar usuários próximos geograficamente
+- **Presença em Tempo Real**: Supabase Realtime Presence
+- **Modal de Permissão**: `LocationPermissionModal` para solicitar acesso à localização
+- **Privacidade**: Nenhum dado de localização armazenado no banco de dados
+- **Opcional**: Usuário pode optar por não compartilhar localização
+
+**Componentes:**
+- `RadarView.tsx`: Visualização do radar de proximidade
+- `LocationPermissionModal.tsx`: Modal de solicitação de permissão
+- `useGeolocation.ts`: Hook para captura de GPS
+- `GeolocationPresenceContext.tsx`: Contexto de presença em tempo real
+
+**Fluxo:**
+1. Usuário acessa Chat
+2. Sistema solicita permissão de localização (se não concedida)
+3. Usuário aceita ou recusa
+4. Se aceito: localização compartilhada via Realtime Presence
+5. Radar mostra usuários próximos em salas públicas
+6. Usuário pode iniciar chat com pessoas próximas
 
 ---
 

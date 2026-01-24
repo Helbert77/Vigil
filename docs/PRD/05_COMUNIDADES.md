@@ -5,8 +5,9 @@
 | Campo | Valor |
 |-------|-------|
 | **Nome** | Sistema de Comunidades Vigil |
-| **Versão** | 1.0.0 |
+| **Versão** | 1.1.0 |
 | **Data** | 12/12/2024 |
+| **Última Atualização** | 24/01/2026 |
 | **Responsável** | Equipe de Desenvolvimento Vigil |
 | **Tipo** | PRD - Funcionalidade Principal |
 
@@ -554,39 +555,80 @@ CREATE TRIGGER update_community_member_count_trigger
 ```
 
 ### Controle de Acesso
+
+#### Verificação em App.tsx
 ```typescript
-// communityAccess.ts
-export const canAccessCommunity = (
-  userPlan: string, 
-  requiredPlan: string
-): boolean => {
-  if (!requiredPlan || requiredPlan === 'all') return true;
-  
+// App.tsx - Controle de acesso a comunidades
+const canAccessCommunity = (community: Community): boolean => {
+  // ADMIN TEM ACESSO IRRESTRITO A TUDO
+  if (appUser?.role === 'admin') {
+    return true;
+  }
+
+  if (!community.requiredPlan || community.requiredPlan === 'all') {
+    return true;
+  }
+
   const planHierarchy: Record<string, number> = {
     free: 0,
     basic: 1,
     pro: 2,
     premium: 3
   };
-  
-  const userPlanLevel = planHierarchy[userPlan] || 0;
-  
-  switch (requiredPlan) {
-    case 'basic+': return userPlanLevel >= planHierarchy.basic;
-    case 'pro+': return userPlanLevel >= planHierarchy.pro;
-    case 'premium': return userPlanLevel >= planHierarchy.premium;
+
+  const userLevel = planHierarchy[appUser?.plan || 'free'] || 0;
+
+  switch (community.requiredPlan) {
+    case 'basic+': return userLevel >= planHierarchy.basic;
+    case 'pro+': return userLevel >= planHierarchy.pro;
+    case 'premium': return userLevel >= planHierarchy.premium;
     default: return true;
   }
 };
+```
 
-export const getAccessDeniedMessage = (requiredPlan: string): string => {
-  const messages = {
-    'basic+': 'Esta comunidade requer plano Basic ou superior',
-    'pro+': 'Esta comunidade requer plano Pro ou superior',
-    'premium': 'Esta comunidade é exclusiva para membros Premium'
+#### Verificação em CommunityDetail.tsx
+```typescript
+// CommunityDetail.tsx - Controle de acesso a posts
+const hasAccess = useMemo(() => {
+  // ADMIN TEM ACESSO IRRESTRITO
+  if (user.role === 'admin') {
+    return true;
+  }
+
+  if (!community?.requiredPlan || community.requiredPlan === 'all') {
+    return true;
+  }
+
+  const planHierarchy: Record<string, number> = {
+    free: 0,
+    basic: 1,
+    pro: 2,
+    premium: 3
   };
-  return messages[requiredPlan] || 'Acesso negado';
-};
+
+  const userLevel = planHierarchy[user.plan || 'free'] || 0;
+
+  switch (community.requiredPlan) {
+    case 'basic+': return userLevel >= planHierarchy.basic;
+    case 'pro+': return userLevel >= planHierarchy.pro;
+    case 'premium': return userLevel >= planHierarchy.premium;
+    default: return true;
+  }
+}, [user.plan, user.role, community?.requiredPlan]);
+```
+
+#### Hierarquia de Roles
+```typescript
+interface User {
+  role: 'user' | 'moderator' | 'admin';
+  plan: 'free' | 'basic' | 'pro' | 'premium';
+}
+
+// Ordem de prioridade
+// 1. Admin: Acesso TOTAL e IRRESTRITO
+// 2. Moderator: Acesso baseado em plano + poderes de moderação
+// 3. User: Acesso baseado apenas em plano
 ```
 
 ---
@@ -595,14 +637,19 @@ export const getAccessDeniedMessage = (requiredPlan: string): string => {
 
 ### Acesso por Plano
 
-| Funcionalidade | Free | Basic | Pro | Premium |
-|----------------|------|-------|-----|---------|
-| **Ver comunidades públicas** | ✅ | ✅ | ✅ | ✅ |
-| **Participar comunidades** | ❌ | ❌ | ✅ | ✅ |
-| **Postar em comunidades** | ❌ | ❌ | ✅ | ✅ |
-| **Criar comunidades** | ❌ | ❌ | ❌ | ✅ |
-| **Moderar comunidades** | ❌ | ❌ | ❌ | ✅ |
-| **Comunidades Basic+** | ❌ | ✅ | ✅ | ✅ |
+| Funcionalidade | Free | Basic | Pro | Premium | Admin |
+|----------------|------|-------|-----|---------|-------|
+| **Ver comunidades públicas** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Participar comunidades** | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Postar em comunidades** | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Criar comunidades** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Moderar comunidades** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Comunidades Basic+** | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Comunidades Pro+** | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Comunidades Premium** | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **ACESSO IRRESTRITO** | ❌ | ❌ | ❌ | ❌ | ✅ |
+
+**Nota Importante:** Administradores têm acesso irrestrito a TODAS as comunidades, independentemente do plano requerido. Isso permite supervisão, moderação e gestão completa da plataforma.
 | **Comunidades Pro+** | ❌ | ❌ | ✅ | ✅ |
 | **Comunidades Premium** | ❌ | ❌ | ❌ | ✅ |
 

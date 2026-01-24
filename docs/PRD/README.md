@@ -2,7 +2,7 @@
 
 ## 🎯 Resumo Executivo
 
-Esta biblioteca contém **19 documentos PRD abrangentes** que documentam completamente o sistema Vigil - uma rede social inovadora focada em teorias, investigações e conhecimento especializado. A documentação foi criada para servir tanto desenvolvedores quanto usuários finais, fornecendo uma fonte única da verdade sobre todas as funcionalidades da plataforma.
+Esta biblioteca contém **22 documentos PRD abrangentes** que documentam completamente o sistema Vigil - uma rede social inovadora focada em teorias, investigações e conhecimento especializado. A documentação foi criada para servir tanto desenvolvedores quanto usuários finais, fornecendo uma fonte única da verdade sobre todas as funcionalidades da plataforma.
 
 ---
 
@@ -35,10 +35,15 @@ Esta biblioteca contém **19 documentos PRD abrangentes** que documentam complet
 16. **[15 - Moderação](15_MODERACAO.md)** - Fila de moderação, appeals, ações administrativas
 17. **[16 - Administração](16_ADMINISTRACAO.md)** - Dashboard admin, métricas, aprovação de ads
 
-### ⚙️ **Configurações e Componentes** (2 documentos)
+### ⚙️ **Configurações e Componentes** (3 documentos)
 18. **[17 - Planos Premium](17_PLANOS_PREMIUM.md)** - Assinaturas, Stripe, benefícios por plano
 19. **[18 - Configurações](18_CONFIGURACOES.md)** - Preferências, privacidade, bloqueios
 20. **[19 - Componentes Comuns](19_COMPONENTES_COMUNS.md)** - Sistema de design e componentes reutilizáveis
+
+### 🎧 **Suporte e Recursos Especiais** (3 documentos)
+21. **[20 - Sistema de Suporte](20_SUPORTE.md)** - Tickets, categorização, emails, prioridades
+22. **[21 - Páginas Legais](21_PAGINAS_LEGAIS.md)** - Privacidade, Termos, Cookies, Acessibilidade
+23. **[22 - Páginas Adicionais](22_PAGINAS_ADICIONAIS.md)** - Salvos, Trending, Tópicos, Splash
 
 ---
 

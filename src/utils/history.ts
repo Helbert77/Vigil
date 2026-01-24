@@ -21,6 +21,7 @@ export type Page =
   | 'CommunityDetail'
   | 'TopicDetail'
   | 'About'
+  | 'Help'
   | 'TermsOfService'
   | 'PrivacyPolicy'
   | 'CookiePolicy'
@@ -93,6 +94,8 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
       return state.activeTag ? `/topic/${encodeURIComponent(state.activeTag)}` : '/topic';
     case 'About':
       return '/about';
+    case 'Help':
+      return '/help';
     case 'TermsOfService':
       return '/terms';
     case 'PrivacyPolicy':
@@ -182,6 +185,7 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/advertising/select-plan': 'SelectAdPlan',
     '/advertising/payment-success': 'PaymentSuccess',
     '/about': 'About',
+    '/help': 'Help',
     '/terms': 'TermsOfService',
     '/privacy': 'PrivacyPolicy',
     '/cookies': 'CookiePolicy',

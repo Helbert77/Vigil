@@ -30,6 +30,7 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import CookiePolicy from '@/pages/CookiePolicy';
 import Disclaimer from '@/pages/Disclaimer';
 import Accessibility from '@/pages/Accessibility';
+import Help from '@/pages/Help';
 import PremiumPage from '@/src/pages/PremiumPage';
 import ChatPage from '@/src/pages/ChatPage';
 import ToastContainer from '@/components/common/ToastContainer';
@@ -1061,6 +1062,8 @@ const App: React.FC = () => {
         /> : null;
       case 'About':
         return <About />;
+      case 'Help':
+        return <Help onNavigateBack={() => handleNavigation('Home')} searchQuery={searchQuery} />;
       case 'TermsOfService':
         return <TermsOfService />;
       case 'PrivacyPolicy':
@@ -1249,6 +1252,7 @@ const App: React.FC = () => {
                 onNavigateTerms={() => handleNavigation('TermsOfService')}
                 onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')}
                 onNavigateCookies={() => handleNavigation('CookiePolicy')}
+                onNavigateHelp={() => handleNavigation('Help')}
                 onNavigateDisclaimer={() => handleNavigation('Disclaimer')}
                 onNavigateAccessibility={() => handleNavigation('Accessibility')}
                 onOpenFollowModal={handleOpenFollowModal}

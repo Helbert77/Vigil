@@ -5,8 +5,9 @@
 | Campo | Valor |
 |-------|-------|
 | **Nome** | Sistema de Posts Vigil |
-| **Versão** | 1.0.0 |
+| **Versão** | 1.1.0 |
 | **Data** | 12/12/2024 |
+| **Última Atualização** | 24/01/2026 |
 | **Responsável** | Equipe de Desenvolvimento Vigil |
 | **Tipo** | PRD - Funcionalidade Principal |
 
@@ -263,12 +264,59 @@ const CreatePost: React.FC<CreatePostProps> = ({
 - **Enquete**: Múltiplas opções com duração configurável
 - **Quadro de Evidências**: Links, imagens, vídeos e documentos
 
+#### Botões de Cancelamento
+Cada tipo de mídia especial possui botão de cancelamento:
+
+**Cancelar Enquete:**
+```tsx
+<button 
+  onClick={handleRemoveMedia}
+  className="text-sm font-semibold text-gray-700 hover:text-red-600"
+>
+  Cancelar Enquete
+</button>
+```
+- Remove todas as opções da enquete
+- Reseta duração para padrão
+- Volta ao estado de seleção de mídia
+
+**Cancelar Quadro de Evidências:**
+```tsx
+<button 
+  onClick={handleRemoveMedia}
+  className="text-sm font-semibold text-gray-700 hover:text-red-600"
+>
+  Cancelar Quadro de Evidências
+</button>
+```
+- Remove todos os itens de evidência
+- Limpa uploads pendentes
+- Volta ao estado de seleção de mídia
+
+**Função handleRemoveMedia:**
+```typescript
+const handleRemoveMedia = () => {
+  setMediaType(null);
+  setImageUrl(undefined);
+  setVideoUrl(undefined);
+  setAudioUrl(undefined);
+  setIsSensitive(false);
+  setPollOptions(['', '']);
+  setPollDays(1);
+  setPollHours(0);
+  setPollMinutes(0);
+  setEvidenceItems([]);
+  if (mediaInputRef.current) mediaInputRef.current.value = '';
+};
+```
+
 #### Validações
 - **Limite de caracteres**: Baseado no plano do usuário
 - **Tamanho de arquivo**: Máximo 10MB para imagens, 50MB para vídeos
 - **Formatos suportados**: JPG, PNG, GIF, MP4, MP3, WAV
 - **Enquetes**: Mínimo 2 opções, máximo 4
 - **Duração da enquete**: 5 minutos a 7 dias
+- **Evidências**: Mínimo 1 item, máximo 10 itens
 
 ### 2. Exibição de Posts (PostCard.tsx)
 
