@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../icons/Icon';
 import { Comment, User } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const TrashIcon = () => <Icon className="h-5 w-5 text-red-500"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></Icon>;
@@ -14,6 +15,7 @@ interface CommentActionsMenuProps {
 }
 
 const CommentActionsMenu: React.FC<CommentActionsMenuProps> = ({ comment, currentUser, onDelete, onEdit }) => {
+  const { t } = useTranslation(['posts', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isCurrentUserComment = comment.user.id === currentUser.id;
@@ -61,7 +63,7 @@ const CommentActionsMenu: React.FC<CommentActionsMenuProps> = ({ comment, curren
             className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
           >
             <TrashIcon />
-            <span>Apagar Comentário</span>
+            <span>{t('common:delete')} {t('posts:comment')}</span>
           </button>
         </div>
       )}

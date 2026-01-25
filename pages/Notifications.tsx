@@ -8,6 +8,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import RejectedAdModal from '@/components/advertising/RejectedAdModal';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const HeartIcon = () => <Icon className="h-6 w-6 text-red-500"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></Icon>;
 const MessageCircleIcon = () => <Icon className="h-6 w-6 text-blue-500"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></Icon>;
@@ -16,73 +17,70 @@ const AtSignIcon = () => <Icon className="h-6 w-6 text-purple-500"><circle cx="1
 const MailIcon = () => <Icon className="h-6 w-6 text-cyan-500"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></Icon>;
 const UsersIcon = () => <Icon className="h-6 w-6 text-indigo-500"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
 
-const getNotificationText = (notification: Notification): string => {
+const getNotificationText = (notification: Notification, t: any): string => {
     switch (notification.type) {
         case 'like':
-            return 'curtiu sua postagem.';
+            return t('notifications:like');
         case 'comment':
-            return 'comentou na sua postagem.';
+            return t('notifications:comment');
         case 'follow':
-            return 'começou a seguir você.';
+            return t('notifications:follow');
         case 'comment_like':
-            return 'curtiu seu comentário.';
+            return t('notifications:commentLike');
         case 'mention':
-            return 'mencionou você em uma postagem.';
+            return t('notifications:mention');
         case 'message':
-            return 'enviou uma mensagem para você.';
+            return t('notifications:message');
         case 'ad_approval_pending':
-            return 'há um novo anúncio aguardando aprovação.';
+            return t('notifications:adApprovalPending');
         case 'ad_approved':
-            return 'seu anúncio foi aprovado e está ativo!';
+            return t('notifications:adApproved');
         case 'ad_rejected':
-            // Try to get reason from metadata, fallback to 'não especificado'
-            // Check both snake_case and camelCase just in case
-            const reason = notification.metadata?.rejection_reason || notification.metadata?.reason || 'não especificado';
-            return `seu anúncio foi rejeitado. Motivo: ${reason}`;
+            const reason = notification.metadata?.rejection_reason || notification.metadata?.reason || t('notifications:notSpecified');
+            return t('notifications:adRejected', { reason });
         case 'chat_room_invitation':
-            const roomName = notification.metadata?.room_name || 'uma sala';
-            return `te convidou para a sala "${roomName}".`;
+            const roomName = notification.metadata?.room_name || t('notifications:aRoom');
+            return t('notifications:chatRoomInvitation', { roomName });
         case 'room_access_request':
-            const requestRoomName = notification.metadata?.room_name || 'uma sala';
-            return `solicitou acesso à sala "${requestRoomName}".`;
+            const requestRoomName = notification.metadata?.room_name || t('notifications:aRoom');
+            return t('notifications:roomAccessRequest', { roomName: requestRoomName });
         case 'room_access_approved':
-            const approvedRoomName = notification.metadata?.room_name || 'uma sala';
-            return `aprovou seu pedido de acesso à sala "${approvedRoomName}".`;
+            const approvedRoomName = notification.metadata?.room_name || t('notifications:aRoom');
+            return t('notifications:roomAccessApproved', { roomName: approvedRoomName });
         case 'room_access_rejected':
-            const rejectedRoomName = notification.metadata?.room_name || 'uma sala';
-            return `rejeitou seu pedido de acesso à sala "${rejectedRoomName}".`;
+            const rejectedRoomName = notification.metadata?.room_name || t('notifications:aRoom');
+            return t('notifications:roomAccessRejected', { roomName: rejectedRoomName });
         case 'timeline_approved':
-            return 'aprovou seu evento da timeline!';
+            return t('notifications:timelineApproved');
         case 'timeline_rejected':
-            return 'rejeitou seu evento da timeline.';
+            return t('notifications:timelineRejected');
         case 'timeline_moderation_pending':
-            return 'submeteu um novo evento para moderação na timeline.';
+            return t('notifications:timelineModerationPending');
         case 'trial_expired':
-            // Usar mensagem do metadata se disponível, senão usar padrão
-            return notification.metadata?.message || 'seu período de teste expirou. Assine um plano para continuar com acesso premium.';
+            return notification.metadata?.message || t('notifications:trialExpired');
         case 'trial_expiring':
-            // Usar mensagem do metadata se disponível, senão usar padrão
             const daysRemaining = notification.metadata?.days_remaining || 3;
-            return notification.metadata?.message || `seu período de teste expira em ${daysRemaining} dia${daysRemaining > 1 ? 's' : ''}! Assine agora para manter o acesso premium.`;
+            const plural = daysRemaining > 1 ? 's' : '';
+            return notification.metadata?.message || t('notifications:trialExpiring', { days: daysRemaining, plural });
         case 'trial_coupon_offer':
             const couponCode = notification.metadata?.coupon_code || '';
             const trialDays = notification.metadata?.trial_days || 7;
             const couponPlan = notification.metadata?.plan || 'premium';
-            return `você ganhou ${trialDays} dias grátis do plano ${couponPlan.toUpperCase()}! Use o cupom: ${couponCode}`;
+            return t('notifications:trialCouponOffer', { days: trialDays, plan: couponPlan.toUpperCase(), code: couponCode });
         case 'subscription_activated':
-            return notification.metadata?.message || 'sua assinatura foi ativada com sucesso!';
+            return notification.metadata?.message || t('notifications:subscriptionActivated');
         case 'subscription_trial_started':
-            return notification.metadata?.message || 'seu período de teste foi ativado!';
+            return notification.metadata?.message || t('notifications:subscriptionTrialStarted');
         case 'subscription_canceled':
-            return notification.metadata?.message || 'sua assinatura foi cancelada.';
+            return notification.metadata?.message || t('notifications:subscriptionCanceled');
         case 'subscription_upgraded':
-            return notification.metadata?.message || 'sua assinatura foi atualizada!';
+            return notification.metadata?.message || t('notifications:subscriptionUpgraded');
         case 'subscription_downgraded':
-            return notification.metadata?.message || 'sua assinatura foi alterada.';
+            return notification.metadata?.message || t('notifications:subscriptionDowngraded');
         case 'subscription_payment_failed':
-            return notification.metadata?.message || 'falha no pagamento da sua assinatura.';
+            return notification.metadata?.message || t('notifications:subscriptionPaymentFailed');
         case 'subscription_renewed':
-            return notification.metadata?.message || 'sua assinatura foi renovada!';
+            return notification.metadata?.message || t('notifications:subscriptionRenewed');
         default:
             return '';
     }
@@ -130,6 +128,7 @@ interface NotificationItemProps {
     onJoinChatRoom?: (roomId: string) => void;
     onApproveRoomAccess?: (requestId: string) => void;
     onRejectRoomAccess?: (requestId: string) => void;
+    t: any;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
@@ -144,7 +143,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     onAdRejectedClick,
     onJoinChatRoom,
     onApproveRoomAccess,
-    onRejectRoomAccess
+    onRejectRoomAccess,
+    t
 }) => {
     const handleClick = () => {
         if (notification.type === 'ad_approval_pending' && onNavigateToAdApproval) {
@@ -197,7 +197,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                 )}
                                 {notification.actor.role && ['admin', 'moderator'].includes(notification.actor.role) && <ModeratorBadgeIcon className="h-4 w-4 flex-shrink-0" />}
                             </div>
-                            {' '}{getNotificationText(notification)}
+                            {' '}{getNotificationText(notification, t)}
                         </div>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 pl-16">{new Date(notification.created_at).toLocaleString()}</p>
@@ -213,7 +213,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                             : 'bg-primary hover:bg-gray-600 text-white'
                             }`}
                     >
-                        {isFollowing ? 'Seguindo' : 'Seguir de volta'}
+                        {isFollowing ? t('notifications:following') : t('notifications:followBack')}
                     </button>
                 )}
                 {(() => {
@@ -239,7 +239,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                 }}
                                 className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-primary hover:bg-primary/90 text-white"
                             >
-                                Entrar na Sala
+                                {t('notifications:joinRoom')}
                             </button>
                         );
                     }
@@ -254,7 +254,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                 }}
                                 className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-primary hover:bg-primary/90 text-white"
                             >
-                                Entrar na Sala
+                                {t('messages:enterRoom')}
                             </button>
                         );
                     }
@@ -271,7 +271,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                         }}
                                         className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-green-500 hover:bg-green-600 text-white"
                                     >
-                                        Aceitar
+                                        {t('common:accept')}
                                     </button>
                                     <button
                                         onClick={(e) => {
@@ -280,7 +280,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                                         }}
                                         className="font-bold py-1 px-4 rounded-full text-sm transition-colors duration-200 flex-shrink-0 bg-red-500 hover:bg-red-600 text-white"
                                     >
-                                        Negar
+                                        {t('notifications:deny')}
                                     </button>
                                 </div>
                             );
@@ -311,17 +311,18 @@ interface NotificationsProps {
 
 const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost, onFollowToggle, followedUserIds, currentUser, onViewProfile, onOpenFollowModal, onClearAll, onNavigateToAdApproval, onJoinChatRoom, onApproveRoomAccess, onRejectRoomAccess }) => {
     const [rejectedAdId, setRejectedAdId] = useState<string | null>(null);
+    const { t } = useTranslation(['notifications', 'common']);
 
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+                <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">{t('notifications:title')}</h1>
                 {notifications.length > 0 && (
                     <button
                         onClick={onClearAll}
                         className="text-sm font-semibold text-primary hover:underline"
                     >
-                        Limpar tudo
+                        {t('notifications:clearAll')}
                     </button>
                 )}
             </div>
@@ -341,6 +342,7 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost
                             onJoinChatRoom={onJoinChatRoom}
                             onApproveRoomAccess={onApproveRoomAccess}
                             onRejectRoomAccess={onRejectRoomAccess}
+                            t={t}
                             onAdRejectedClick={async (adId) => {
                                 // Verificar status do anúncio antes de abrir o modal
                                 try {
@@ -365,7 +367,7 @@ const Notifications: React.FC<NotificationsProps> = ({ notifications, onViewPost
                         />
                     ))
                 ) : (
-                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">You have no new notifications.</p>
+                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">{t('notifications:noNotifications')}</p>
                 )}
             </Card>
 

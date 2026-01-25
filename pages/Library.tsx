@@ -7,6 +7,7 @@ import LibraryItemModal from '../components/library/LibraryItemModal';
 import AddLibraryItemModal from '../components/library/AddLibraryItemModal';
 import Dropdown from '../components/common/Dropdown';
 import { canAddLibraryItems } from '@/src/utils/libraryAccess';
+import { useTranslation } from 'react-i18next';
 
 const SearchIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 const GridIcon = () => <Icon><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></Icon>;
@@ -43,6 +44,7 @@ const Library: React.FC<LibraryProps> = ({
   onIncrementView,
   onIncrementDownload
 }) => {
+  const { t } = useTranslation(['library', 'common']);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortBy, setSortBy] = useState<SortBy>('date');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
@@ -103,20 +105,20 @@ const Library: React.FC<LibraryProps> = ({
   };
 
   const categoryLabels = {
-    all: 'Todos',
-    ebook: 'Ebooks',
-    article: 'Artigos',
-    magazine: 'Revistas',
-    document: 'Documentos',
-    link: 'Links'
+    all: t('library:all'),
+    ebook: t('library:categories.ebook'),
+    article: t('library:categories.article'),
+    magazine: t('library:categories.magazine'),
+    document: t('library:categories.document'),
+    link: t('library:categories.link')
   };
 
   const sortLabels = {
-    date: 'Data',
-    title: 'Título',
-    author: 'Autor',
-    views: 'Visualizações',
-    downloads: 'Downloads'
+    date: t('library:date'),
+    title: t('library:sortTitle'),
+    author: t('library:author'),
+    views: t('library:views'),
+    downloads: t('library:downloads')
   };
 
   const getCategoryCount = (category: CategoryFilter) => {
@@ -143,17 +145,17 @@ const Library: React.FC<LibraryProps> = ({
         }}
       >
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Biblioteca</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">{t('library:title')}</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
-            Explore o acervo proibido de conhecimento que desafia a narrativa oficial. Ebooks, artigos, documentos e links que revelam as verdades que tentaram esconder de você.
+            {t('library:pageDescription')}
           </p>
           <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm md:text-base">
-            Contribua para o crescimento do nosso acervo.{' '}
+            {t('library:contributeText')}{' '}
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none rounded px-1 focus-subtle font-medium"
             >
-              Contribua
+              {t('library:contribute')}
             </button>
           </p>
         </div>
@@ -168,7 +170,7 @@ const Library: React.FC<LibraryProps> = ({
           </div>
           <input
             type="text"
-            placeholder="Buscar por título, autor, descrição ou tags..."
+            placeholder={t('library:search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
@@ -179,7 +181,7 @@ const Library: React.FC<LibraryProps> = ({
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Filtrar por categoria:
+              {t('library:filterByCategory')}
             </label>
             <Dropdown
               options={(['all', 'ebook', 'article', 'magazine', 'document', 'link'] as CategoryFilter[]).map((category) => ({
@@ -195,7 +197,7 @@ const Library: React.FC<LibraryProps> = ({
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Ordenar por:
+              {t('library:sortBy')}
             </label>
             <Dropdown
               options={(['date', 'title', 'author', 'views', 'downloads'] as SortBy[]).map((sort) => ({
@@ -211,7 +213,7 @@ const Library: React.FC<LibraryProps> = ({
           {/* View Controls */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Modo de exibição:
+              {t('library:viewMode')}
             </label>
             <div className="flex items-center gap-2">
               <button
@@ -221,8 +223,8 @@ const Library: React.FC<LibraryProps> = ({
                     ? 'bg-primary text-white'
                     : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
-                title="Lista"
-                aria-label="Modo de exibição: Lista"
+                title={t('library:viewModeList')}
+                aria-label={t('library:viewModeList')}
               >
                 <ListIcon />
               </button>
@@ -233,8 +235,8 @@ const Library: React.FC<LibraryProps> = ({
                     ? 'bg-primary text-white'
                     : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
-                title="Grade Pequena"
-                aria-label="Modo de exibição: Grade Pequena"
+                title={t('library:viewModeGridSmall')}
+                aria-label={t('library:viewModeGridSmall')}
               >
                 <GridSmallIcon />
               </button>
@@ -245,8 +247,8 @@ const Library: React.FC<LibraryProps> = ({
                     ? 'bg-primary text-white'
                     : 'bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
-                title="Grade Grande"
-                aria-label="Modo de exibição: Grade Grande"
+                title={t('library:viewModeGridLarge')}
+                aria-label={t('library:viewModeGridLarge')}
               >
                 <GridIcon />
               </button>
@@ -277,8 +279,8 @@ const Library: React.FC<LibraryProps> = ({
         <Card className="p-12 text-center">
           <p className="text-gray-500 dark:text-gray-400 text-lg">
             {searchQuery || categoryFilter !== 'all'
-              ? 'Nenhum item encontrado com os filtros aplicados.'
-              : 'Nenhum item na biblioteca ainda.'}
+              ? t('library:noItemsFound')
+              : t('library:noItemsInLibrary')}
           </p>
         </Card>
       )}

@@ -6,6 +6,8 @@ import { useSession } from '@/contexts/SessionContext';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/src/i18n/config';
 
 const SendIcon = () => <Icon className="h-6 w-6"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></Icon>;
 const SearchIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
@@ -23,6 +25,7 @@ interface MessagesProps {
 
 const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, isLoading, followedUsers, onDeleteConversation }) => {
   const { user: currentUser, loading: sessionLoading } = useSession();
+  const { t } = useTranslation(['messages', 'common']);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -189,13 +192,14 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
       }
       const now = new Date();
       const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      const locale = i18n.language === 'pt' ? 'pt-BR' : 'en-US';
 
       if (diffInHours < 24) {
-        return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
       } else if (diffInHours < 48) {
-        return 'Ontem';
+        return t('messages:yesterday');
       } else {
-        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
       }
     } catch (e) {
       return ''; // Return empty string on error
@@ -224,7 +228,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-500 dark:text-gray-400">
-            {sessionLoading ? 'Carregando sessão...' : 'Carregando conversas...'}
+            {sessionLoading ? t('messages:loadingSession') : t('messages:loadingConversations')}
           </p>
         </div>
       </div>
@@ -235,9 +239,9 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
     return (
       <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
         <div className="text-center">
-          <p className="text-red-500 mb-4">Erro: Usuário não identificado</p>
+          <p className="text-red-500 mb-4">{t('common:error')}: {t('common:userNotIdentified')}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Por favor, faça login novamente
+            {t('common:pleaseLoginAgain')}
           </p>
         </div>
       </div>
@@ -253,7 +257,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
   return (
     <>
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-white">Mensagens</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-gray-900 dark:text-white">{t('messages:title')}</h1>
         
         <div className="bg-light-card dark:bg-dark-card rounded-xl overflow-hidden border border-light-border dark:border-dark-border shadow-lg">
           {/* 
@@ -274,7 +278,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                 <div className="relative mb-3">
                   <input
                     type="text"
-                    placeholder="Buscar conversas..."
+                    placeholder={t('messages:searchConversations')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-full py-2 md:py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
@@ -288,7 +292,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                   className="w-full bg-primary hover:bg-primary/90 text-white py-2 md:py-2 px-3 md:px-4 rounded-full text-sm font-medium flex items-center justify-center gap-2 transition-colors"
                 >
                   <PlusIcon />
-                  <span className="truncate">Nova Conversa</span>
+                  <span className="truncate">{t('messages:newConversation')}</span>
                 </button>
               </div>
 
@@ -311,7 +315,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                         {newChatTargetUser.name}
                       </h3>
                       <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
-                        Nova conversa
+                        {t('messages:newConversationPreview')}
                       </p>
                     </div>
                   </div>
@@ -322,13 +326,13 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                   <div className="p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
                     {searchQuery.trim() ? (
                       <>
-                        <p className="mb-2 text-sm md:text-base">Nenhuma conversa encontrada</p>
-                        <p className="text-xs md:text-sm">Tente outro termo de busca</p>
+                        <p className="mb-2 text-sm md:text-base">{t('messages:noConversationsFound')}</p>
+                        <p className="text-xs md:text-sm">{t('messages:tryAnotherSearch')}</p>
                       </>
                     ) : (
                       <>
-                        <p className="mb-2 text-sm md:text-base">Nenhuma conversa ainda</p>
-                        <p className="text-xs md:text-sm">Inicie uma nova conversa!</p>
+                        <p className="mb-2 text-sm md:text-base">{t('messages:noConversations')}</p>
+                        <p className="text-xs md:text-sm">{t('messages:noConversationsDesc')}</p>
                       </>
                     )}
                   </div>
@@ -378,7 +382,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                             )}
                           </div>
                           <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {lastMessage ? lastMessage.text : 'Nenhuma mensagem ainda'}
+                            {lastMessage ? lastMessage.text : t('messages:noMessagesYet')}
                           </p>
                         </div>
                       </div>
@@ -444,7 +448,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
                             >
                               <TrashIcon />
-                              <span>Apagar Conversa</span>
+                              <span>{t('messages:deleteConversation')}</span>
                             </button>
                           </div>
                         )}
@@ -456,11 +460,11 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                   <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-gray-50 dark:bg-gray-900/30">
                     {newChatTargetUser ? (
                       <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                        <p>Envie a primeira mensagem para {newChatTargetUser.name}!</p>
+                        <p>{t('messages:sendFirstMessage', { name: newChatTargetUser.name })}</p>
                       </div>
                     ) : selectedConversation && selectedConversation.messages.length === 0 ? (
                       <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                        <p>Nenhuma mensagem ainda. Envie a primeira!</p>
+                        <p>{t('messages:noMessagesYet')}</p>
                       </div>
                     ) : (
                       selectedConversation?.messages.map((message) => {
@@ -486,7 +490,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                                   isSentByMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                                 }`}
                               >
-                                {isTemp ? 'Enviando...' : formatTimestamp(message.timestamp)}
+                                {isTemp ? t('messages:sending') : formatTimestamp(message.timestamp)}
                               </p>
                             </div>
                           </div>
@@ -501,7 +505,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                     <form onSubmit={handleSubmit} className="flex items-center gap-2 md:gap-3">
                       <input
                         type="text"
-                        placeholder="Digite uma mensagem..."
+                        placeholder={t('messages:typeMessage')}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         disabled={isSending}
@@ -525,10 +529,10 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
                 <div className="flex items-center justify-center h-full text-center p-6 md:p-8">
                   <div>
                     <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      Selecione uma conversa
+                      {t('messages:selectConversation')}
                     </h2>
                     <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
-                      Escolha uma conversa existente ou inicie uma nova
+                      {t('messages:selectConversationDesc')}
                     </p>
                   </div>
                 </div>
@@ -553,7 +557,7 @@ const Messages: React.FC<MessagesProps> = ({ conversations, handleSendMessage, i
               <div className="flex-1 overflow-y-auto p-3 md:p-4">
                 {followedUsers.length === 0 ? (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-6 md:py-8 text-sm md:text-base">
-                    Você não está seguindo ninguém ainda
+                    {t('messages:notFollowingAnyone')}
                   </p>
                 ) : (
                   <div className="space-y-2">

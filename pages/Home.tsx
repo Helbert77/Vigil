@@ -8,6 +8,7 @@ import { useAdsWithState, useAdTracking } from '../src/hooks/useAdsWithState';
 import { useAdInteractions } from '../src/hooks/useAdInteractions';
 import { injectAdsIntoPosts } from '../src/utils/adFrequency';
 import { isAd } from '../src/utils/typeGuards';
+import { useTranslation } from 'react-i18next';
 
 interface HomeProps {
   posts: Post[];
@@ -47,6 +48,7 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostIds, onToggleSave, user, communities, joinedCommunityIds, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll, allUsers, setCurrentPage, onAddComment, onUpdateComment, onDeleteComment, onToggleCommentLike, onViewAd }) => {
+  const { t } = useTranslation(['common', 'posts']);
   // Buscar anúncios ativos com estado local
   const {
     ads,
@@ -133,7 +135,7 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
         }) : (
           <Card>
             <p className="text-center text-gray-500 dark:text-gray-400 p-4">
-              No posts yet. Be the first to uncover the truth!
+              {t('posts:noPosts')}
             </p>
           </Card>
         )}

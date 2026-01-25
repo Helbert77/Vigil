@@ -9,6 +9,7 @@ import * as api from '@/src/services/api';
 import CancellationModal from "@/src/components/premium/CancellationModal";
 import CancellationConfirmationModal from "@/src/components/premium/CancellationConfirmationModal";
 import { getCurrentPrice, isPromotionActive, getTrialDays, calculateAnnualBonus, formatPrice } from '@/src/utils/pricingUtils';
+import { useTranslation } from 'react-i18next';
 
 interface PremiumPageProps {
   user: User;
@@ -16,6 +17,7 @@ interface PremiumPageProps {
 }
 
 export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPageProps) {
+  const { t } = useTranslation(['premium', 'common']);
   const { session, refreshUser } = useSession();
   const { addToast } = useToast();
   const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
@@ -56,7 +58,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       fetch('http://127.0.0.1:7242/ingest/3b6491f1-b93e-48e8-9da7-4667e4860f71',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'PremiumPage.tsx:54',message:'CHECKOUT SUCCESS - User returned from Stripe',data:{userId:session?.user?.id,planActivated,couponUsed,hasSession:!!session},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
 
-      addToast('Pagamento processado com sucesso! Aguarde a confirmação da assinatura.', 'success');
+      addToast(t('premium:paymentProcessed'), 'success');
       
       // ✅ Registrar uso do cupom se foi usado
       if (couponUsed && couponValidation?.valid && session?.user?.id && planActivated) {
@@ -86,7 +88,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       };
       refreshWithRetry();
     } else if (checkoutStatus === 'canceled') {
-      addToast('Checkout cancelado. Você pode tentar novamente quando quiser.', 'info');
+      addToast(t('premium:checkoutCanceled'), 'info');
       // Limpar parâmetro da URL
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -107,8 +109,8 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   // Calcular preços dinâmicos (promocionais e originais)
   const prices = {
     free: {
-      monthly: { value: 0, display: "Grátis", original: null, discount: 0 },
-      annually: { value: 0, display: "Grátis", original: null, discount: 0 },
+      monthly: { value: 0, display: t('premium:free'), original: null, discount: 0 },
+      annually: { value: 0, display: t('premium:free'), original: null, discount: 0 },
     },
     basic: {
       monthly: {
@@ -172,7 +174,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   // Handler para validar cupom
   const handleValidateCoupon = async () => {
     if (!session?.user || !couponCode.trim()) {
-      addToast('Digite um código de cupom', 'error');
+      addToast(t('premium:enterCouponCode'), 'error');
       return;
     }
 
@@ -190,13 +192,13 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       if (data.valid) {
         // Forçar seleção do plano do cupom
         setSelectedPlan(data.coupon.plan);
-        addToast(`✅ Cupom válido! ${data.coupon.trialDays} dias de teste do ${data.coupon.plan.toUpperCase()}`, 'success');
+        addToast(t('premium:couponValid', { days: data.coupon.trialDays, plan: data.coupon.plan.toUpperCase() }), 'success');
       } else {
-        addToast(data.error || 'Cupom inválido', 'error');
+        addToast(data.error || t('premium:couponInvalid'), 'error');
       }
     } catch (err) {
       console.error('Erro ao validar cupom:', err);
-      addToast('Erro ao validar cupom', 'error');
+      addToast(t('premium:errorValidatingCoupon'), 'error');
     } finally {
       setIsValidatingCoupon(false);
     }
@@ -221,7 +223,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
 
     // Validar se cupom aplicado corresponde ao plano selecionado
     if (couponValidation?.valid && couponValidation.coupon.plan !== selectedPlan) {
-      addToast(`Este cupom é válido apenas para o plano ${couponValidation.coupon.plan.toUpperCase()}. Por favor, selecione o plano correto.`, "error");
+      addToast(t('premium:couponOnlyForPlan', { plan: couponValidation.coupon.plan.toUpperCase() }), "error");
       return;
     }
 
@@ -417,7 +419,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                   Preços especiais para os primeiros membros da comunidade Vigil
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Economize até 25% nos planos mensais e garanta acesso vitalício aos preços promocionais!
+                  {t('premium:savePromo')}
                 </p>
                 <div className="mt-4 inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-4 py-2 rounded-full text-sm font-bold">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -436,7 +438,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         <div className="max-w-md mx-auto mb-8">
           <Card className="p-6">
             <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-              🎁 Tem um Cupom de Teste Grátis?
+              {t('premium:hasCoupon')}
             </h3>
             <div className="flex gap-2">
               <input
@@ -455,7 +457,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 disabled={isValidatingCoupon || !couponCode.trim()}
                 className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors"
               >
-                {isValidatingCoupon ? 'Validando...' : 'Aplicar'}
+                {isValidatingCoupon ? t('premium:validating') : t('premium:apply')}
               </button>
             </div>
             
@@ -470,20 +472,20 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                     <p className="font-bold">✅ Cupom Aplicado!</p>
                     <p className="text-sm">{couponValidation.coupon.description}</p>
                     <p className="text-sm font-semibold mt-1">
-                      {couponValidation.coupon.trialDays} dias grátis do plano {couponValidation.coupon.plan.toUpperCase()}
+                      {t('premium:freeDaysOfPlan', { days: couponValidation.coupon.trialDays, plan: couponValidation.coupon.plan.toUpperCase() })}
                     </p>
                     <p className="text-xs mt-2 opacity-80">
-                      ⚠️ Apenas o plano {couponValidation.coupon.plan.toUpperCase()} está disponível com este cupom
+                      {t('premium:onlyPlanAvailable', { plan: couponValidation.coupon.plan.toUpperCase() })}
                     </p>
                     <button
                       onClick={() => {
                         setCouponCode('');
                         setCouponValidation(null);
-                        addToast('Cupom removido. Agora você pode escolher qualquer plano.', 'info');
+                        addToast(t('premium:couponRemoved'), 'info');
                       }}
                       className="mt-2 text-xs underline hover:no-underline"
                     >
-                      Remover cupom e escolher outro plano
+                      {t('premium:removeCoupon')}
                     </button>
                   </>
                 ) : (
@@ -515,7 +517,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
-            Mensal
+            {t('premium:monthly')}
           </button>
         </div>
       </div>
@@ -526,7 +528,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           {couponValidation?.valid && couponValidation.coupon.plan !== 'basic' && (
             <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
               <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                Cupom não válido para este plano
+                {t('premium:couponNotValidForPlan')}
               </div>
             </div>
           )}
@@ -566,7 +568,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             {couponValidation?.valid && couponValidation.coupon.plan !== 'pro' && (
               <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
                 <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                  Cupom não válido para este plano
+                  {t('premium:couponNotValidForPlan')}
                 </div>
               </div>
             )}
@@ -605,7 +607,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           {couponValidation?.valid && couponValidation.coupon.plan !== 'premium' && (
             <div className="absolute inset-0 bg-black/10 dark:bg-black/30 rounded-2xl z-10 flex items-center justify-center">
               <div className="bg-gray-900/90 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                Cupom não válido para este plano
+                {t('premium:couponNotValidForPlan')}
               </div>
             </div>
           )}
@@ -646,7 +648,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
 
       <Card className="mt-16 max-w-3xl mx-auto p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Seu Plano Atual: {currentPlan.toUpperCase()}
+          {t('premium:yourCurrentPlan')}: {currentPlan.toUpperCase()}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
           Você pode fazer upgrade ou gerenciar sua assinatura a qualquer momento.

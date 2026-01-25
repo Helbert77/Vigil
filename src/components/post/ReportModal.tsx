@@ -1,16 +1,8 @@
 import React, { useState } from 'react';
 import { Icon } from '@/components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
-
-const REPORT_REASONS = [
-  { id: 'spam', label: 'É spam' },
-  { id: 'hate_speech', label: 'Discurso de ódio ou violência' },
-  { id: 'misinformation', label: 'Desinformação prejudicial' },
-  { id: 'harassment', label: 'Assédio ou bullying' },
-  { id: 'self_harm', label: 'Autopreservação ou suicídio' },
-  { id: 'other', label: 'Outro motivo' },
-];
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -20,8 +12,18 @@ interface ReportModalProps {
 }
 
 const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, isSubmitting }) => {
+  const { t } = useTranslation(['posts', 'common']);
   const [selectedReason, setSelectedReason] = useState('');
   const [notes, setNotes] = useState('');
+  
+  const REPORT_REASONS = [
+    { id: 'spam', label: t('posts:reportReasons.spam') },
+    { id: 'hate_speech', label: t('posts:reportReasons.hate_speech') },
+    { id: 'misinformation', label: t('posts:reportReasons.misinformation') },
+    { id: 'harassment', label: t('posts:reportReasons.harassment') },
+    { id: 'self_harm', label: t('posts:reportReasons.self_harm') },
+    { id: 'other', label: t('posts:reportReasons.other') },
+  ];
 
   if (!isOpen) return null;
 
@@ -35,7 +37,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, is
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 md:p-4" onClick={onClose}>
       <div className="bg-light-card dark:bg-dark-card rounded-lg md:rounded-xl shadow-xl w-full max-w-md max-h-[95vh] md:max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-3 md:p-4 border-b border-light-border dark:border-dark-border flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-bold truncate pr-2">Denunciar Conteúdo</h2>
+          <h2 className="text-lg md:text-xl font-bold truncate pr-2">{t('posts:reportContent')}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 flex-shrink-0 p-1">
             <XIcon />
           </button>
@@ -61,7 +63,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, is
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Por favor, forneça mais detalhes."
+              placeholder={t('posts:provideDetails')}
               className="w-full h-24 p-3 md:p-2 border rounded-md bg-light-bg dark:bg-dark-bg border-light-border dark:border-dark-border text-base"
             />
           )}
@@ -72,7 +74,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit, is
             disabled={!selectedReason || isSubmitting}
             className="bg-primary hover:bg-gray-600 text-white font-bold py-3 md:py-2 px-6 rounded-full transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-base"
           >
-            {isSubmitting ? 'Enviando...' : 'Enviar Denúncia'}
+            {isSubmitting ? t('common:sending') : t('posts:submitReport')}
           </button>
         </div>
       </div>

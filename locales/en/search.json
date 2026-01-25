@@ -1,0 +1,17 @@
+{
+  "title": "Search",
+  "filterBy": "Filter by",
+  "date": "Date",
+  "anyDate": "Any date",
+  "last24Hours": "Last 24 hours",
+  "last7Days": "Last 7 days",
+  "last30Days": "Last 30 days",
+  "community": "Community",
+  "allCommunities": "All Communities",
+  "followingOnly": "Only from people you follow",
+  "showingResultsFor": "Showing results for:",
+  "posts": "Posts",
+  "users": "Users",
+  "noPostsFound": "No posts found matching your search.",
+  "noUsersFound": "No users found matching your search."
+}

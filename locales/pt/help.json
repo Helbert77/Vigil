@@ -1,0 +1,137 @@
+{
+  "title": "Central de Ajuda",
+  "backToCategories": "Voltar para categorias",
+  "back": "Voltar",
+  "findAnswers": "Encontre respostas para suas dúvidas sobre o Vigil",
+  "resultsFor": "Resultados para:",
+  "noResultsFound": "Nenhum resultado encontrado",
+  "noResultsDesc": "Não encontramos tópicos relacionados a \"{{query}}\". Tente buscar com outras palavras.",
+  "viewAllCategories": "Ver todas as categorias",
+  "viewAllTopics": "Ver todos os tópicos →",
+  "notFound": "Não encontrou o que procura?",
+  "contactSupport": "Entre em contato com nosso suporte",
+  "categories": {
+    "gettingStarted": {
+      "title": "Começando no Vigil",
+      "description": "Aprenda o básico sobre como usar o Vigil",
+      "topics": {
+        "overview": {
+          "title": "Visão Geral do Sistema",
+          "description": "Entenda a arquitetura e funcionalidades principais do Vigil"
+        },
+        "authentication": {
+          "title": "Autenticação e Conta",
+          "description": "Como criar conta, fazer login e recuperar senha"
+        },
+        "layout": {
+          "title": "Navegação e Interface",
+          "description": "Conheça a interface e como navegar pelo app"
+        }
+      }
+    },
+    "creatingContent": {
+      "title": "Criando Conteúdo",
+      "description": "Publique posts, crie comunidades e compartilhe",
+      "topics": {
+        "posts": {
+          "title": "Sistema de Posts",
+          "description": "Como criar posts com texto, imagens, vídeos, enquetes e evidências"
+        },
+        "communities": {
+          "title": "Comunidades",
+          "description": "Crie e participe de comunidades temáticas"
+        },
+        "timeline": {
+          "title": "Timeline Histórica",
+          "description": "Explore eventos históricos na timeline interativa"
+        }
+      }
+    },
+    "communication": {
+      "title": "Comunicação",
+      "description": "Converse com outros usuários",
+      "topics": {
+        "messages": {
+          "title": "Mensagens Privadas",
+          "description": "Chat privado 1:1 em tempo real"
+        },
+        "chatRooms": {
+          "title": "Chat Rooms",
+          "description": "Salas de chat públicas e privadas (Premium)"
+        },
+        "notifications": {
+          "title": "Notificações",
+          "description": "Sistema de notificações em tempo real"
+        }
+      }
+    },
+    "discovery": {
+      "title": "Descoberta",
+      "description": "Encontre pessoas e conteúdo interessante",
+      "topics": {
+        "search": {
+          "title": "Busca Avançada",
+          "description": "Busque posts, usuários e comunidades"
+        },
+        "profile": {
+          "title": "Perfil do Usuário",
+          "description": "Personalize seu perfil e veja perfis de outros"
+        },
+        "trending": {
+          "title": "Tópicos em Alta",
+          "description": "Descubra posts salvos e tópicos populares"
+        }
+      }
+    },
+    "premium": {
+      "title": "Recursos Premium",
+      "description": "Desbloqueie funcionalidades exclusivas",
+      "topics": {
+        "plans": {
+          "title": "Planos e Assinaturas",
+          "description": "Conheça os planos Premium, Pro e Basic"
+        },
+        "library": {
+          "title": "Biblioteca de Conteúdo",
+          "description": "Acesse e-books, artigos e documentos exclusivos"
+        },
+        "advertising": {
+          "title": "Dashboard de Publicidade",
+          "description": "Crie e gerencie campanhas publicitárias"
+        }
+      }
+    },
+    "security": {
+      "title": "Segurança e Privacidade",
+      "description": "Proteja sua conta e dados",
+      "topics": {
+        "settings": {
+          "title": "Configurações",
+          "description": "Personalize preferências, privacidade e bloqueios"
+        },
+        "moderation": {
+          "title": "Moderação",
+          "description": "Sistema de moderação e appeals"
+        },
+        "policies": {
+          "title": "Políticas e Termos",
+          "description": "Privacidade, termos de serviço e cookies"
+        }
+      }
+    },
+    "support": {
+      "title": "Suporte",
+      "description": "Obtenha ajuda e entre em contato",
+      "topics": {
+        "supportSystem": {
+          "title": "Sistema de Suporte",
+          "description": "Como criar tickets e obter ajuda"
+        },
+        "contact": {
+          "title": "Contato Direto",
+          "description": "Entre em contato via email: suporte@myvigil.co"
+        }
+      }
+    }
+  }
+}

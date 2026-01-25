@@ -4,6 +4,7 @@ import CommunityCard from '../components/communities/CommunityCard';
 import CreateCommunityModal, { NewCommunityData } from '@/components/communities/CreateCommunityModal';
 import EditCommunityModal, { UpdateCommunityData } from '@/components/communities/EditCommunityModal';
 import { Icon } from '../components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const PlusIcon = () => <Icon className="h-5 w-5 mr-2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></Icon>;
 
@@ -19,6 +20,7 @@ interface CommunitiesProps {
 }
 
 const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityIds, onViewCommunity, onJoinCommunityToggle, onCreateCommunity, onUpdateCommunity, user, setCurrentPage }) => {
+  const { t } = useTranslation(['communities', 'common']);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -57,18 +59,18 @@ const Communities: React.FC<CommunitiesProps> = ({ communities, joinedCommunityI
     <>
       <div>
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">Comunidades</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">{t('communities:title')}</h1>
           <button
             onClick={handleOpenCreateModal} // Usar o novo manipulador
             className="flex items-center bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors
               /* Mobile adjustments: smaller size */
               md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
           >
-            Criar Comunidade
+            {t('communities:createCommunity')}
           </button>
         </div>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-          Conecte-se com outros buscadores da verdade em comunidades dedicadas a teorias e investigações específicas.
+          {t('communities:pageDescription')}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {communities.map((community) => (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const MaximizeIcon = () => <Icon className="h-5 w-5"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></Icon>;
@@ -9,7 +10,8 @@ const ZoomOutIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8
 
 // Componente para visualizar texto de Data URLs
 const TextViewer: React.FC<{ fileUrl: string; fileName: string }> = ({ fileUrl, fileName }) => {
-  const [content, setContent] = useState<string>('Carregando...');
+  const { t } = useTranslation(['library']);
+  const [content, setContent] = useState<string>(t('library:loading'));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,19 +33,19 @@ const TextViewer: React.FC<{ fileUrl: string; fileName: string }> = ({ fileUrl, 
         }
       } catch (err) {
         console.error('Erro ao carregar conteúdo:', err);
-        setError(err instanceof Error ? err.message : 'Erro desconhecido');
-        setContent('Erro ao carregar o conteúdo do arquivo.');
+        setError(err instanceof Error ? err.message : t('library:unknownError'));
+        setContent(t('library:errorLoadingContent'));
       }
     };
 
     loadContent();
-  }, [fileUrl]);
+  }, [fileUrl, t]);
 
   if (error) {
     return (
       <div className="flex items-center justify-center w-full h-full">
         <div className="text-center text-red-600 dark:text-red-400">
-          <p className="text-lg mb-4">Erro ao carregar arquivo</p>
+          <p className="text-lg mb-4">{t('library:errorLoadingFile')}</p>
           <p className="text-sm">{error}</p>
         </div>
       </div>
@@ -68,6 +70,7 @@ interface FileViewerProps {
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) => {
+  const { t } = useTranslation(['library']);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
 
@@ -154,7 +157,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
               style={{ width: '100%', height: '100%' }}
             >
               <source src={fileUrl} />
-              Seu navegador não suporta a reprodução de vídeo.
+              {t('library:browserNotSupported')}
             </video>
           </div>
         );
@@ -187,13 +190,13 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
         return (
           <div className="flex items-center justify-center w-full h-full">
             <div className="text-center text-gray-600 dark:text-gray-400">
-              <p className="text-lg mb-4">Não é possível visualizar este tipo de arquivo.</p>
+              <p className="text-lg mb-4">{t('library:cannotPreviewFile')}</p>
               <a
                 href={fileUrl}
                 download
                 className="px-6 py-3 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200 inline-block"
               >
-                Baixar Arquivo
+                {t('library:downloadFile')}
               </a>
             </div>
           </div>
@@ -218,7 +221,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
             {fileName}
           </h3>
           <span className="text-gray-400 text-sm uppercase">
-            {fileType === 'unknown' ? 'Arquivo' : fileType}
+            {fileType === 'unknown' ? t('library:file') : fileType}
           </span>
         </div>
 
@@ -229,7 +232,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
               <button
                 onClick={handleZoomOut}
                 className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="Diminuir zoom"
+                title={t('library:zoomOut')}
               >
                 <ZoomOutIcon />
               </button>
@@ -239,7 +242,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
               <button
                 onClick={handleZoomIn}
                 className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="Aumentar zoom"
+                title={t('library:zoomIn')}
               >
                 <ZoomInIcon />
               </button>
@@ -251,7 +254,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
           <button
             onClick={toggleFullscreen}
             className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-            title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+            title={isFullscreen ? t('library:exitFullscreen') : t('library:fullscreen')}
           >
             {isFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
           </button>
@@ -260,7 +263,7 @@ const FileViewer: React.FC<FileViewerProps> = ({ fileUrl, fileName, onClose }) =
           <button
             onClick={onClose}
             className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-            title="Fechar"
+            title={t('library:close')}
           >
             <XIcon />
           </button>

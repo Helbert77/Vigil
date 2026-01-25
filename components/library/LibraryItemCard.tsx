@@ -3,6 +3,7 @@ import { LibraryItem } from '../../types';
 import Card from '../common/Card';
 import { Icon } from '../icons/Icon';
 import { getDocumentCoverUrl, getFileTypeFromUrl } from '../../src/utils/documentThumbnail';
+import { useTranslation } from 'react-i18next';
 
 const EyeIcon = () => <Icon className="h-4 w-4"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
 const DownloadIcon = () => <Icon className="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></Icon>;
@@ -19,6 +20,7 @@ interface LibraryItemCardProps {
 }
 
 const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onClick }) => {
+  const { t } = useTranslation(['library']);
   const [imageError, setImageError] = useState(false);
   
   // Gera thumbnail para documentos se necessário
@@ -55,15 +57,15 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
   const getTypeLabel = () => {
     switch (item.type) {
       case 'ebook':
-        return 'Ebook';
+        return t('library:ebook');
       case 'article':
-        return 'Artigo';
+        return t('library:article');
       case 'magazine':
-        return 'Revista';
+        return t('library:magazine');
       case 'document':
-        return 'Documento';
+        return t('library:document');
       case 'link':
-        return 'Link';
+        return t('library:link');
     }
   };
 
@@ -122,7 +124,7 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
                   {item.title}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  por {item.author}
+                  {t('library:by')} {item.author}
                 </p>
               </div>
               <span className={`${getTypeColor()} text-white text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap`}>
@@ -147,12 +149,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
               </div>
               {isNew() && (
                 <span className="bg-green-500 text-white px-2 py-0.5 rounded-full font-semibold">
-                  Novo
+                  {t('library:new')}
                 </span>
               )}
               {isPopular() && (
                 <span className="bg-yellow-500 text-white px-2 py-0.5 rounded-full font-semibold">
-                  Popular
+                  {t('library:popular')}
                 </span>
               )}
             </div>
@@ -188,12 +190,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
         <div className="absolute top-5 right-5 flex flex-col gap-1">
           {isNew() && (
             <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-lg">
-              Novo
+              {t('library:new')}
             </span>
           )}
           {isPopular() && (
             <span className="bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-lg">
-              Popular
+              {t('library:popular')}
             </span>
           )}
         </div>
@@ -237,12 +239,12 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
       <div className="absolute top-6 right-6 flex flex-col gap-1">
         {isNew() && (
           <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg">
-            Novo
+            {t('library:new')}
           </span>
         )}
         {isPopular() && (
           <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg">
-            Popular
+            {t('library:popular')}
           </span>
         )}
       </div>
@@ -259,7 +261,7 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
 
       {/* Author */}
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        por {item.author}
+        {t('library:by')} {item.author}
       </p>
 
       {/* Description */}

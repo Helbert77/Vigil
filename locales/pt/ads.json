@@ -1,0 +1,87 @@
+{
+  "dashboard": {
+    "title": "Analytics de Anúncios",
+    "subtitle": "Acompanhe a performance das suas campanhas",
+    "createAd": "Criar Anúncio",
+    "noData": "Nenhum dado disponível",
+    "noDataDesc": "Você ainda não tem anúncios ativos ou métricas registradas no período selecionado.",
+    "createFirstAd": "Criar Primeiro Anúncio"
+  },
+  "metrics": {
+    "impressions": "Impressões",
+    "clicks": "Cliques",
+    "engagement": "Engajamento",
+    "totalCost": "Custo Total",
+    "totalViews": "Total de visualizações",
+    "ctr": "CTR",
+    "rate": "Taxa",
+    "avgCpc": "CPC médio",
+    "likes": "Curtidas",
+    "shares": "Compartilhamentos",
+    "saves": "Salvamentos",
+    "noClicks": "Sem cliques"
+  },
+  "period": {
+    "label": "Período",
+    "last7days": "Últimos 7 dias",
+    "last30days": "Últimos 30 dias",
+    "last90days": "Últimos 90 dias"
+  },
+  "filter": {
+    "filterByAd": "Filtrar por anúncio",
+    "allAds": "Todos os anúncios"
+  },
+  "myAds": {
+    "title": "Meus Anúncios",
+    "subtitle": "Gerencie suas campanhas publicitárias",
+    "noAds": "Nenhum anúncio ainda",
+    "noAdsDesc": "Você ainda não criou nenhum anúncio. Comece sua primeira campanha agora!",
+    "status": {
+      "active": "Ativo",
+      "paused": "Pausado",
+      "ended": "Encerrado",
+      "pending": "Aguardando Aprovação",
+      "rejected": "Rejeitado"
+    }
+  },
+  "create": {
+    "title": "Criar Anúncio",
+    "adTitle": "Título do Anúncio",
+    "description": "Descrição",
+    "imageUrl": "URL da Imagem",
+    "videoUrl": "URL do Vídeo",
+    "linkUrl": "URL do Link",
+    "advertiserName": "Nome do Anunciante",
+    "type": "Tipo de Anúncio",
+    "native": "Nativo",
+    "adsense": "AdSense",
+    "selectPlan": "Selecionar Plano",
+    "creating": "Criando...",
+    "success": "Anúncio criado com sucesso!",
+    "error": "Falha ao criar anúncio"
+  },
+  "edit": {
+    "title": "Editar Anúncio",
+    "updating": "Atualizando...",
+    "success": "Anúncio atualizado com sucesso!",
+    "error": "Falha ao atualizar anúncio"
+  },
+  "actions": {
+    "pause": "Pausar",
+    "activate": "Ativar",
+    "ended": "Encerrado",
+    "waitingApproval": "Aguardando Aprovação",
+    "deleteTitle": "Excluir Anúncio?",
+    "deleteMessage": "Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita e todas as métricas associadas serão perdidas.",
+    "deleteConfirm": "Sim, excluir",
+    "pauseTitle": "Pausar Anúncio?",
+    "pauseMessage": "Tem certeza que deseja pausar este anúncio? Ele deixará de ser exibido até que seja reativado.",
+    "pauseConfirm": "Sim, pausar",
+    "activateTitle": "Ativar Anúncio?",
+    "activateMessage": "Tem certeza que deseja ativar este anúncio? Ele voltará a ser exibido para os usuários.",
+    "activateConfirm": "Sim, ativar"
+  },
+  "adActions": "Ações do anúncio",
+  "upgradePlan": "Atualizar Plano",
+  "ad": "Anúncio"
+}

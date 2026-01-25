@@ -3,6 +3,7 @@ import { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
 import { Icon } from '@/components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const AlertTriangleIcon = () => (
   <Icon className="h-6 w-6 text-red-500">
@@ -52,6 +53,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   user,
   preDeletionChecks
 }) => {
+  const { t } = useTranslation(['settings', 'common']);
   const { addToast } = useToast();
   const [step, setStep] = useState<'checks' | 'options' | 'password' | 'confirmation'>('checks');
   const [password, setPassword] = useState('');
@@ -230,7 +232,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  {canProceed ? 'Continuar' : 'Resolva os problemas acima'}
+                  {canProceed ? t('messages.continue') : t('messages.resolveIssues')}
                 </button>
               </div>
             </div>
@@ -331,7 +333,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   onClick={() => setStep('password')}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md font-medium"
                 >
-                  Continuar
+                  {t('messages.continue')}
                 </button>
               </div>
             </div>
@@ -352,7 +354,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
-                  placeholder="Digite sua senha atual"
+                  placeholder={t('messages.enterCurrentPassword')}
                   onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
                 />
               </div>
@@ -393,7 +395,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
-                  placeholder="Digite: EXCLUIR MINHA CONTA"
+                  placeholder={t('messages.typeDeleteAccount')}
                   onKeyPress={(e) => e.key === 'Enter' && handleFinalConfirmation()}
                 />
               </div>

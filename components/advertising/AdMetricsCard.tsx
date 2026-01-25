@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AdMetricsCardProps {
   title: string;
@@ -18,6 +19,7 @@ const AdMetricsCard: React.FC<AdMetricsCardProps> = ({
   icon,
   trend 
 }) => {
+  const { t } = useTranslation(['ads', 'common']);
   return (
     <div className="bg-light-card dark:bg-dark-card p-3 md:p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
       <div className="flex items-start justify-between">
@@ -39,7 +41,7 @@ const AdMetricsCard: React.FC<AdMetricsCardProps> = ({
             }`}>
               <span>{trend.isPositive ? '↑' : '↓'}</span>
               <span>{Math.abs(trend.value)}%</span>
-              <span className="text-gray-500 dark:text-gray-400">vs período anterior</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('ads:dashboard.vsPrevious')}</span>
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '@/components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 interface LocationPermissionModalProps {
   isOpen: boolean;
@@ -53,6 +54,8 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
   isLocationEnabled = false,
   onDisableLocation
 }) => {
+  const { t } = useTranslation('chat');
+  
   if (!isOpen) return null;
 
   const isGranted = permissionStatus === 'granted';
@@ -69,8 +72,8 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
               <MapPinIcon className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold font-orbitron">Radar Discovery</h2>
-              <p className="text-xs text-blue-100">Encontre pessoas próximas</p>
+              <h2 className="text-lg font-bold font-orbitron">{t('locationModal.title')}</h2>
+              <p className="text-xs text-blue-100">{t('locationModal.subtitle')}</p>
             </div>
           </div>
           <button
@@ -89,10 +92,10 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
               <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-sm text-green-800 dark:text-green-300">
-                  Localização Ativada
+                  {t('locationModal.locationActivated')}
                 </h3>
                 <p className="text-xs text-green-700 dark:text-green-400">
-                  Compartilhando com usuários próximos
+                  {t('locationModal.locationActivatedDesc')}
                 </p>
               </div>
             </div>
@@ -103,10 +106,10 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
               <AlertCircleIcon className="h-4 w-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-sm text-red-800 dark:text-red-300">
-                  {isDenied ? 'Permissão Negada' : 'Indisponível'}
+                  {isDenied ? t('locationModal.permissionDenied') : t('locationModal.unavailable')}
                 </h3>
                 <p className="text-xs text-red-700 dark:text-red-400">
-                  {locationError || 'Não foi possível acessar.'}
+                  {locationError || t('locationModal.unavailableDesc')}
                 </p>
               </div>
             </div>
@@ -116,10 +119,10 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
           <div className="mb-3">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2 text-sm">
               <span className="text-lg">🎯</span>
-              Como funciona?
+              {t('locationModal.howItWorks')}
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Encontra usuários próximos em tempo real. Quanto mais perto, mais ao centro do radar.
+              {t('locationModal.howItWorksDesc')}
             </p>
           </div>
 
@@ -128,27 +131,27 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
             <div className="flex items-start gap-2">
               <span className="text-base">📍</span>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white text-xs">Pessoas próximas</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white text-xs">{t('locationModal.nearbyPeople')}</h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Usuários na sua região
+                  {t('locationModal.nearbyPeopleDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-base">🔒</span>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white text-xs">Privacidade</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white text-xs">{t('locationModal.privacy')}</h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Não armazenamos sua localização
+                  {t('locationModal.privacyDesc')}
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-base">⚡</span>
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white text-xs">Tempo real</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white text-xs">{t('locationModal.realtime')}</h4>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Usuários conectados agora
+                  {t('locationModal.realtimeDesc')}
                 </p>
               </div>
             </div>
@@ -158,7 +161,7 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
           {isLocationEnabled && (
             <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <h4 className="font-semibold text-gray-900 dark:text-white text-xs mb-2 flex items-center gap-1">
-                📏 Raio de Busca
+                📏 {t('locationModal.searchRadius')}
               </h4>
               
               {/* Botões de Raio Rápido */}
@@ -187,7 +190,7 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-gray-600 border border-purple-300 dark:border-purple-700'
                 }`}
               >
-                {maxDistance >= 20000 ? '🌍 Busca Global Ativa' : '🌍 Ativar Busca Global'}
+                {maxDistance >= 20000 ? t('locationModal.globalSearchActive') : t('locationModal.activateGlobalSearch')}
               </button>
               
               {/* Slider para ajuste fino - SEMPRE ATIVO */}
@@ -202,21 +205,21 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
                   className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                 />
                 <span className="text-sm font-bold text-blue-600 dark:text-blue-400 min-w-[80px] text-right">
-                  {maxDistance >= 20000 ? '🌍 Global' : `${maxDistance} km`}
+                  {maxDistance >= 20000 ? t('locationModal.global') : t('locationModal.km', { distance: maxDistance })}
                 </span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <span>10 km</span>
-                <span>20.000 km</span>
+                <span>{t('locationModal.minKm')}</span>
+                <span>{t('locationModal.maxKm')}</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                 {maxDistance >= 20000 
-                  ? '🌍 Mostrando usuários do mundo todo'
+                  ? t('locationModal.showingGlobal')
                   : maxDistance >= 500
-                  ? '🌎 Alcance continental'
+                  ? t('locationModal.continentalReach')
                   : maxDistance >= 100
-                  ? '🗺️ Alcance regional'
-                  : '📍 Alcance local'
+                  ? t('locationModal.regionalReach')
+                  : t('locationModal.localReach')
                 }
               </p>
             </div>
@@ -225,13 +228,13 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
           {/* Informações de Privacidade - Compactas */}
           <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
             <h4 className="font-semibold text-gray-900 dark:text-white text-xs mb-1 flex items-center gap-1">
-              🛡️ Privacidade
+              {t('locationModal.privacyTitle')}
             </h4>
             <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
-              <li>• Não salva no banco</li>
-              <li>• Apenas em tempo real</li>
-              <li>• Desative quando quiser</li>
-              <li>• Desaparece ao sair</li>
+              <li>{t('locationModal.privacyItem1')}</li>
+              <li>{t('locationModal.privacyItem2')}</li>
+              <li>{t('locationModal.privacyItem3')}</li>
+              <li>{t('locationModal.privacyItem4')}</li>
             </ul>
           </div>
 
@@ -242,7 +245,7 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
                 onClick={onEnableLocation}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 text-sm"
               >
-                Ativar Localização
+                {t('locationModal.activateLocation')}
               </button>
             ) : (
               <button
@@ -252,14 +255,14 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
                 }}
                 className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm"
               >
-                Desativar Localização
+                {t('locationModal.disableLocation')}
               </button>
             )}
             <button
               onClick={onClose}
               className="flex-shrink-0 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-2.5 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
             >
-              Fechar
+              {t('locationModal.close')}
             </button>
           </div>
 
@@ -267,23 +270,23 @@ const LocationPermissionModal: React.FC<LocationPermissionModalProps> = ({
           {isDenied && (
             <div className="mt-3 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Ative nas configurações do navegador
+                {t('locationModal.browserSettings')}
               </p>
               <button
                 onClick={() => {
                   if (navigator.userAgent.includes('Chrome')) {
-                    alert('Chrome: Clique no 🔒 ao lado da URL → Localização → Permitir');
+                    alert(t('locationModal.chromeInstructions'));
                   } else if (navigator.userAgent.includes('Firefox')) {
-                    alert('Firefox: Clique no 🔒 ao lado da URL → Localização → Permitir');
+                    alert(t('locationModal.firefoxInstructions'));
                   } else if (navigator.userAgent.includes('Safari')) {
-                    alert('Safari: Preferências → Sites → Localização → Permitir');
+                    alert(t('locationModal.safariInstructions'));
                   } else {
-                    alert('Procure o ícone 🔒 na barra de endereços.');
+                    alert(t('locationModal.genericInstructions'));
                   }
                 }}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Ver instruções
+                {t('locationModal.viewInstructions')}
               </button>
             </div>
           )}

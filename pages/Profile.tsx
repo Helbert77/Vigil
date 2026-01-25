@@ -13,6 +13,7 @@ import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
 import { GamificationTab } from '@/src/components/gamification/GamificationTab';
+import { useTranslation } from 'react-i18next';
 
 const CalendarIcon = () => <Icon className="h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></Icon>;
 const ListIcon = () => <Icon className="h-5 w-5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></Icon>;
@@ -56,6 +57,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'gamification' | 'moderation'>('posts');
   const [selectedRole, setSelectedRole] = useState(user.role || 'user');
   const { addToast } = useToast();
+  const { t } = useTranslation(['profile', 'common']);
   
   const { user: sessionUser } = useSession();
   const isModerator = sessionUser && ['admin', 'moderator'].includes(sessionUser.role || 'user');
@@ -134,7 +136,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
         <div className="relative h-32 sm:h-48 bg-gray-700 -m-4 sm:-m-6">
           {isEditing ? (
             <div className="relative h-full w-full">
-              <img src={editedUser.bannerUrl || user.bannerUrl || 'https://picsum.photos/seed/default-banner/1500/500'} alt="Profile banner" className="h-full w-full object-cover opacity-70" />
+              <img src={editedUser.bannerUrl || user.bannerUrl || 'https://picsum.photos/seed/default-banner/1500/500'} alt={t('profile:profileBannerAlt')} className="h-full w-full object-cover opacity-70" />
               <ImageUploader
                 userId={user.id}
                 filePath="banner"
@@ -142,7 +144,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
               />
             </div>
           ) : (
-            user.bannerUrl && <img src={user.bannerUrl} alt="Profile banner" className="h-full w-full object-cover" />
+            user.bannerUrl && <img src={user.bannerUrl} alt={t('profile:profileBannerAlt')} className="h-full w-full object-cover" />
           )}
         </div>
 
@@ -176,7 +178,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                       value={editedUser.name || ''}
                       onChange={handleInputChange}
                       className="font-bold w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-                      placeholder="Your Name"
+                      placeholder={t('profile:yourName')}
                   />
                    <input 
                       type="text"
@@ -184,7 +186,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                       value={editedUser.username || ''}
                       onChange={handleInputChange}
                       className="text-gray-500 dark:text-gray-400 w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-                      placeholder="Your Username"
+                      placeholder={t('profile:yourUsername')}
                   />
                 </div>
               ) : (
@@ -211,7 +213,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                     <button onClick={handleSave} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">Save</button>
                   </div>
                 ) : (
-                  onUpdateUser && <button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">Edit Profile</button>
+                  onUpdateUser && <button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-full transition-all duration-200 transform active:scale-95 text-sm">{t('profile:editProfile')}</button>
                 )
               ) : (
                 <button 
@@ -222,7 +224,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                       : 'bg-primary hover:bg-gray-600 text-white'
                   }`}
                 >
-                  {isFollowing ? 'Seguindo' : 'Seguir'}
+                  {isFollowing ? t('profile:following') : t('profile:follow')}
                 </button>
               )}
             </div>
@@ -252,7 +254,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                         value={editedUser.name || ''}
                         onChange={handleInputChange}
                         className="font-bold w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-                        placeholder="Your Name"
+                        placeholder={t('profile:yourName')}
                     />
                      <input 
                         type="text"
@@ -260,7 +262,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                         value={editedUser.username || ''}
                         onChange={handleInputChange}
                         className="text-gray-500 dark:text-gray-400 w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
-                        placeholder="Your Username"
+                        placeholder={t('profile:yourUsername')}
                     />
                 </div>
              ) : (
@@ -285,7 +287,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                   <button onClick={handleSave} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 transform active:scale-95">Save</button>
                 </div>
               ) : (
-                onUpdateUser && <button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 transform active:scale-95">Edit Profile</button>
+                onUpdateUser && <button onClick={() => setIsEditing(true)} className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition-all duration-200 transform active:scale-95">{t('profile:editProfile')}</button>
               )
             ) : (
               <button 
@@ -296,7 +298,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                     : 'bg-primary hover:bg-gray-600 text-white'
                 }`}
               >
-                {isFollowing ? 'Seguindo' : 'Seguir'}
+                {isFollowing ? t('profile:following') : t('profile:follow')}
               </button>
             )}
           </div>
@@ -311,11 +313,11 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 onChange={handleInputChange}
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
                 rows={3}
-                placeholder="Your bio"
+                placeholder={t('profile:yourBio')}
             />
           ) : (
             <>
-              <p className="text-gray-700 dark:text-gray-300 mb-4">{user.bio || 'No bio provided.'}</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">{user.bio || t('profile:noBio')}</p>
               
               {/* Data de entrada */}
               <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
@@ -327,11 +329,11 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
               <div className="flex items-center gap-6 text-sm">
                   <button onClick={() => onOpenFollowModal(user, 'following')} className="hover:underline">
                       <span className="font-bold text-gray-800 dark:text-gray-200">{user.followingCount.toLocaleString()}</span>
-                      <span className="ml-1 text-gray-500 dark:text-gray-400">Seguindo</span>
+                      <span className="ml-1 text-gray-500 dark:text-gray-400">{t('profile:following')}</span>
                   </button>
                   <button onClick={() => onOpenFollowModal(user, 'followers')} className="hover:underline">
                       <span className="font-bold text-gray-800 dark:text-gray-200">{user.followersCount.toLocaleString()}</span>
-                      <span className="ml-1 text-gray-500 dark:text-gray-400">Seguidores</span>
+                      <span className="ml-1 text-gray-500 dark:text-gray-400">{t('profile:followers')}</span>
                   </button>
               </div>
             </>
@@ -347,11 +349,11 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 onChange={handleInputChange}
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
                 rows={3}
-                placeholder="Your bio"
+                placeholder={t('profile:yourBio')}
             />
           ) : (
             <>
-              <p className="text-gray-700 dark:text-gray-300">{user.bio || 'No bio provided.'}</p>
+              <p className="text-gray-700 dark:text-gray-300">{user.bio || t('profile:noBio')}</p>
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4">
                   <div className="flex items-center space-x-1">
                       <CalendarIcon />
@@ -359,11 +361,11 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                   </div>
                   <button onClick={() => onOpenFollowModal(user, 'following')} className="hover:underline">
                       <span className="font-bold text-gray-800 dark:text-gray-200">{user.followingCount.toLocaleString()}</span>
-                      <span className="ml-1">Seguindo</span>
+                      <span className="ml-1">{t('profile:following')}</span>
                   </button>
                   <button onClick={() => onOpenFollowModal(user, 'followers')} className="hover:underline">
                       <span className="font-bold text-gray-800 dark:text-gray-200">{user.followersCount.toLocaleString()}</span>
-                      <span className="ml-1">Seguidores</span>
+                      <span className="ml-1">{t('profile:followers')}</span>
                   </button>
               </div>
             </>
@@ -373,29 +375,29 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
 
       {isAdminViewing && !isCurrentUserProfile && (
         <Card className="mb-6">
-          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">Painel de Administrador</h3>
+          <h3 className="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">{t('profile:adminPanel')}</h3>
           <div className="flex items-center space-x-4">
-            <label htmlFor="role-select" className="font-medium">Função do Usuário:</label>
+            <label htmlFor="role-select" className="font-medium">{t('profile:userRole')}</label>
             <select
               id="role-select"
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value as 'user' | 'moderator' | 'admin')}
               className="bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="user">User</option>
-              <option value="moderator">Moderator</option>
-              <option value="admin">Admin</option>
+              <option value="user">{t('profile:user')}</option>
+              <option value="moderator">{t('profile:moderator')}</option>
+              <option value="admin">{t('profile:admin')}</option>
             </select>
-            <button onClick={handleRoleChange} className="bg-secondary text-white font-bold py-2 px-4 rounded-full text-sm">Salvar Função</button>
+            <button onClick={handleRoleChange} className="bg-secondary text-white font-bold py-2 px-4 rounded-full text-sm">{t('profile:saveRole')}</button>
           </div>
         </Card>
       )}
 
       <div className="flex border-b border-light-border dark:border-dark-border mb-4 overflow-x-auto">
-        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Posts</button>
-        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Mídia</button>
-        <button onClick={() => setActiveTab('gamification')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'gamification' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>Seu Progresso</button>
-        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 whitespace-nowrap ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}><ShieldIcon /> Moderação</button>}
+        <button onClick={() => setActiveTab('posts')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile:posts')}</button>
+        <button onClick={() => setActiveTab('media')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile:media')}</button>
+        <button onClick={() => setActiveTab('gamification')} className={`px-4 py-2 font-bold whitespace-nowrap ${activeTab === 'gamification' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}>{t('profile:yourProgress')}</button>
+        {isModerator && <button onClick={() => setActiveTab('moderation')} className={`px-4 py-2 font-bold flex items-center gap-2 whitespace-nowrap ${activeTab === 'moderation' ? 'text-primary border-b-2 border-primary' : 'text-gray-500 dark:text-gray-400'}`}><ShieldIcon /> {t('profile:moderation')}</button>}
       </div>
 
       {activeTab === 'posts' && (
@@ -426,7 +428,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 />)
             ) : (
             <Card>
-                <p>No posts yet. Time to reveal a truth.</p>
+                <p>{t('profile:noPosts')}</p>
             </Card>
             )}
         </div>
@@ -438,7 +440,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 <div className="grid grid-cols-3 gap-1">
                     {mediaPosts.map((post: Post) => (
                         <div key={post.id} className="relative aspect-square group cursor-pointer" onClick={() => onViewPost(post.id)}>
-                            <img src={post.imageUrl || post.videoUrl} alt="Post media" className="w-full h-full object-cover" />
+                            <img src={post.imageUrl || post.videoUrl} alt={t('profile:postMedia')} className="w-full h-full object-cover" />
                             {post.videoUrl && (
                                 <div className="absolute top-2 right-2 text-white drop-shadow-md">
                                     <VideoIcon />
@@ -459,7 +461,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdatePost, savedPostI
                 </div>
             ) : (
                 <Card>
-                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">No posts with media found.</p>
+                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">{t('profile:noMedia')}</p>
                 </Card>
             )}
         </div>

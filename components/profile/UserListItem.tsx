@@ -3,6 +3,7 @@ import { User } from '@/types';
 import Avatar from '../common/Avatar';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import { useTranslation } from 'react-i18next';
 
 interface UserListItemProps {
   user: User;
@@ -15,6 +16,7 @@ interface UserListItemProps {
 }
 
 const UserListItem: React.FC<UserListItemProps> = ({ user, currentUser, isFollowing, onFollowToggle, onViewProfile, onViewFollowers, onViewFollowing }) => {
+  const { t } = useTranslation(['profile']);
   const isCurrentUser = user.id === currentUser.id;
 
   return (
@@ -31,10 +33,10 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, currentUser, isFollow
           <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-2">{user.bio}</p>
           <div className="flex space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
             <button onClick={(e) => { e.stopPropagation(); onViewFollowing(user); }} className="hover:underline">
-              <span className="font-bold text-gray-700 dark:text-gray-300">{user.followingCount}</span> Seguindo
+              <span className="font-bold text-gray-700 dark:text-gray-300">{user.followingCount}</span> {t('profile:following')}
             </button>
             <button onClick={(e) => { e.stopPropagation(); onViewFollowers(user); }} className="hover:underline">
-              <span className="font-bold text-gray-700 dark:text-gray-300">{user.followersCount}</span> Seguidores
+              <span className="font-bold text-gray-700 dark:text-gray-300">{user.followersCount}</span> {t('profile:followers')}
             </button>
           </div>
         </div>
@@ -48,7 +50,7 @@ const UserListItem: React.FC<UserListItemProps> = ({ user, currentUser, isFollow
               : 'bg-primary hover:bg-gray-600 text-white'
           }`}
         >
-          {isFollowing ? 'Seguindo' : 'Seguir'}
+          {isFollowing ? t('profile:following') : t('profile:follow')}
         </button>
       )}
     </div>

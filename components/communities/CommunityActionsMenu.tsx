@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Community, User } from '../../types';
 import { Icon } from '../icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const EditIcon = () => <Icon className="h-5 w-5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></Icon>;
@@ -12,6 +13,7 @@ interface CommunityActionsMenuProps {
 }
 
 const CommunityActionsMenu: React.FC<CommunityActionsMenuProps> = ({ community, currentUser, onEdit }) => {
+  const { t } = useTranslation(['communities', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +48,7 @@ const CommunityActionsMenu: React.FC<CommunityActionsMenuProps> = ({ community, 
           setIsOpen(!isOpen);
         }}
         className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        aria-label="Opções da comunidade"
+        aria-label={t('communities:communityOptions')}
       >
         <MoreHorizontalIcon />
       </button>
@@ -62,7 +64,7 @@ const CommunityActionsMenu: React.FC<CommunityActionsMenuProps> = ({ community, 
             className="w-full text-left flex items-center space-x-3 px-4 py-3 text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <EditIcon />
-            <span>Editar Comunidade</span>
+            <span>{t('common:edit')} {t('communities:title')}</span>
           </button>
         </div>
       )}

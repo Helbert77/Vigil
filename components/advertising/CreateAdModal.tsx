@@ -3,6 +3,7 @@ import { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { pushHistoryState, type NavigationSnapshot } from '@/src/utils/history';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +26,7 @@ interface CreateAdModalProps {
 
 const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, onAdCreated }) => {
   const { addToast } = useToast();
+  const { t } = useTranslation(['ads', 'common', 'errors']);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -57,13 +59,13 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
 
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
-      addToast('Por favor, selecione uma imagem válida', 'error');
+      addToast(t('errors:invalidImage'), 'error');
       return;
     }
 
     // Validar tamanho (máx 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      addToast('A imagem deve ter no máximo 5MB', 'error');
+      addToast(t('errors:imageTooLarge', { size: 5 }), 'error');
       return;
     }
 
@@ -84,7 +86,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       // addToast('Imagem carregada com sucesso', 'success');
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
-      addToast('Erro ao fazer upload da imagem', 'error');
+      addToast(t('errors:uploadImageError'), 'error');
     } finally {
       setIsUploadingImage(false);
     }
@@ -96,13 +98,13 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
 
     // Validar tipo de arquivo
     if (!file.type.startsWith('video/')) {
-      addToast('Por favor, selecione um vídeo válido', 'error');
+      addToast(t('errors:invalidVideo'), 'error');
       return;
     }
 
     // Validar tamanho (máx 50MB)
     if (file.size > 50 * 1024 * 1024) {
-      addToast('O vídeo deve ter no máximo 50MB', 'error');
+      addToast(t('errors:videoTooLarge', { size: 50 }), 'error');
       return;
     }
 
@@ -123,7 +125,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       // addToast('Vídeo carregado com sucesso', 'success');
     } catch (error) {
       console.error('Erro ao fazer upload do vídeo:', error);
-      addToast('Erro ao fazer upload do vídeo', 'error');
+      addToast(t('errors:uploadVideoError'), 'error');
     } finally {
       setIsUploadingVideo(false);
     }
@@ -251,7 +253,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
     } catch (error: any) {
       console.error('Erro ao criar anúncio:', error);
 
-      let errorMessage = 'Erro ao criar anúncio. Tente novamente.';
+      let errorMessage = t('ads:create.error');
 
       if (error?.message) {
         errorMessage = error.message;
@@ -274,7 +276,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
       >
         {/* Header */}
         <div className="p-4 border-b border-light-border dark:border-dark-border flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Criar Novo Anúncio</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('ads:create.title')}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
@@ -294,65 +296,62 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
             {/* Título */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Título do Anúncio *
+                {t('ads:create.adTitle')} *
               </label>
               <input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
-                placeholder="Ex: Descubra nosso novo produto"
+                placeholder={t('ads:create.adTitle')}
                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                 maxLength={100}
                 required
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formData.title.length}/100 caracteres
+                {formData.title.length}/100
               </p>
             </div>
 
             {/* Descrição */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Descrição *
+                {t('ads:create.description')} *
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Descreva seu anúncio..."
+                placeholder={t('ads:create.description')}
                 rows={4}
                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                 maxLength={500}
                 required
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formData.description.length}/500 caracteres
+                {formData.description.length}/500
               </p>
             </div>
 
             {/* Link */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Link de Destino (opcional)
+                {t('ads:create.linkUrl')}
               </label>
               <input
                 type="url"
                 name="link_url"
                 value={formData.link_url}
                 onChange={handleChange}
-                placeholder="https://exemplo.com"
+                placeholder="https://example.com"
                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Deixe em branco para testes
-              </p>
             </div>
 
             {/* Upload de Imagem */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Imagem do Anúncio {!formData.video_url && '*'}
+                {t('ads:create.imageUrl')} {!formData.video_url && '*'}
               </label>
               <input
                 ref={imageInputRef}
@@ -381,8 +380,8 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
                 ) : (
                   <div className="text-center text-gray-500">
                     <UploadIcon />
-                    <p className="text-sm mt-2">Clique para enviar uma imagem</p>
-                    <p className="text-xs mt-1">PNG, JPG, GIF até 5MB</p>
+                    <p className="text-sm mt-2">{t('common:upload')}</p>
+                    <p className="text-xs mt-1">PNG, JPG, GIF (5MB max)</p>
                   </div>
                 )}
               </div>
@@ -392,7 +391,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
                   onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
                   className="text-sm text-red-600 hover:text-red-700 mt-2"
                 >
-                  Remover imagem
+                  {t('common:remove')}
                 </button>
               )}
             </div>
@@ -400,7 +399,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
             {/* Upload de Vídeo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Vídeo do Anúncio (opcional)
+                {t('ads:create.videoUrl')}
               </label>
               <input
                 ref={videoInputRef}
@@ -429,8 +428,8 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
                 ) : (
                   <div className="text-center text-gray-500">
                     <UploadIcon />
-                    <p className="text-sm mt-2">Clique para enviar um vídeo</p>
-                    <p className="text-xs mt-1">MP4, WebM até 50MB</p>
+                    <p className="text-sm mt-2">{t('common:upload')}</p>
+                    <p className="text-xs mt-1">MP4, WebM (50MB max)</p>
                   </div>
                 )}
               </div>
@@ -440,7 +439,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
                   onClick={() => setFormData(prev => ({ ...prev, video_url: '' }))}
                   className="text-sm text-red-600 hover:text-red-700 mt-2"
                 >
-                  Remover vídeo
+                  {t('common:remove')}
                 </button>
               )}
             </div>
@@ -450,7 +449,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
               {/* Tipo */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tipo de Anúncio
+                  {t('ads:create.type')}
                 </label>
                 <select
                   name="type"
@@ -458,8 +457,8 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
                   onChange={handleChange}
                   className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="native">Nativo</option>
-                  <option value="adsense">AdSense</option>
+                  <option value="native">{t('ads:create.native')}</option>
+                  <option value="adsense">{t('ads:create.adsense')}</option>
                 </select>
               </div>
             </div>
@@ -473,7 +472,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
               disabled={isLoading}
               className="px-6 py-2 rounded-lg border border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              Cancelar
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
@@ -483,7 +482,7 @@ const CreateAdModal: React.FC<CreateAdModalProps> = ({ isOpen, onClose, user, on
               {isLoading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               )}
-              {isLoading ? 'Criando...' : 'Criar Anúncio'}
+              {isLoading ? t('ads:create.creating') : t('ads:dashboard.createAd')}
             </button>
           </div>
         </form>

@@ -3,6 +3,7 @@ import Card from '../components/common/Card';
 import { Icon } from '../components/icons/Icon';
 import HelpModal from '../components/help/HelpModal';
 import { getPRDContent } from '../src/services/prdService';
+import { useTranslation } from 'react-i18next';
 
 // Icons
 const BookOpenIcon = () => <Icon className="h-8 w-8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></Icon>;
@@ -36,6 +37,7 @@ interface HelpCategory {
 }
 
 const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
+  const { t } = useTranslation(['help', 'common']);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<HelpTopic | null>(null);
@@ -45,183 +47,183 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
   const categories: HelpCategory[] = [
     {
       id: 'getting-started',
-      title: 'Começando no Vigil',
-      description: 'Aprenda o básico sobre como usar o Vigil',
+      title: t('help:categories.gettingStarted.title'),
+      description: t('help:categories.gettingStarted.description'),
       icon: <BookOpenIcon />,
       color: 'from-blue-500 to-blue-600',
       topics: [
         {
           id: 'overview',
-          title: 'Visão Geral do Sistema',
-          description: 'Entenda a arquitetura e funcionalidades principais do Vigil',
+          title: t('help:categories.gettingStarted.topics.overview.title'),
+          description: t('help:categories.gettingStarted.topics.overview.description'),
           prdNumber: '01'
         },
         {
           id: 'authentication',
-          title: 'Autenticação e Conta',
-          description: 'Como criar conta, fazer login e recuperar senha',
+          title: t('help:categories.gettingStarted.topics.authentication.title'),
+          description: t('help:categories.gettingStarted.topics.authentication.description'),
           prdNumber: '02'
         },
         {
           id: 'layout',
-          title: 'Navegação e Interface',
-          description: 'Conheça a interface e como navegar pelo app',
+          title: t('help:categories.gettingStarted.topics.layout.title'),
+          description: t('help:categories.gettingStarted.topics.layout.description'),
           prdNumber: '03'
         }
       ]
     },
     {
       id: 'creating-content',
-      title: 'Criando Conteúdo',
-      description: 'Publique posts, crie comunidades e compartilhe',
+      title: t('help:categories.creatingContent.title'),
+      description: t('help:categories.creatingContent.description'),
       icon: <EditIcon />,
       color: 'from-green-500 to-green-600',
       topics: [
         {
           id: 'posts',
-          title: 'Sistema de Posts',
-          description: 'Como criar posts com texto, imagens, vídeos, enquetes e evidências',
+          title: t('help:categories.creatingContent.topics.posts.title'),
+          description: t('help:categories.creatingContent.topics.posts.description'),
           prdNumber: '04'
         },
         {
           id: 'communities',
-          title: 'Comunidades',
-          description: 'Crie e participe de comunidades temáticas',
+          title: t('help:categories.creatingContent.topics.communities.title'),
+          description: t('help:categories.creatingContent.topics.communities.description'),
           prdNumber: '05'
         },
         {
           id: 'timeline',
-          title: 'Timeline Histórica',
-          description: 'Explore eventos históricos na timeline interativa',
+          title: t('help:categories.creatingContent.topics.timeline.title'),
+          description: t('help:categories.creatingContent.topics.timeline.description'),
           prdNumber: '12'
         }
       ]
     },
     {
       id: 'communication',
-      title: 'Comunicação',
-      description: 'Converse com outros usuários',
+      title: t('help:categories.communication.title'),
+      description: t('help:categories.communication.description'),
       icon: <MessageSquareIcon />,
       color: 'from-purple-500 to-purple-600',
       topics: [
         {
           id: 'messages',
-          title: 'Mensagens Privadas',
-          description: 'Chat privado 1:1 em tempo real',
+          title: t('help:categories.communication.topics.messages.title'),
+          description: t('help:categories.communication.topics.messages.description'),
           prdNumber: '06'
         },
         {
           id: 'chat-rooms',
-          title: 'Chat Rooms',
-          description: 'Salas de chat públicas e privadas (Premium)',
+          title: t('help:categories.communication.topics.chatRooms.title'),
+          description: t('help:categories.communication.topics.chatRooms.description'),
           prdNumber: '07'
         },
         {
           id: 'notifications',
-          title: 'Notificações',
-          description: 'Sistema de notificações em tempo real',
+          title: t('help:categories.communication.topics.notifications.title'),
+          description: t('help:categories.communication.topics.notifications.description'),
           prdNumber: '08'
         }
       ]
     },
     {
       id: 'discovery',
-      title: 'Descoberta',
-      description: 'Encontre pessoas e conteúdo interessante',
+      title: t('help:categories.discovery.title'),
+      description: t('help:categories.discovery.description'),
       icon: <SearchIcon />,
       color: 'from-orange-500 to-orange-600',
       topics: [
         {
           id: 'search',
-          title: 'Busca Avançada',
-          description: 'Busque posts, usuários e comunidades',
+          title: t('help:categories.discovery.topics.search.title'),
+          description: t('help:categories.discovery.topics.search.description'),
           prdNumber: '10'
         },
         {
           id: 'profile',
-          title: 'Perfil do Usuário',
-          description: 'Personalize seu perfil e veja perfis de outros',
+          title: t('help:categories.discovery.topics.profile.title'),
+          description: t('help:categories.discovery.topics.profile.description'),
           prdNumber: '09'
         },
         {
           id: 'trending',
-          title: 'Tópicos em Alta',
-          description: 'Descubra posts salvos e tópicos populares',
+          title: t('help:categories.discovery.topics.trending.title'),
+          description: t('help:categories.discovery.topics.trending.description'),
           prdNumber: '22'
         }
       ]
     },
     {
       id: 'premium',
-      title: 'Recursos Premium',
-      description: 'Desbloqueie funcionalidades exclusivas',
+      title: t('help:categories.premium.title'),
+      description: t('help:categories.premium.description'),
       icon: <CrownIcon />,
       color: 'from-yellow-500 to-yellow-600',
       topics: [
         {
           id: 'plans',
-          title: 'Planos e Assinaturas',
-          description: 'Conheça os planos Premium, Pro e Basic',
+          title: t('help:categories.premium.topics.plans.title'),
+          description: t('help:categories.premium.topics.plans.description'),
           prdNumber: '17'
         },
         {
           id: 'library',
-          title: 'Biblioteca de Conteúdo',
-          description: 'Acesse e-books, artigos e documentos exclusivos',
+          title: t('help:categories.premium.topics.library.title'),
+          description: t('help:categories.premium.topics.library.description'),
           prdNumber: '11'
         },
         {
           id: 'advertising',
-          title: 'Dashboard de Publicidade',
-          description: 'Crie e gerencie campanhas publicitárias',
+          title: t('help:categories.premium.topics.advertising.title'),
+          description: t('help:categories.premium.topics.advertising.description'),
           prdNumber: '14'
         }
       ]
     },
     {
       id: 'security',
-      title: 'Segurança e Privacidade',
-      description: 'Proteja sua conta e dados',
+      title: t('help:categories.security.title'),
+      description: t('help:categories.security.description'),
       icon: <ShieldIcon />,
       color: 'from-red-500 to-red-600',
       topics: [
         {
           id: 'settings',
-          title: 'Configurações',
-          description: 'Personalize preferências, privacidade e bloqueios',
+          title: t('help:categories.security.topics.settings.title'),
+          description: t('help:categories.security.topics.settings.description'),
           prdNumber: '18'
         },
         {
           id: 'moderation',
-          title: 'Moderação',
-          description: 'Sistema de moderação e appeals',
+          title: t('help:categories.security.topics.moderation.title'),
+          description: t('help:categories.security.topics.moderation.description'),
           prdNumber: '15'
         },
         {
           id: 'policies',
-          title: 'Políticas e Termos',
-          description: 'Privacidade, termos de serviço e cookies',
+          title: t('help:categories.security.topics.policies.title'),
+          description: t('help:categories.security.topics.policies.description'),
           prdNumber: '21'
         }
       ]
     },
     {
       id: 'support',
-      title: 'Suporte',
-      description: 'Obtenha ajuda e entre em contato',
+      title: t('help:categories.support.title'),
+      description: t('help:categories.support.description'),
       icon: <HeadphonesIcon />,
       color: 'from-indigo-500 to-indigo-600',
       topics: [
         {
           id: 'support-system',
-          title: 'Sistema de Suporte',
-          description: 'Como criar tickets e obter ajuda',
+          title: t('help:categories.support.topics.supportSystem.title'),
+          description: t('help:categories.support.topics.supportSystem.description'),
           prdNumber: '20'
         },
         {
           id: 'contact',
-          title: 'Contato Direto',
-          description: 'Entre em contato via email: suporte@myvigil.co'
+          title: t('help:categories.support.topics.contact.title'),
+          description: t('help:categories.support.topics.contact.description')
         }
       ]
     }
@@ -278,17 +280,17 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4"
         >
           <ArrowLeftIcon />
-          <span>{selectedCategoryData ? 'Voltar para categorias' : 'Voltar'}</span>
+          <span>{selectedCategoryData ? t('help:backToCategories') : t('help:back')}</span>
         </button>
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          {selectedCategoryData ? selectedCategoryData.title : 'Central de Ajuda'}
+          {selectedCategoryData ? selectedCategoryData.title : t('help:title')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg">
           {selectedCategoryData 
             ? selectedCategoryData.description 
             : searchQuery.trim() 
-              ? `Resultados para: "${searchQuery}"`
-              : 'Encontre respostas para suas dúvidas sobre o Vigil'
+              ? `${t('help:resultsFor')} "${searchQuery}"`
+              : t('help:findAnswers')
           }
         </p>
       </div>
@@ -349,10 +351,10 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
             <SearchIcon />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Nenhum resultado encontrado
+            {t('help:noResultsFound')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Não encontramos tópicos relacionados a "{searchQuery}". Tente buscar com outras palavras.
+            {t('help:noResultsDesc', { query: searchQuery })}
           </p>
           <button
             onClick={() => {
@@ -361,7 +363,7 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
             }}
             className="text-primary hover:underline font-medium"
           >
-            Ver todas as categorias
+            {t('help:viewAllCategories')}
           </button>
         </div>
       ) : (
@@ -418,7 +420,7 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
                   onClick={() => setSelectedCategory(category.id)}
                   className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
                 >
-                  Ver todos os tópicos →
+                  {t('help:viewAllTopics')}
                 </button>
               </div>
             </div>
@@ -430,12 +432,12 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
       {/* Footer Note */}
       {!selectedCategoryData && (
         <div className="text-center text-sm text-gray-500 dark:text-gray-400 pb-8">
-        <p>Não encontrou o que procura?</p>
+        <p>{t('help:notFound')}</p>
         <a
           href="mailto:suporte@myvigil.co"
           className="text-primary hover:underline font-medium"
         >
-          Entre em contato com nosso suporte
+          {t('help:contactSupport')}
         </a>
         </div>
       )}

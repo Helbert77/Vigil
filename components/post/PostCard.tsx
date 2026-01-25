@@ -16,6 +16,7 @@ import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import { useSimpleTimeAgo } from '../../hooks/useTimeAgoOptimized';
 import ResilientVideo from '@/src/components/common/ResilientVideo';
 import MediaViewer from '@/src/components/common/MediaViewer';
+import { useTranslation } from 'react-i18next';
 
 const HeartIcon = ({ filled }: { filled: boolean }) => (
     <Icon className={filled ? 'text-red-500' : ''} fill={filled ? 'currentColor' : 'none'}>
@@ -68,6 +69,7 @@ interface PollDisplayProps {
 }
 
 const PollDisplay: React.FC<PollDisplayProps> = ({ poll, postId, userVotedOption, onVote }) => {
+    const { t } = useTranslation(['posts', 'common']);
     const [timeRemaining, setTimeRemaining] = useState('');
     const [isPollActive, setIsPollActive] = useState(true);
 
@@ -78,7 +80,7 @@ const PollDisplay: React.FC<PollDisplayProps> = ({ poll, postId, userVotedOption
             const diff = endDate.getTime() - now.getTime();
 
             if (diff <= 0) {
-                setTimeRemaining('Enquete encerrada');
+                setTimeRemaining(t('posts:pollEnded'));
                 setIsPollActive(false);
                 return;
             }
@@ -92,9 +94,9 @@ const PollDisplay: React.FC<PollDisplayProps> = ({ poll, postId, userVotedOption
             if (days > 0) remaining += `${days}d `;
             if (hours > 0) remaining += `${hours}h `;
             if (minutes > 0 && days === 0) remaining += `${minutes}m `;
-            if (remaining === '' && diff > 0) remaining = 'menos de um minuto '
+            if (remaining === '' && diff > 0) remaining = t('posts:lessThanMinute') + ' '
             
-            setTimeRemaining(remaining.trim() + ' restantes');
+            setTimeRemaining(remaining.trim() + ' ' + t('posts:remaining'));
         };
 
         calculateTime();
@@ -138,7 +140,7 @@ const PollDisplay: React.FC<PollDisplayProps> = ({ poll, postId, userVotedOption
                     </button>
                 )
             })}
-             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{totalVotes.toLocaleString()} votos · {timeRemaining}</p>
+             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">{totalVotes.toLocaleString()} {t('posts:votes')} · {timeRemaining}</p>
         </div>
     );
 };
@@ -251,6 +253,7 @@ interface PostCardProps {
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onToggleSave, user, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, isClickable = true, shareableUsers, onSendMessage, followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onMediaLoad, onVoteOnPoll, allUsers }) => {
+  const { t } = useTranslation(['posts', 'common']);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showDmModal, setShowDmModal] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -622,7 +625,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                 </button>
               </Tooltip>
               <div className="relative" ref={shareContainerRef} onClick={(e) => e.stopPropagation()}>
-                <Tooltip text="Compartilhar">
+                <Tooltip text={t('posts:share')}>
                   <button onClick={(e) => handleActionClick(e, () => setShowShareMenu(!showShareMenu))} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-green-500 dark:hover:text-green-500 transition-colors duration-200 transform active:scale-110">
                     <ShareIcon />
                     <span className="text-xs md:text-sm">{post.shares}</span>

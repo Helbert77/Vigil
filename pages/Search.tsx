@@ -4,6 +4,7 @@ import Card from '../components/common/Card';
 import PostCard from '../components/post/PostCard';
 import Avatar from '../components/common/Avatar';
 import { Icon } from '../components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const SearchIcon = () => <Icon><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 
@@ -38,6 +39,7 @@ const Search: React.FC<SearchProps> = ({
     onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, 
     onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onVoteOnPoll, communities, joinedCommunityIds 
 }) => {
+  const { t } = useTranslation(['search', 'common']);
   const [activeTab, setActiveTab] = useState<'Posts' | 'Users'>('Posts');
   const [dateFilter, setDateFilter] = useState<'all' | '24h' | '7d' | '30d'>('all');
   const [communityFilter, setCommunityFilter] = useState<string>('all');
@@ -129,34 +131,34 @@ const Search: React.FC<SearchProps> = ({
 
   return (
     <div>
-      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">Busca Avançada</h1>
+      <h1 className="text-xl md:text-3xl font-bold mb-6 text-gray-900 dark:text-white">{t('search:title')}</h1>
 
       <Card className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Data</label>
+            <label htmlFor="date-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('search:date')}</label>
             <select
               id="date-filter"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-light-border dark:border-dark-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-light-bg dark:bg-dark-bg"
             >
-              <option value="all">Qualquer data</option>
-              <option value="24h">Últimas 24 horas</option>
-              <option value="7d">Últimos 7 dias</option>
-              <option value="30d">Últimos 30 dias</option>
+              <option value="all">{t('search:anyDate')}</option>
+              <option value="24h">{t('search:last24Hours')}</option>
+              <option value="7d">{t('search:last7Days')}</option>
+              <option value="30d">{t('search:last30Days')}</option>
             </select>
           </div>
 
           <div>
-            <label htmlFor="community-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Comunidade</label>
+            <label htmlFor="community-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('search:community')}</label>
             <select
               id="community-filter"
               value={communityFilter}
               onChange={(e) => setCommunityFilter(e.target.value)}
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-light-border dark:border-dark-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-light-bg dark:bg-dark-bg"
             >
-              <option value="all">Todas as Comunidades</option>
+              <option value="all">{t('search:allCommunities')}</option>
               {userJoinedCommunities.map(community => (
                 <option key={community.id} value={community.id}>{community.name}</option>
               ))}
@@ -174,7 +176,7 @@ const Search: React.FC<SearchProps> = ({
               />
             </div>
             <div className="ml-3 text-sm">
-              <label htmlFor="following-only" className="font-medium text-gray-700 dark:text-gray-300">Apenas de quem você segue</label>
+              <label htmlFor="following-only" className="font-medium text-gray-700 dark:text-gray-300">{t('search:followingOnly')}</label>
             </div>
           </div>
         </div>
@@ -182,14 +184,14 @@ const Search: React.FC<SearchProps> = ({
 
       {query && (
          <div className="text-center text-gray-500 dark:text-gray-400 mb-6">
-            Mostrando resultados para: <span className="font-bold text-gray-700 dark:text-gray-300">"{query}"</span>
+            {t('search:showingResultsFor')} <span className="font-bold text-gray-700 dark:text-gray-300">"{query}"</span>
         </div>
       )}
 
       <div>
           <div className="flex border-b border-light-border dark:border-dark-border bg-light-card dark:bg-dark-card rounded-t-lg">
-            <TabButton label="Posts" count={filteredPosts.length} isActive={activeTab === 'Posts'} onClick={() => setActiveTab('Posts')} />
-            <TabButton label="Users" count={filteredUsers.length} isActive={activeTab === 'Users'} onClick={() => setActiveTab('Users')} />
+            <TabButton label={t('search:posts')} count={filteredPosts.length} isActive={activeTab === 'Posts'} onClick={() => setActiveTab('Posts')} />
+            <TabButton label={t('search:users')} count={filteredUsers.length} isActive={activeTab === 'Users'} onClick={() => setActiveTab('Users')} />
           </div>
       </div>
       
@@ -223,7 +225,7 @@ const Search: React.FC<SearchProps> = ({
                 ))
               ) : (
                 <Card>
-                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">No posts found matching your search.</p>
+                    <p className="text-center p-8 text-gray-500 dark:text-gray-400">{t('search:noPostsFound')}</p>
                 </Card>
               )}
             </>
@@ -238,7 +240,7 @@ const Search: React.FC<SearchProps> = ({
                     ))}
                 </div>
               ) : (
-                <p className="text-center p-8 text-gray-500 dark:text-gray-400">No users found matching your search.</p>
+                <p className="text-center p-8 text-gray-500 dark:text-gray-400">{t('search:noUsersFound')}</p>
               )}
             </Card>
           )}

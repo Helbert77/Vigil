@@ -1,5 +1,7 @@
 import React from 'react';
 import { Icon } from '@/components/icons/Icon';
+import { useTranslation } from 'react-i18next';
+import { formatNumber, formatCurrency } from '@/src/i18n/formatters';
 
 const EyeIcon = () => <Icon className="h-4 w-4"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
 const MousePointerIcon = () => <Icon className="h-4 w-4"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path><path d="m13 13 6 6"></path></Icon>;
@@ -27,6 +29,8 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
   isLoading,
   onViewDetails 
 }) => {
+  const { t } = useTranslation(['ads', 'common']);
+  
   if (isLoading) {
     return (
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
@@ -41,11 +45,11 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
     return (
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          Performance por Anúncio
+          {t('ads:dashboard.performanceByAd')}
         </h3>
         <div className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-          <p className="text-center">Nenhum anúncio ativo no momento</p>
-          <p className="text-sm text-center mt-2">Crie seu primeiro anúncio para começar a ver métricas</p>
+          <p className="text-center">{t('ads:myAds.noAds')}</p>
+          <p className="text-sm text-center mt-2">{t('ads:dashboard.createFirstAd')}</p>
         </div>
       </div>
     );
@@ -54,44 +58,44 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
   return (
     <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-        Performance por Anúncio
+        {t('ads:dashboard.performanceByAd')}
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-light-border dark:border-dark-border">
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Anúncio
+                {t('ads:create.adTitle')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <EyeIcon />
-                  <span>Impressões</span>
+                  <span>{t('ads:dashboard.impressions')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <MousePointerIcon />
-                  <span>Cliques</span>
+                  <span>{t('ads:dashboard.clicks')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                CTR
+                {t('ads:dashboard.ctr')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <HeartIcon />
-                  <span>Engajamento</span>
+                  <span>{t('ads:dashboard.engagement')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Custo
+                {t('ads:dashboard.cost')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                CPC
+                {t('ads:dashboard.cpc')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Ações
+                {t('common:actions')}
               </th>
             </tr>
           </thead>
@@ -107,10 +111,10 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                   </p>
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
-                  {ad.impressions.toLocaleString('pt-BR')}
+                  {formatNumber(ad.impressions)}
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
-                  {ad.clicks.toLocaleString('pt-BR')}
+                  {formatNumber(ad.clicks)}
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className={`font-semibold ${
@@ -122,13 +126,13 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                   </span>
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
-                  {ad.engagement.toLocaleString('pt-BR')}
+                  {formatNumber(ad.engagement)}
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
-                  € {ad.cost.toFixed(2)}
+                  {formatCurrency(ad.cost)}
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
-                  € {ad.cpc.toFixed(2)}
+                  {formatCurrency(ad.cpc)}
                 </td>
                 <td className="py-3 px-4 text-center">
                   {onViewDetails && (
@@ -136,7 +140,7 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                       onClick={() => onViewDetails(ad.id)}
                       className="text-primary hover:text-secondary text-sm font-medium transition-colors"
                     >
-                      Ver detalhes
+                      {t('common:viewDetails')}
                     </button>
                   )}
                 </td>

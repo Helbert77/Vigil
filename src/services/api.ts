@@ -1803,9 +1803,9 @@ export const unlockAchievement = async (userId: string, achievementCode: string)
   });
 };
 
-// Buscar conquistas do usuário
-export const fetchUserAchievements = async (userId: string) => {
-  return supabase
+// Buscar conquistas do usuário com tradução
+export const fetchUserAchievements = async (userId: string, language: string = 'en') => {
+  const { data, error } = await supabase
     .from('user_achievements')
     .select(`
       *,
@@ -1813,24 +1813,60 @@ export const fetchUserAchievements = async (userId: string) => {
     `)
     .eq('user_id', userId)
     .order('unlocked_at', { ascending: false });
+
+  if (error) return { data: null, error };
+
+  // Aplicar traduções nas conquistas
+  const translatedData = data?.map(userAch => ({
+    ...userAch,
+    achievement: userAch.achievement ? {
+      ...userAch.achievement,
+      name: userAch.achievement.name_translations?.[language] || userAch.achievement.name_translations?.['en'] || userAch.achievement.name,
+      description: userAch.achievement.description_translations?.[language] || userAch.achievement.description_translations?.['en'] || userAch.achievement.description
+    } : null
+  }));
+
+  return { data: translatedData, error: null };
 };
 
-// Buscar todas as conquistas
-export const fetchAllAchievements = async () => {
-  return supabase
+// Buscar todas as conquistas com tradução
+export const fetchAllAchievements = async (language: string = 'en') => {
+  const { data, error } = await supabase
     .from('achievements')
     .select('*')
     .eq('is_active', true)
     .order('category', { ascending: true });
+
+  if (error) return { data: null, error };
+
+  // Aplicar traduções manualmente
+  const translatedData = data?.map(achievement => ({
+    ...achievement,
+    name: achievement.name_translations?.[language] || achievement.name_translations?.['en'] || achievement.name,
+    description: achievement.description_translations?.[language] || achievement.description_translations?.['en'] || achievement.description
+  }));
+
+  return { data: translatedData, error: null };
 };
 
-// Buscar missões ativas
-export const fetchActiveMissions = async () => {
-  return supabase
+// Buscar missões ativas com tradução
+export const fetchActiveMissions = async (language: string = 'en') => {
+  const { data, error } = await supabase
     .from('missions')
     .select('*')
     .eq('is_active', true)
     .order('mission_type', { ascending: true });
+
+  if (error) return { data: null, error };
+
+  // Aplicar traduções manualmente
+  const translatedData = data?.map(mission => ({
+    ...mission,
+    name: mission.name_translations?.[language] || mission.name_translations?.['en'] || mission.name,
+    description: mission.description_translations?.[language] || mission.description_translations?.['en'] || mission.description
+  }));
+
+  return { data: translatedData, error: null };
 };
 
 // Buscar progresso de missões do usuário

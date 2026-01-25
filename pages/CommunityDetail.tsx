@@ -9,11 +9,12 @@ import CreatePost from '@/src/components/post/CreatePost';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import EditCommunityPlanModal from '@/components/communities/EditCommunityPlanModal';
-import { getRequiredPlanLabel, getRequiredPlanColor } from '@/src/utils/communityAccess';
+import { getRequiredPlanLabel, getRequiredPlanColor, getRequiredPlanLabelKey } from '@/src/utils/communityAccess';
 import { useAdsWithState, useAdTracking } from '../src/hooks/useAdsWithState';
 import { useAdInteractions } from '../src/hooks/useAdInteractions';
 import { injectAdsIntoPosts } from '../src/utils/adFrequency';
 import { isAd } from '../src/utils/typeGuards';
+import { useTranslation } from 'react-i18next';
 
 const ArrowLeftIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
 const UsersIcon = () => <Icon className="h-4 w-4 mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -55,6 +56,7 @@ interface CommunityDetailProps {
 }
 
 const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage, onUpdateCommunityPlan }) => {
+  const { t } = useTranslation(['communities', 'posts', 'common']);
   const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
   
   // Buscar anúncios ativos para esta comunidade com estado local
@@ -124,10 +126,10 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
   return (
     <div>
       <div className="flex items-center mb-4">
-        <button onClick={onNavigateBack} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label="Go back">
+        <button onClick={onNavigateBack} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" aria-label={t('communities:goBack')}>
           <ArrowLeftIcon />
         </button>
-        <h1 className="text-xl font-bold ml-4">Community</h1>
+        <h1 className="text-xl font-bold ml-4">{t('communities:community')}</h1>
       </div>
 
       <Card className="mb-6 overflow-hidden p-0 sm:p-0">
@@ -135,7 +137,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
           <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-32 sm:h-48 w-full object-cover" />
           {community.requiredPlan && community.requiredPlan !== 'all' && (
             <div className={`absolute top-2 right-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg`}>
-              {getRequiredPlanLabel(community.requiredPlan)}
+              {t(getRequiredPlanLabelKey(community.requiredPlan))}
             </div>
           )}
         </div>
@@ -149,9 +151,9 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
               <button
                 onClick={() => setIsEditPlanModalOpen(true)}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 whitespace-nowrap"
-                title="Editar acesso da comunidade"
+                title={t('communities:editAccessTooltip')}
               >
-                Editar Acesso
+                {t('communities:editAccess')}
               </button>
             )}
           </div>
@@ -159,11 +161,11 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
             <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
                 <div className="flex items-center">
                     <UsersIcon />
-                    <span>{(community.memberCount ?? 0).toLocaleString()} members</span>
+                    <span>{(community.memberCount ?? 0).toLocaleString()} {t('communities:members')}</span>
                 </div>
                 <div className="flex items-center">
                     <MessageSquareIcon />
-                    <span>{(community.postsCount ?? 0).toLocaleString()} posts</span>
+                    <span>{(community.postsCount ?? 0).toLocaleString()} {t('posts:posts')}</span>
                 </div>
             </div>
             <button
@@ -174,7 +176,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
                   : 'bg-primary hover:bg-gray-600 text-white'
               }`}
             >
-              {isJoined ? 'Joined' : 'Join'}
+              {isJoined ? t('communities:joined') : t('communities:join')}
             </button>
           </div>
         </div>
@@ -196,7 +198,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
         <div className="lg:col-span-8">
           {pinnedPosts.length > 0 && (
             <div className="mb-8">
-              <h3 className="text-xl font-bold mb-4 flex items-center"><PinIcon /> Pinned Posts</h3>
+              <h3 className="text-xl font-bold mb-4 flex items-center"><PinIcon /> {t('posts:pinnedPosts')}</h3>
               <div className="space-y-4">
                 {pinnedPosts.map((post: Post) => (
                   <PostCard key={post.id} post={post} isSaved={savedPostIds.includes(post.id)} onUpdatePost={onUpdatePost} onToggleSave={onToggleSave} user={user} onToggleLike={onToggleLike} onIncrementView={onIncrementView} onViewPost={onViewPost} onDeletePost={onDeletePost} onBlockToggle={onBlockToggle} blockedUserIds={blockedUserIds} shareableUsers={shareableUsers} onSendMessage={onSendMessage} followedUserIds={followedUserIds} onViewProfile={onViewProfile} onFollowToggle={onFollowToggle} onOpenFollowModal={onOpenFollowModal} onVoteOnPoll={onVoteOnPoll} allUsers={allUsers} />
@@ -205,7 +207,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
             </div>
           )}
 
-          <h3 className="text-xl font-bold mb-4">Latest Posts</h3>
+          <h3 className="text-xl font-bold mb-4">{t('posts:latestPosts')}</h3>
           <div>
             {regularPostsWithAds.length > 0 ? (
               regularPostsWithAds.map((item, index) => {
@@ -258,7 +260,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
             ) : (
               <Card>
                 <p className="text-center text-gray-500 dark:text-gray-400 p-4">
-                  No posts found for this community yet. Be the first to share a discovery!
+                  {t('communities:noPostsYet')}
                 </p>
               </Card>
             )}
@@ -267,7 +269,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
 
         <aside className="lg:col-span-4 space-y-6">
           <Card>
-            <h3 className="text-lg font-bold mb-4 flex items-center"><GavelIcon /> Community Rules</h3>
+            <h3 className="text-lg font-bold mb-4 flex items-center"><GavelIcon /> {t('communities:communityRules')}</h3>
             {community.rules && community.rules.length > 0 ? (
               <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
                 {community.rules.map((rule, index) => (
@@ -275,11 +277,11 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
                 ))}
               </ol>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma regra foi definida para esta comunidade ainda.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('communities:noRulesDefined')}</p>
             )}
           </Card>
           <Card>
-            <h3 className="text-lg font-bold mb-4 flex items-center"><TrophyIcon /> Active Members</h3>
+            <h3 className="text-lg font-bold mb-4 flex items-center"><TrophyIcon /> {t('communities:activeMembers')}</h3>
             {activeMembers && activeMembers.length > 0 ? (
               <div className="space-y-4">
                 {activeMembers.map(member => (
@@ -295,12 +297,12 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
                         <p className="text-xs text-gray-500 dark:text-gray-400">@{member.username}</p>
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{member.post_count} posts</span>
+                    <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">{member.post_count} {t('posts:posts')}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Ainda não há membros ativos para mostrar. Seja o primeiro a postar!</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('communities:noActiveMembers')}</p>
             )}
           </Card>
         </aside>

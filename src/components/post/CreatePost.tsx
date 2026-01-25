@@ -10,6 +10,7 @@ import MentionSuggestions from '@/src/components/common/MentionSuggestions';
 import EmojiPicker from '@/src/components/post/EmojiPicker';
 import ResilientVideo from '@/src/components/common/ResilientVideo';
 import { getPlanLimits } from '@/src/utils/pricingUtils';
+import { useTranslation } from 'react-i18next';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const PollIcon = () => <Icon><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></Icon>;
@@ -27,6 +28,7 @@ interface CreatePostProps {
 }
 
 const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, allUsers, setCurrentPage }) => {
+  const { t } = useTranslation(['posts', 'common']);
   const [text, setText] = useState('');
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'poll' | 'evidence' | null>(null);
   
@@ -120,7 +122,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
 
     const fileMainType = file.type.split('/')[0];
     if (!['image', 'video', 'audio'].includes(fileMainType)) {
-        addToast('Tipo de arquivo não suportado. Por favor, selecione uma imagem, vídeo ou áudio.', 'error');
+        addToast(t('posts:unsupportedFileType'), 'error');
         return;
     }
 
@@ -224,7 +226,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
 
     const fileType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : null;
     if (!fileType) {
-      addToast('Tipo de arquivo não suportado. Por favor, selecione uma imagem ou vídeo.', 'error');
+      addToast(t('posts:unsupportedFileTypeImageVideo'), 'error');
       return;
     }
 
@@ -451,7 +453,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                         className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-md border border-light-border dark:border-dark-border hover:border-red-500 dark:hover:border-red-400"
                         style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
                       >
-                        Cancelar Enquete
+                        {t('posts:cancelPoll')}
                       </button>
                   </div>
               </div>
@@ -479,7 +481,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                 </div>
                 <input type="text" placeholder="Título da Evidência" value={item.title} onChange={(e) => updateEvidenceItem(item.id, 'title', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 mb-2" />
                 {item.type === 'text' && (
-                  <textarea placeholder="Descreva a evidência..." value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" rows={3}></textarea>
+                  <textarea placeholder={t('posts:describeEvidence')} value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" rows={3}></textarea>
                 )}
                 {item.type === 'link' && (
                   <input type="text" placeholder="URL do Link" value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" />
@@ -511,7 +513,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                 className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors px-3 py-1.5 rounded-md border border-light-border dark:border-dark-border hover:border-red-500 dark:hover:border-red-400"
                 style={{ display: 'inline-flex', visibility: 'visible', opacity: 1 }}
               >
-                Cancelar Quadro de Evidências
+                {t('posts:cancelEvidenceBoard')}
               </button>
             </div>
           </div>
@@ -534,10 +536,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
              <Tooltip text="Criar enquete">
                <button onClick={() => handleAttachmentButtonClick('poll')} disabled={!!mediaType} className="p-2 hover:text-orange-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add poll"><PollIcon /></button>
              </Tooltip>
-             <Tooltip text="Adicionar quadro de evidências">
+             <Tooltip text={t('posts:addEvidenceBoard')}>
                <button onClick={() => handleAttachmentButtonClick('evidence')} disabled={!!mediaType} className="p-2 hover:text-indigo-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add evidence board"><ClipboardIcon /></button>
              </Tooltip>
-             <Tooltip text="Adicionar emoji">
+             <Tooltip text={t('posts:addEmoji')}>
                <div className="relative inline-block">
                  <button 
                    ref={emojiButtonRef}

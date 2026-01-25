@@ -1,0 +1,15 @@
+{
+  "title": "Painel de Administração",
+  "subtitle": "Gerencie e monitore a plataforma Vigil",
+  "accessDenied": "Acesso Negado",
+  "noPermission": "Você não tem permissão para acessar esta área.",
+  "tabs": {
+    "analytics": "Analytics",
+    "users": "Usuários",
+    "content": "Conteúdo",
+    "coupons": "Cupons"
+  },
+  "userManagement": "Gerenciamento de Usuários",
+  "contentModeration": "Moderação de Conteúdo",
+  "inDevelopment": "Em desenvolvimento..."
+}

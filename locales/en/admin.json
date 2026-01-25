@@ -1,0 +1,15 @@
+{
+  "title": "Administration Panel",
+  "subtitle": "Manage and monitor the Vigil platform",
+  "accessDenied": "Access Denied",
+  "noPermission": "You do not have permission to access this area.",
+  "tabs": {
+    "analytics": "Analytics",
+    "users": "Users",
+    "content": "Content",
+    "coupons": "Coupons"
+  },
+  "userManagement": "User Management",
+  "contentModeration": "Content Moderation",
+  "inDevelopment": "In development..."
+}

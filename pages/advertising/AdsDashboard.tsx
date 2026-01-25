@@ -7,6 +7,8 @@ import AdPerformanceChart from '@/components/advertising/AdPerformanceChart';
 import AdsPerformanceTable from '@/components/advertising/AdsPerformanceTable';
 import CreateAdModal from '@/components/advertising/CreateAdModal';
 import { Icon } from '@/components/icons/Icon';
+import { useTranslation } from 'react-i18next';
+import { formatNumber, formatCurrency } from '@/src/i18n/formatters';
 
 // Ícones
 const EyeIcon = () => <Icon className="h-6 w-6"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
@@ -20,6 +22,7 @@ interface AdsDashboardProps {
 
 const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
   const { addToast } = useToast();
+  const { t } = useTranslation(['ads', 'common']);
   const [isLoading, setIsLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<number>(7);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -48,7 +51,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
 
     } catch (error) {
       console.error('Erro ao carregar métricas:', error);
-      addToast('Erro ao carregar métricas de anúncios', 'error');
+      addToast(t('common:error'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -133,10 +136,10 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
       <div className="flex flex-wrap gap-4 justify-between items-center">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            Analytics de Anúncios
+            {t('ads:dashboard.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Acompanhe a performance das suas campanhas
+            {t('ads:dashboard.subtitle')}
           </p>
         </div>
 
@@ -148,20 +151,20 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
               /* Mobile adjustments: smaller size */
               md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
           >
-            Criar Anúncio
+            {t('ads:dashboard.createAd')}
           </button>
 
           <label className="text-sm text-gray-600 dark:text-gray-400">
-            Período:
+            {t('ads:period.label')}:
           </label>
           <select
             value={timeframe}
             onChange={(e) => setTimeframe(Number(e.target.value))}
             className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value={7}>Últimos 7 dias</option>
-            <option value={30}>Últimos 30 dias</option>
-            <option value={90}>Últimos 90 dias</option>
+            <option value={7}>{t('ads:period.last7days')}</option>
+            <option value={30}>{t('ads:period.last30days')}</option>
+            <option value={90}>{t('ads:period.last90days')}</option>
           </select>
         </div>
       </div>
@@ -169,7 +172,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
       {/* Filtro por Anúncio */}
       <div className="flex items-center gap-3">
         <label htmlFor="ad-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Filtrar por anúncio:
+          {t('ads:filter.filterByAd')}:
         </label>
         <select
           id="ad-filter"
@@ -177,7 +180,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           onChange={(e) => setSelectedAdId(e.target.value)}
           className="bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary min-w-[250px]"
         >
-          <option value="all">Todos os anúncios</option>
+          <option value="all">{t('ads:filter.allAds')}</option>
           {adsPerformance.map((ad) => (
             <option key={ad.id} value={ad.id}>
               {ad.title}
@@ -203,30 +206,30 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <AdMetricsCard
-              title="Impressões"
-              value={filteredMetrics.aggregated?.total_impressions?.toLocaleString('pt-BR') || '0'}
-              description="Total de visualizações"
+              title={t('ads:metrics.impressions')}
+              value={formatNumber(filteredMetrics.aggregated?.total_impressions || 0)}
+              description={t('ads:metrics.totalViews')}
               icon={<EyeIcon />}
             />
 
             <AdMetricsCard
-              title="Cliques"
-              value={filteredMetrics.aggregated?.total_clicks?.toLocaleString('pt-BR') || '0'}
-              description={`CTR: ${filteredMetrics.aggregated?.ctr?.toFixed(2) || '0.00'}%`}
+              title={t('ads:metrics.clicks')}
+              value={formatNumber(filteredMetrics.aggregated?.total_clicks || 0)}
+              description={`${t('ads:metrics.ctr')}: ${filteredMetrics.aggregated?.ctr?.toFixed(2) || '0.00'}%`}
               icon={<MousePointerIcon />}
             />
 
             <AdMetricsCard
-              title="Engajamento"
-              value={filteredMetrics.aggregated?.total_engagement?.toLocaleString('pt-BR') || '0'}
-              description={`Taxa: ${filteredMetrics.aggregated?.engagement_rate || '0.00'}%`}
+              title={t('ads:metrics.engagement')}
+              value={formatNumber(filteredMetrics.aggregated?.total_engagement || 0)}
+              description={`${t('ads:metrics.rate')}: ${filteredMetrics.aggregated?.engagement_rate || '0.00'}%`}
               icon={<HeartIcon />}
             />
 
             <AdMetricsCard
-              title="Custo Total"
-              value={`€ ${totalCost.toFixed(2)}`}
-              description={avgCpc !== null ? `CPC médio: € ${avgCpc.toFixed(2)}` : 'CPC médio: Sem cliques'}
+              title={t('ads:metrics.totalCost')}
+              value={formatCurrency(totalCost)}
+              description={avgCpc !== null ? `${t('ads:metrics.avgCpc')}: ${formatCurrency(avgCpc)}` : `${t('ads:metrics.avgCpc')}: ${t('ads:metrics.noClicks')}`}
               icon={<TrendingUpIcon />}
             />
           </div>
@@ -234,23 +237,23 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
           {/* Métricas Detalhadas */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Curtidas</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ads:metrics.likes')}</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {filteredMetrics.aggregated?.total_likes?.toLocaleString('pt-BR') || '0'}
+                {formatNumber(filteredMetrics.aggregated?.total_likes || 0)}
               </p>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Compartilhamentos</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ads:metrics.shares')}</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {filteredMetrics.aggregated?.total_shares?.toLocaleString('pt-BR') || '0'}
+                {formatNumber(filteredMetrics.aggregated?.total_shares || 0)}
               </p>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card p-3 md:p-4 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Salvamentos</p>
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">{t('ads:metrics.saves')}</p>
               <p className="text-base md:text-xl font-bold text-gray-900 dark:text-white">
-                {filteredMetrics.aggregated?.total_saves?.toLocaleString('pt-BR') || '0'}
+                {formatNumber(filteredMetrics.aggregated?.total_saves || 0)}
               </p>
             </div>
           </div>
@@ -274,10 +277,10 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
               <div className="max-w-md mx-auto">
                 <div className="text-6xl mb-4">📊</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Nenhum dado disponível
+                  {t('ads:dashboard.noData')}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Você ainda não tem anúncios ativos ou métricas registradas no período selecionado.
+                  {t('ads:dashboard.noDataDesc')}
                 </p>
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
@@ -285,7 +288,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
               /* Mobile adjustments: smaller size */
               md:py-2 md:px-4 py-1.5 px-3 text-sm md:text-base"
                 >
-                  Criar Primeiro Anúncio
+                  {t('ads:dashboard.createFirstAd')}
                 </button>
               </div>
             </div>

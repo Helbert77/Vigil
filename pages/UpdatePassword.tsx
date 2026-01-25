@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/hooks/useTheme';
 import { useToast } from '@/hooks/useToast';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { useTranslation } from 'react-i18next';
 
 interface PasswordStrength {
   score: number;
@@ -18,6 +19,7 @@ interface PasswordStrength {
 }
 
 const UpdatePassword: React.FC = () => {
+  const { t } = useTranslation(['password', 'common']);
   const { theme } = useTheme();
   const { addToast } = useToast();
   
@@ -39,11 +41,11 @@ const UpdatePassword: React.FC = () => {
     if (authError) {
       // Mostrar mensagem de erro apropriada
       if (authError.errorCode === 'otp_expired') {
-        setErrors(['O link de recuperação expirou. Por favor, solicite um novo link.']);
-        addToast('Link de recuperação expirado', 'error');
+        setErrors([t('password:errors.recoveryLinkExpired')]);
+        addToast(t('password:toasts.linkExpired'), 'error');
       } else {
-        setErrors([authError.errorDescription || 'Erro ao processar link de recuperação']);
-        addToast('Erro no link de recuperação', 'error');
+        setErrors([authError.errorDescription || t('password:errors.recoveryLinkError')]);
+        addToast(t('password:toasts.linkError'), 'error');
       }
       
       // Limpar o erro
@@ -74,27 +76,27 @@ const UpdatePassword: React.FC = () => {
     switch (score) {
       case 0:
       case 1:
-        label = 'Muito Fraca';
+        label = t('password:strength.veryWeak');
         color = 'bg-red-500';
         break;
       case 2:
-        label = 'Fraca';
+        label = t('password:strength.weak');
         color = 'bg-orange-500';
         break;
       case 3:
-        label = 'Média';
+        label = t('password:strength.medium');
         color = 'bg-yellow-500';
         break;
       case 4:
-        label = 'Forte';
+        label = t('password:strength.strong');
         color = 'bg-blue-500';
         break;
       case 5:
-        label = 'Muito Forte';
+        label = t('password:strength.veryStrong');
         color = 'bg-green-500';
         break;
       default:
-        label = 'Muito Fraca';
+        label = t('password:strength.veryWeak');
         color = 'bg-red-500';
     }
 
@@ -108,32 +110,32 @@ const UpdatePassword: React.FC = () => {
     const errors: string[] = [];
 
     if (!password) {
-      errors.push('A nova senha é obrigatória.');
+      errors.push(t('password:errors.newPasswordRequired'));
     } else {
       if (password.length < 8) {
-        errors.push('A senha deve ter no mínimo 8 caracteres.');
+        errors.push(t('password:errors.minLength'));
       }
       if (password.length > 128) {
-        errors.push('A senha deve ter no máximo 128 caracteres.');
+        errors.push(t('password:errors.maxLength'));
       }
       if (!/[A-Z]/.test(password)) {
-        errors.push('A senha deve conter pelo menos uma letra maiúscula.');
+        errors.push(t('password:errors.uppercaseRequired'));
       }
       if (!/[a-z]/.test(password)) {
-        errors.push('A senha deve conter pelo menos uma letra minúscula.');
+        errors.push(t('password:errors.lowercaseRequired'));
       }
       if (!/[0-9]/.test(password)) {
-        errors.push('A senha deve conter pelo menos um número.');
+        errors.push(t('password:errors.numberRequired'));
       }
       if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-        errors.push('A senha deve conter pelo menos um caractere especial (!@#$%^&*()_+-=[]{}|;:,.<>?).');
+        errors.push(t('password:errors.specialRequired'));
       }
     }
 
     if (!confirmPassword) {
-      errors.push('A confirmação de senha é obrigatória.');
+      errors.push(t('password:errors.confirmRequired'));
     } else if (password !== confirmPassword) {
-      errors.push('As senhas não correspondem.');
+      errors.push(t('password:errors.passwordsDontMatch'));
     }
 
     return errors;
@@ -154,7 +156,7 @@ const UpdatePassword: React.FC = () => {
           console.log('✅ [UPDATE_PASSWORD] Sessão válida após update');
           console.log('👤 [UPDATE_PASSWORD] User:', session.user?.email);
           
-          addToast('Senha atualizada com sucesso! Faça login com sua nova senha.', 'success');
+          addToast(t('password:success.updated'), 'success');
           setSuccess(true);
           
           console.log('⏰ [UPDATE_PASSWORD] Aguardando 2s para redirecionar...');
@@ -218,11 +220,11 @@ const UpdatePassword: React.FC = () => {
 
       if (error) {
         setErrors([error.message]);
-        addToast('Erro ao atualizar senha: ' + error.message, 'error');
+        addToast(t('password:errors.updateError') + ' ' + error.message, 'error');
       }
     } catch (error: any) {
-      setErrors(['Erro inesperado ao atualizar senha.']);
-      addToast('Erro inesperado ao atualizar senha.', 'error');
+      setErrors([t('password:errors.unexpectedError')]);
+      addToast(t('password:errors.unexpectedError'), 'error');
     }
     
     setLoading(false);
@@ -247,7 +249,7 @@ const UpdatePassword: React.FC = () => {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-                  {errors.length === 1 ? 'Erro encontrado:' : `${errors.length} erros encontrados:`}
+                  {errors.length === 1 ? t('password:errors.single') : `${errors.length} ${t('password:errors.multiple')}`}
                 </h3>
                 <div className="mt-2 text-sm text-red-700 dark:text-red-300">
                   <ul className="list-disc pl-5 space-y-1">
@@ -283,7 +285,7 @@ const UpdatePassword: React.FC = () => {
           {/* Campo Nova Senha */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nova Senha *
+              {t('password:newPassword')}
             </label>
             <div className="relative">
               <input
@@ -318,7 +320,7 @@ const UpdatePassword: React.FC = () => {
             {password && (
               <div className="mt-2">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs text-gray-600 dark:text-gray-400">Força da senha:</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{t('password:passwordStrength')}</span>
                   <span className={`text-xs font-medium ${passwordStrength.score >= 4 ? 'text-green-600 dark:text-green-400' : passwordStrength.score >= 3 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
                     {passwordStrength.label}
                   </span>
@@ -330,27 +332,27 @@ const UpdatePassword: React.FC = () => {
                   ></div>
                 </div>
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                  <p className="mb-1">Requisitos:</p>
+                  <p className="mb-1">{t('password:requirements')}</p>
                   <ul className="space-y-1">
                     <li className={`flex items-center ${passwordStrength.requirements.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-500'}`}>
                       <span className="mr-2">{passwordStrength.requirements.length ? '✓' : '○'}</span>
-                      Mínimo 8 caracteres
+                      {t('password:minChars')}
                     </li>
                     <li className={`flex items-center ${passwordStrength.requirements.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-500'}`}>
                       <span className="mr-2">{passwordStrength.requirements.uppercase ? '✓' : '○'}</span>
-                      Uma letra maiúscula
+                      {t('password:uppercase')}
                     </li>
                     <li className={`flex items-center ${passwordStrength.requirements.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-500'}`}>
                       <span className="mr-2">{passwordStrength.requirements.lowercase ? '✓' : '○'}</span>
-                      Uma letra minúscula
+                      {t('password:lowercase')}
                     </li>
                     <li className={`flex items-center ${passwordStrength.requirements.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-500'}`}>
                       <span className="mr-2">{passwordStrength.requirements.number ? '✓' : '○'}</span>
-                      Um número
+                      {t('password:number')}
                     </li>
                     <li className={`flex items-center ${passwordStrength.requirements.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-500'}`}>
                       <span className="mr-2">{passwordStrength.requirements.special ? '✓' : '○'}</span>
-                      Um caractere especial
+                      {t('password:special')}
                     </li>
                   </ul>
                 </div>
@@ -372,7 +374,7 @@ const UpdatePassword: React.FC = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Confirme sua nova senha"
+                placeholder={t('password:confirmPasswordPlaceholder')}
               />
               <button
                 type="button"
@@ -392,10 +394,10 @@ const UpdatePassword: React.FC = () => {
               </button>
             </div>
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-sm text-red-600 dark:text-red-400">As senhas não correspondem</p>
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">{t('password:passwordsDontMatch')}</p>
             )}
             {confirmPassword && password === confirmPassword && password && (
-              <p className="mt-1 text-sm text-green-600 dark:text-green-400">✓ Senhas correspondem</p>
+              <p className="mt-1 text-sm text-green-600 dark:text-green-400">{t('password:passwordsMatch')}</p>
             )}
           </div>
 
@@ -411,17 +413,17 @@ const UpdatePassword: React.FC = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Atualizando senha...
+                {t('password:updating')}
               </div>
             ) : (
-              'Atualizar Senha'
+              t('password:updateButton')
             )}
           </button>
         </form>
 
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Após atualizar sua senha, você será redirecionado para fazer login novamente.
+            {t('password:redirectMessage')}
           </p>
         </div>
       </div>

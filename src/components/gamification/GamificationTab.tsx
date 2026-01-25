@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { UserGamification, UserAchievement, Achievement, Mission, UserMissionProgress } from '@/types';
 import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 interface GamificationTabProps {
   userId: string;
@@ -9,6 +10,7 @@ interface GamificationTabProps {
 }
 
 export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnProfile }) => {
+  const { t, i18n } = useTranslation(['gamification']);
   const { addToast } = useToast();
   const [gamification, setGamification] = useState<UserGamification | null>(null);
   const [achievements, setAchievements] = useState<UserAchievement[]>([]);
@@ -20,32 +22,35 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
 
   useEffect(() => {
     loadGamificationData();
-  }, [userId]);
+  }, [userId, i18n.language]);
 
   const loadGamificationData = async () => {
     setLoading(true);
     try {
+      // Obter idioma atual
+      const currentLanguage = i18n.language;
+
       // Carregar dados de gamificação
       const { data: gamData, error: gamError } = await api.fetchUserGamification(userId);
       if (!gamError && gamData) {
         setGamification(gamData);
       }
 
-      // Carregar conquistas do usuário
-      const { data: userAch, error: achError } = await api.fetchUserAchievements(userId);
+      // Carregar conquistas do usuário com tradução
+      const { data: userAch, error: achError } = await api.fetchUserAchievements(userId, currentLanguage);
       if (!achError && userAch) {
         setAchievements(userAch);
       }
 
-      // Carregar todas as conquistas
-      const { data: allAch, error: allAchError } = await api.fetchAllAchievements();
+      // Carregar todas as conquistas com tradução
+      const { data: allAch, error: allAchError } = await api.fetchAllAchievements(currentLanguage);
       if (!allAchError && allAch) {
         setAllAchievements(allAch);
       }
 
-      // Se for perfil próprio, carregar missões
+      // Se for perfil próprio, carregar missões com tradução
       if (isOwnProfile) {
-        const { data: missionsData, error: missionsError } = await api.fetchActiveMissions();
+        const { data: missionsData, error: missionsError } = await api.fetchActiveMissions(currentLanguage);
         if (!missionsError && missionsData) {
           setMissions(missionsData);
         }
@@ -57,7 +62,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
       }
     } catch (error) {
       console.error('[GamificationTab] Error loading data:', error);
-      addToast('Erro ao carregar dados de gamificação', 'error');
+      addToast(t('gamification:loadError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -76,11 +81,11 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
   };
 
   const getLevelName = (level: number) => {
-    if (level <= 5) return 'Iniciante';
-    if (level <= 10) return 'Explorador';
-    if (level <= 15) return 'Veterano';
-    if (level <= 20) return 'Elite';
-    return 'Lendário';
+    if (level <= 5) return t('gamification:levelNames.beginner');
+    if (level <= 10) return t('gamification:levelNames.explorer');
+    if (level <= 15) return t('gamification:levelNames.veteran');
+    if (level <= 20) return t('gamification:levelNames.elite');
+    return t('gamification:levelNames.legendary');
   };
 
   const getAchievementProgress = (achievement: Achievement) => {
@@ -105,7 +110,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
     return (
       <div className="text-center py-12">
         <p className="text-gray-600 dark:text-gray-400">
-          Dados de gamificação não disponíveis
+          {t('gamification:dataNotAvailable')}
         </p>
       </div>
     );
@@ -123,7 +128,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
-          📊 Visão Geral
+          📊 {t('gamification:overview')}
         </button>
         <button
           onClick={() => setActiveSection('achievements')}
@@ -133,7 +138,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
           }`}
         >
-          🏆 Conquistas ({achievements.length}/{allAchievements.length})
+          🏆 {t('gamification:achievements')} ({achievements.length}/{allAchievements.length})
         </button>
         {isOwnProfile && (
           <button
@@ -144,7 +149,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
-            🎯 Missões
+            🎯 {t('gamification:missions')}
           </button>
         )}
       </div>
@@ -156,12 +161,12 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
           <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-center md:text-left">
-                <div className="text-sm opacity-90 mb-1">Nível Atual</div>
+                <div className="text-sm opacity-90 mb-1">{t('gamification:currentLevel')}</div>
                 <div className="text-5xl md:text-6xl font-bold mb-2">{gamification.current_level}</div>
                 <div className="text-xl font-semibold">{getLevelName(gamification.current_level)}</div>
               </div>
               <div className="flex-1 w-full md:max-w-md">
-                <div className="text-sm opacity-90 mb-2">Progresso para Nível {gamification.current_level + 1}</div>
+                <div className="text-sm opacity-90 mb-2">{t('gamification:progressToLevel', { level: gamification.current_level + 1 })}</div>
                 <div className="bg-white/20 rounded-full h-4 overflow-hidden">
                   <div
                     className="bg-white h-full transition-all duration-500"
@@ -169,7 +174,10 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                   />
                 </div>
                 <div className="text-sm mt-2 opacity-90">
-                  {gamification.total_xp.toLocaleString()} / {gamification.xp_to_next_level.toLocaleString()} XP
+                  {t('gamification:xpProgress', { 
+                    current: gamification.total_xp.toLocaleString(i18n.language === 'pt' ? 'pt-BR' : 'en-US'),
+                    total: gamification.xp_to_next_level.toLocaleString(i18n.language === 'pt' ? 'pt-BR' : 'en-US')
+                  })}
                 </div>
               </div>
             </div>
@@ -180,9 +188,9 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
             <div className="bg-light-card dark:bg-dark-card rounded-xl p-4 border border-light-border dark:border-dark-border">
               <div className="text-3xl mb-2">⭐</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {gamification.total_xp.toLocaleString()}
+                {gamification.total_xp.toLocaleString(i18n.language === 'pt' ? 'pt-BR' : 'en-US')}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">XP Total</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('gamification:totalXP')}</div>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card rounded-xl p-4 border border-light-border dark:border-dark-border">
@@ -190,7 +198,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {achievements.length}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Conquistas</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('gamification:achievementsCount')}</div>
             </div>
 
             <div className="bg-light-card dark:bg-dark-card rounded-xl p-4 border border-light-border dark:border-dark-border">
@@ -198,7 +206,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {gamification.daily_login_streak}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Dias Consecutivos</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">{t('gamification:consecutiveDays')}</div>
             </div>
           </div>
 
@@ -206,7 +214,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
           {achievements.length > 0 && (
             <div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                🏆 Conquistas Recentes
+                🏆 {t('gamification:recentAchievements')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {achievements.slice(0, 4).map((userAch) => (
@@ -223,7 +231,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                         {userAch.achievement?.description}
                       </div>
                       <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                        +{userAch.achievement?.xp_reward} XP
+                        {t('gamification:xpReward', { xp: userAch.achievement?.xp_reward || 0 })}
                       </div>
                     </div>
                   </div>
@@ -238,7 +246,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
       {activeSection === 'achievements' && (
         <div className="space-y-4">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            {achievements.length} de {allAchievements.length} conquistas desbloqueadas
+            {t('gamification:achievementsUnlocked', { unlocked: achievements.length, total: allAchievements.length })}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {allAchievements.map((achievement) => {
@@ -267,11 +275,11 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                       </div>
                       <div className="flex items-center justify-between mt-2">
                         <div className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">
-                          +{achievement.xp_reward} XP
+                          {t('gamification:xpReward', { xp: achievement.xp_reward })}
                         </div>
                         {isUnlocked && userAch && (
                           <div className="text-xs text-green-600 dark:text-green-400">
-                            ✓ {new Date(userAch.unlocked_at).toLocaleDateString('pt-BR')}
+                            ✓ {t('gamification:unlockedAt', { date: new Date(userAch.unlocked_at).toLocaleDateString(i18n.language === 'pt' ? 'pt-BR' : 'en-US') })}
                           </div>
                         )}
                       </div>
@@ -291,10 +299,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <span>☀️</span>
-              Missões Diárias
-              <span className="text-sm font-normal text-gray-600 dark:text-gray-400">
-                (Reset às 00:00)
-              </span>
+              {t('gamification:dailyMissionsWithReset')}
             </h3>
             <div className="space-y-3">
               {missions.filter(m => m.mission_type === 'daily').map((mission) => {
@@ -324,14 +329,14 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
-                          +{mission.xp_reward} XP
+                          {t('gamification:xpReward', { xp: mission.xp_reward })}
                         </div>
                       </div>
                     </div>
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-gray-600 dark:text-gray-400">
-                          Progresso: {currentCount}/{mission.target_count}
+                          {t('gamification:progressLabel', { current: currentCount, target: mission.target_count })}
                         </span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {Math.min(100, Math.round(percentage))}%
@@ -356,10 +361,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <span>📅</span>
-              Missões Semanais
-              <span className="text-sm font-normal text-gray-600 dark:text-gray-400">
-                (Reset segunda-feira)
-              </span>
+              {t('gamification:weeklyMissionsWithReset')}
             </h3>
             <div className="space-y-3">
               {missions.filter(m => m.mission_type === 'weekly').map((mission) => {
@@ -389,14 +391,14 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId, isOwnP
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
-                          +{mission.xp_reward} XP
+                          {t('gamification:xpReward', { xp: mission.xp_reward })}
                         </div>
                       </div>
                     </div>
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-gray-600 dark:text-gray-400">
-                          Progresso: {currentCount}/{mission.target_count}
+                          {t('gamification:progressLabel', { current: currentCount, target: mission.target_count })}
                         </span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {Math.min(100, Math.round(percentage))}%

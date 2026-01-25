@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { Icon } from '../icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const UploadIcon = () => <Icon className="h-6 w-6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></Icon>;
 
@@ -12,6 +13,7 @@ interface ImageUploaderProps {
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({ userId, filePath, onUpload }) => {
+  const { t } = useTranslation(['common']);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
@@ -37,7 +39,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ userId, filePath, onUploa
 
     if (uploadError) {
       console.error('Error uploading image:', uploadError);
-      addToast('Falha ao enviar imagem. Tente novamente.', 'error');
+      addToast(t('common:uploadFailed') + '. ' + t('common:tryAgain'), 'error');
       setIsUploading(false);
       return;
     }
@@ -50,7 +52,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ userId, filePath, onUploa
       onUpload(data.publicUrl);
       // Toast removido - imagem atualiza visualmente
     } else {
-      addToast('Não foi possível obter o URL da imagem.', 'error');
+      addToast(t('common:somethingWentWrong'), 'error');
     }
     setIsUploading(false);
   };

@@ -37,6 +37,7 @@ export function canAccessCommunity(userPlan: UserPlan, requiredPlan?: RequiredPl
 
 /**
  * Retorna o nome amigável do plano requerido
+ * @deprecated Use getRequiredPlanLabelKey instead with i18n t function
  */
 export function getRequiredPlanLabel(requiredPlan?: RequiredPlan): string {
   switch (requiredPlan) {
@@ -50,6 +51,24 @@ export function getRequiredPlanLabel(requiredPlan?: RequiredPlan): string {
       return 'Premium';
     default:
       return 'Todos';
+  }
+}
+
+/**
+ * Retorna a chave de tradução do plano requerido
+ */
+export function getRequiredPlanLabelKey(requiredPlan?: RequiredPlan): string {
+  switch (requiredPlan) {
+    case 'all':
+      return 'communities:planLabels.all';
+    case 'basic+':
+      return 'communities:planLabels.basicPlus';
+    case 'pro+':
+      return 'communities:planLabels.proPlus';
+    case 'premium':
+      return 'communities:planLabels.premium';
+    default:
+      return 'communities:planLabels.all';
   }
 }
 
@@ -73,6 +92,7 @@ export function getRequiredPlanColor(requiredPlan?: RequiredPlan): string {
 
 /**
  * Retorna mensagem de erro quando usuário não tem acesso
+ * @deprecated Use getAccessDeniedMessageKey instead with i18n t function
  */
 export function getAccessDeniedMessage(requiredPlan: RequiredPlan): string {
   switch (requiredPlan) {
@@ -84,6 +104,22 @@ export function getAccessDeniedMessage(requiredPlan: RequiredPlan): string {
       return 'Esta comunidade é exclusiva para usuários Premium.';
     default:
       return 'Você não tem acesso a esta comunidade.';
+  }
+}
+
+/**
+ * Retorna a chave de tradução da mensagem de acesso negado
+ */
+export function getAccessDeniedMessageKey(requiredPlan: RequiredPlan): string {
+  switch (requiredPlan) {
+    case 'basic+':
+      return 'communities:accessDenied.basicPlus';
+    case 'pro+':
+      return 'communities:accessDenied.proPlus';
+    case 'premium':
+      return 'communities:accessDenied.premium';
+    default:
+      return 'communities:accessDenied.default';
   }
 }
 

@@ -5,6 +5,7 @@ import { Icon } from '../components/icons/Icon';
 import Card from '../components/common/Card';
 import CreateComment from '../components/post/CreateComment';
 import CommentItem from '../components/post/CommentItem';
+import { useTranslation } from 'react-i18next';
 
 const ArrowLeftIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
 
@@ -76,6 +77,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
   followedUserIds, onViewProfile, onFollowToggle, onOpenFollowModal, onVoteOnPoll,
   onUpdateComment, onDeleteComment, allUsers
 }) => {
+  const { t } = useTranslation(['posts', 'common']);
   // Estado interno para gerenciar o comentário atualmente focado dentro desta instância de PostDetail
   const [currentInternalFocusCommentId, setCurrentInternalFocusCommentId] = useState<string | null>(activeCommentId || null);
 
@@ -238,7 +240,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
                 />
               ))
             ) : (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Nenhum comentário ainda. Inicie a conversa.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t('posts:noCommentsYet')}</p>
             )}
         </div>
       </Card>

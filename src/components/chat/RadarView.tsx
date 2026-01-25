@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { formatDistance, calculateBearing, type Coordinates } from '@/src/utils/geoCalculations';
 import { useGeolocationPresence } from '@/src/contexts/GeolocationPresenceContext';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: string;
@@ -27,6 +28,7 @@ interface RadarViewProps {
 }
 
 const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode }) => {
+  const { t } = useTranslation('chat');
   const [radarUsers, setRadarUsers] = useState<RadarUser[]>([]);
   const [hoveredUser, setHoveredUser] = useState<string | null>(null);
   const [radarSize, setRadarSize] = useState<number>(500);
@@ -133,10 +135,10 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
             <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 shadow-2xl text-center max-w-xs">
               <div className="text-4xl mb-3">🔍</div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                Escaneando...
+                {t('radar.scanning')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Aguardando usuários próximos entrarem online
+                {t('radar.waitingForUsers')}
               </p>
             </div>
           </div>
@@ -214,13 +216,13 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
               <div className="flex items-center justify-between mb-1 md:mb-2 gap-1">
                 <h3 className="font-bold text-[10px] md:text-sm text-gray-900 dark:text-white truncate">{user.name}</h3>
                 <span className="text-[9px] md:text-xs font-mono bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-1.5 md:px-2 py-0.5 rounded-full whitespace-nowrap">
-                  {Math.round((user.similarity_score || 0) * 100)}% Match
+                  {Math.round((user.similarity_score || 0) * 100)}% {t('radar.match')}
                 </span>
               </div>
 
               {user.distance !== undefined && (
                 <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
-                  📍 {formatDistance(user.distance)} de distância
+                  📍 {formatDistance(user.distance)} {t('radar.distance')}
                 </p>
               )}
 
@@ -232,7 +234,7 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
 
               {user.age && (
                 <p className="text-[9px] md:text-xs text-gray-600 dark:text-gray-400 mb-0.5 md:mb-1 flex items-center gap-1">
-                  🎂 {user.age} anos
+                  🎂 {user.age} {t('radar.years')}
                 </p>
               )}
 
@@ -258,7 +260,7 @@ const RadarView: React.FC<RadarViewProps> = ({ users, onUserClick, isDarkMode })
                 }}
                 className="mt-1.5 md:mt-3 w-full px-2 md:px-3 py-1 md:py-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-[9px] md:text-xs font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 hover:scale-105 active:scale-95"
               >
-                💬 Ir para Chat
+                💬 {t('radar.goToChat')}
               </button>
             </div>
           </div>

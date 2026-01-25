@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Ad } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -25,6 +26,7 @@ interface EditAdModalProps {
 
 const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, onAdUpdated }) => {
     const { addToast } = useToast();
+    const { t } = useTranslation(['ads', 'common', 'errors']);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isUploadingVideo, setIsUploadingVideo] = useState(false);
@@ -69,12 +71,12 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            addToast('Por favor, selecione uma imagem válida', 'error');
+            addToast(t('errors:invalidImage'), 'error');
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            addToast('A imagem deve ter no máximo 5MB', 'error');
+            addToast(t('errors:imageTooLarge', { size: 5 }), 'error');
             return;
         }
 
@@ -95,7 +97,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
             // addToast('Imagem carregada com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao fazer upload da imagem:', error);
-            addToast('Erro ao fazer upload da imagem', 'error');
+            addToast(t('errors:uploadImageError'), 'error');
         } finally {
             setIsUploadingImage(false);
         }
@@ -106,12 +108,12 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
         if (!file) return;
 
         if (!file.type.startsWith('video/')) {
-            addToast('Por favor, selecione um vídeo válido', 'error');
+            addToast(t('errors:invalidVideo'), 'error');
             return;
         }
 
         if (file.size > 50 * 1024 * 1024) {
-            addToast('O vídeo deve ter no máximo 50MB', 'error');
+            addToast(t('errors:videoTooLarge', { size: 50 }), 'error');
             return;
         }
 
@@ -132,7 +134,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
             // addToast('Vídeo carregado com sucesso', 'success');
         } catch (error) {
             console.error('Erro ao fazer upload do vídeo:', error);
-            addToast('Erro ao fazer upload do vídeo', 'error');
+            addToast(t('errors:uploadVideoError'), 'error');
         } finally {
             setIsUploadingVideo(false);
         }
@@ -142,12 +144,12 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
         e.preventDefault();
 
         if (!formData.title.trim()) {
-            addToast('Por favor, insira um título para o anúncio', 'error');
+            addToast(t('errors:titleRequired'), 'error');
             return;
         }
 
         if (!formData.description.trim()) {
-            addToast('Por favor, insira uma descrição para o anúncio', 'error');
+            addToast(t('errors:descriptionRequired'), 'error');
             return;
         }
 
@@ -155,13 +157,13 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
             try {
                 new URL(formData.link_url);
             } catch {
-                addToast('Por favor, insira uma URL válida', 'error');
+                addToast(t('errors:invalidUrl'), 'error');
                 return;
             }
         }
 
         if (!formData.image_url && !formData.video_url) {
-            addToast('Por favor, adicione uma imagem ou vídeo ao anúncio', 'error');
+            addToast(t('errors:mediaRequired'), 'error');
             return;
         }
 
@@ -201,7 +203,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
 
         } catch (error: any) {
             console.error('Erro ao atualizar anúncio:', error);
-            addToast(error.message || 'Erro ao atualizar anúncio', 'error');
+            addToast(error.message || t('ads:edit.error'), 'error');
         } finally {
             setIsLoading(false);
         }
@@ -217,7 +219,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="p-4 border-b border-light-border dark:border-dark-border flex justify-between items-center shrink-0">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Editar Anúncio</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('ads:edit.title')}</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
@@ -235,59 +237,59 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Título do Anúncio *
+                                {t('ads:create.adTitle')} *
                             </label>
                             <input
                                 type="text"
                                 name="title"
                                 value={formData.title}
                                 onChange={handleChange}
-                                placeholder="Ex: Descubra nosso novo produto"
+                                placeholder={t('ads:create.adTitle')}
                                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                                 maxLength={100}
                                 required
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {formData.title.length}/100 caracteres
+                                {formData.title.length}/100
                             </p>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Descrição *
+                                {t('ads:create.description')} *
                             </label>
                             <textarea
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
-                                placeholder="Descreva seu anúncio..."
+                                placeholder={t('ads:create.description')}
                                 rows={4}
                                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                                 maxLength={500}
                                 required
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {formData.description.length}/500 caracteres
+                                {formData.description.length}/500
                             </p>
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Link de Destino (opcional)
+                                {t('ads:create.linkUrl')}
                             </label>
                             <input
                                 type="url"
                                 name="link_url"
                                 value={formData.link_url}
                                 onChange={handleChange}
-                                placeholder="https://exemplo.com"
+                                placeholder="https://example.com"
                                 className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Imagem do Anúncio {!formData.video_url && '*'}
+                                {t('ads:create.imageUrl')} {!formData.video_url && '*'}
                             </label>
                             <input
                                 ref={imageInputRef}
@@ -316,8 +318,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                                 ) : (
                                     <div className="text-center text-gray-500">
                                         <UploadIcon />
-                                        <p className="text-sm mt-2">Clique para enviar uma imagem</p>
-                                        <p className="text-xs mt-1">PNG, JPG, GIF até 5MB</p>
+                                        <p className="text-sm mt-2">{t('common:upload')}</p>
+                                        <p className="text-xs mt-1">PNG, JPG, GIF (5MB max)</p>
                                     </div>
                                 )}
                             </div>
@@ -327,14 +329,14 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                                     onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
                                     className="text-sm text-red-600 hover:text-red-700 mt-2"
                                 >
-                                    Remover imagem
+                                    {t('common:remove')}
                                 </button>
                             )}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Vídeo do Anúncio (opcional)
+                                {t('ads:create.videoUrl')}
                             </label>
                             <input
                                 ref={videoInputRef}
@@ -363,8 +365,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                                 ) : (
                                     <div className="text-center text-gray-500">
                                         <UploadIcon />
-                                        <p className="text-sm mt-2">Clique para enviar um vídeo</p>
-                                        <p className="text-xs mt-1">MP4, WebM até 50MB</p>
+                                        <p className="text-sm mt-2">{t('common:upload')}</p>
+                                        <p className="text-xs mt-1">MP4, WebM (50MB max)</p>
                                     </div>
                                 )}
                             </div>
@@ -374,7 +376,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                                     onClick={() => setFormData(prev => ({ ...prev, video_url: '' }))}
                                     className="text-sm text-red-600 hover:text-red-700 mt-2"
                                 >
-                                    Remover vídeo
+                                    {t('common:remove')}
                                 </button>
                             )}
                         </div>
@@ -382,7 +384,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Tipo de Anúncio
+                                    {t('ads:create.type')}
                                 </label>
                                 <select
                                     name="type"
@@ -390,8 +392,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                                     onChange={handleChange}
                                     className="w-full px-4 py-2 rounded-lg border border-light-border dark:border-dark-border bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
-                                    <option value="native">Nativo</option>
-                                    <option value="adsense">AdSense</option>
+                                    <option value="native">{t('ads:create.native')}</option>
+                                    <option value="adsense">{t('ads:create.adsense')}</option>
                                 </select>
                             </div>
                         </div>
@@ -404,7 +406,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                             disabled={isLoading}
                             className="px-6 py-2 rounded-lg border border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
                         >
-                            Cancelar
+                            {t('common:cancel')}
                         </button>
                         <button
                             type="submit"
@@ -414,7 +416,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({ isOpen, onClose, user, ad, on
                             {isLoading && (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             )}
-                            {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+                            {isLoading ? t('ads:edit.updating') : t('common:save')}
                         </button>
                     </div>
                 </form>

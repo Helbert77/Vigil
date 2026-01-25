@@ -7,6 +7,8 @@ import { SessionProvider } from '@/contexts/SessionContext';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { PresenceProvider } from '@/src/contexts/PresenceContext';
 import ErrorBoundary from '@/src/components/common/ErrorBoundary';
+import { LanguageProvider } from '@/src/contexts/LanguageContext';
+import '@/src/i18n/config';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,18 +18,20 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <ErrorBoundary>
-    <SessionProvider>
-      <PresenceProvider>
-        <ToastProvider>
-          <ThemeProvider>
-            <App />
-            {import.meta.env.PROD && !['localhost', '127.0.0.1'].includes(window.location.hostname) && (
-              <SpeedInsights />
-            )}
-          </ThemeProvider>
-        </ToastProvider>
-      </PresenceProvider>
-    </SessionProvider>
+    <LanguageProvider>
+      <SessionProvider>
+        <PresenceProvider>
+          <ToastProvider>
+            <ThemeProvider>
+              <App />
+              {import.meta.env.PROD && !['localhost', '127.0.0.1'].includes(window.location.hostname) && (
+                <SpeedInsights />
+              )}
+            </ThemeProvider>
+          </ToastProvider>
+        </PresenceProvider>
+      </SessionProvider>
+    </LanguageProvider>
   </ErrorBoundary>
 );
 

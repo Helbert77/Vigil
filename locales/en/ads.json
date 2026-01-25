@@ -1,0 +1,87 @@
+{
+  "dashboard": {
+    "title": "Ads Analytics",
+    "subtitle": "Track your campaigns performance",
+    "createAd": "Create Ad",
+    "noData": "No data available",
+    "noDataDesc": "You don't have active ads or recorded metrics in the selected period yet.",
+    "createFirstAd": "Create First Ad"
+  },
+  "metrics": {
+    "impressions": "Impressions",
+    "clicks": "Clicks",
+    "engagement": "Engagement",
+    "totalCost": "Total Cost",
+    "totalViews": "Total views",
+    "ctr": "CTR",
+    "rate": "Rate",
+    "avgCpc": "Avg CPC",
+    "likes": "Likes",
+    "shares": "Shares",
+    "saves": "Saves",
+    "noClicks": "No clicks"
+  },
+  "period": {
+    "label": "Period",
+    "last7days": "Last 7 days",
+    "last30days": "Last 30 days",
+    "last90days": "Last 90 days"
+  },
+  "filter": {
+    "filterByAd": "Filter by ad",
+    "allAds": "All ads"
+  },
+  "myAds": {
+    "title": "My Ads",
+    "subtitle": "Manage your advertising campaigns",
+    "noAds": "No ads yet",
+    "noAdsDesc": "You haven't created any ads yet. Start your first campaign now!",
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "ended": "Ended",
+      "pending": "Pending Approval",
+      "rejected": "Rejected"
+    }
+  },
+  "create": {
+    "title": "Create Ad",
+    "adTitle": "Ad Title",
+    "description": "Description",
+    "imageUrl": "Image URL",
+    "videoUrl": "Video URL",
+    "linkUrl": "Link URL",
+    "advertiserName": "Advertiser Name",
+    "type": "Ad Type",
+    "native": "Native",
+    "adsense": "AdSense",
+    "selectPlan": "Select Plan",
+    "creating": "Creating...",
+    "success": "Ad created successfully!",
+    "error": "Failed to create ad"
+  },
+  "edit": {
+    "title": "Edit Ad",
+    "updating": "Updating...",
+    "success": "Ad updated successfully!",
+    "error": "Failed to update ad"
+  },
+  "actions": {
+    "pause": "Pause",
+    "activate": "Activate",
+    "ended": "Ended",
+    "waitingApproval": "Awaiting Approval",
+    "deleteTitle": "Delete Ad?",
+    "deleteMessage": "Are you sure you want to delete this ad? This action cannot be undone and all associated metrics will be lost.",
+    "deleteConfirm": "Yes, delete",
+    "pauseTitle": "Pause Ad?",
+    "pauseMessage": "Are you sure you want to pause this ad? It will stop being displayed until reactivated.",
+    "pauseConfirm": "Yes, pause",
+    "activateTitle": "Activate Ad?",
+    "activateMessage": "Are you sure you want to activate this ad? It will be displayed to users again.",
+    "activateConfirm": "Yes, activate"
+  },
+  "adActions": "Ad actions",
+  "upgradePlan": "Upgrade Plan",
+  "ad": "Ad"
+}

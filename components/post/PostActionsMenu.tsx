@@ -7,6 +7,7 @@ import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
 import { pushHistoryState } from '@/src/utils/history';
 import { logger } from '@/src/utils/Logger';
+import { useTranslation } from 'react-i18next';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const TrashIcon = () => <Icon className="h-5 w-5 text-red-500"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></Icon>;
@@ -26,6 +27,7 @@ interface PostActionsMenuProps {
 }
 
 const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, onDelete, onBlockToggle, isBlocked, onEdit, onNavigateToModeration }) => {
+  const { t } = useTranslation(['posts', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -79,7 +81,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
       if (result.error) {
         // Se for denúncia duplicada, mostrar mensagem específica
         if (result.error.code === 'DUPLICATE_REPORT') {
-          addToast(result.error.message || 'Você já denunciou este conteúdo.', 'info');
+          addToast(result.error.message || t('posts:alreadyReported'), 'info');
           setIsReportModalOpen(false);
           return;
         }
@@ -92,7 +94,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
       logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {
       logger.error('Falha ao enviar denúncia', { postId: post.id, error: err }, 'api', 'PostActionsMenu');
-      const errorMessage = err?.message || 'Erro ao enviar denúncia. Tente novamente.';
+      const errorMessage = err?.message || t('posts:reportError');
       addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingReport(false);
@@ -123,7 +125,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
               role="menuitem"
             >
               <EditIcon />
-              <span>Editar Post</span>
+              <span>{t('posts:editPost')}</span>
             </button>
           )}
 
@@ -162,7 +164,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
             <button
               onClick={handleOpenReport}
               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label="Denunciar post"
+              aria-label={t('common:report')}
               role="menuitem"
             >
               <FlagIcon />
@@ -175,11 +177,11 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
             <button
               onClick={handleBlock}
               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label={isBlocked ? `Desbloquear @${post.user.username}` : `Bloquear @${post.user.username}`}
+              aria-label={isBlocked ? `${t('common:unblock')} @${post.user.username}` : `${t('common:block')} @${post.user.username}`}
               role="menuitem"
             >
               <BlockIcon />
-              <span>{isBlocked ? 'Desbloquear' : 'Bloquear'} @{post.user.username}</span>
+              <span>{isBlocked ? t('common:unblock') : t('common:block')} @{post.user.username}</span>
             </button>
           )}
         </div>

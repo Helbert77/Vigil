@@ -1,0 +1,32 @@
+{
+  "overview": "Visão Geral",
+  "achievements": "Conquistas",
+  "missions": "Missões",
+  "currentLevel": "Nível Atual",
+  "progressToLevel": "Progresso para Nível {{level}}",
+  "totalXP": "XP Total",
+  "xpProgress": "{{current}} / {{total}} XP",
+  "achievementsCount": "Conquistas",
+  "consecutiveDays": "Dias Consecutivos",
+  "recentAchievements": "Conquistas Recentes",
+  "achievementsUnlocked": "{{unlocked}} de {{total}} conquistas desbloqueadas",
+  "dailyMissions": "Missões Diárias",
+  "dailyMissionsWithReset": "Missões Diárias (Reset às 00:00)",
+  "weeklyMissions": "Missões Semanais",
+  "weeklyMissionsWithReset": "Missões Semanais (Reset segunda-feira)",
+  "resetAtMidnight": "(Reset às 00:00)",
+  "resetMonday": "(Reset segunda-feira)",
+  "progress": "Progresso",
+  "progressLabel": "Progresso: {{current}} / {{target}}",
+  "dataNotAvailable": "Dados de gamificação não disponíveis",
+  "loadError": "Erro ao carregar dados de gamificação",
+  "xpReward": "+{{xp}} XP",
+  "unlockedAt": "Desbloqueado em {{date}}",
+  "levelNames": {
+    "beginner": "Iniciante",
+    "explorer": "Explorador",
+    "veteran": "Veterano",
+    "elite": "Elite",
+    "legendary": "Lendário"
+  }
+}

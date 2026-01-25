@@ -3,6 +3,7 @@ import { Icon } from '../icons/Icon';
 import { Ad } from '@/types';
 import Tooltip from '@/components/common/Tooltip';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const EditIcon = () => <Icon className="h-5 w-5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></Icon>;
@@ -17,6 +18,7 @@ interface AdActionsMenuProps {
 }
 
 const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan, onDelete }) => {
+    const { t } = useTranslation(['ads', 'common']);
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const { addToast } = useToast();
@@ -56,7 +58,7 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
 
     return (
         <div className="relative" ref={menuRef}>
-            <Tooltip text="Mais ações" position="bottom">
+            <Tooltip text={t('common:more')} position="bottom">
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -72,7 +74,7 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
                     <button
                         onClick={handleEdit}
                         className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200"
-                        aria-label="Editar anúncio"
+                        aria-label={t('ads:editAd')}
                         role="menuitem"
                     >
                         <EditIcon />
@@ -82,7 +84,7 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
                     <button
                         onClick={handleUpgradePlan}
                         className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200"
-                        aria-label="Atualizar plano"
+                        aria-label={t('ads:upgradePlan')}
                         role="menuitem"
                     >
                         <TrendingUpIcon />
@@ -92,11 +94,11 @@ const AdActionsMenu: React.FC<AdActionsMenuProps> = ({ ad, onEdit, onUpgradePlan
                     <button
                         onClick={handleDelete}
                         className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400"
-                        aria-label="Excluir anúncio"
+                        aria-label={t('common:delete')}
                         role="menuitem"
                     >
                         <TrashIcon />
-                        <span>Excluir Anúncio</span>
+                        <span>{t('common:delete')} {t('ads:ad')}</span>
                     </button>
                 </div>
             )}

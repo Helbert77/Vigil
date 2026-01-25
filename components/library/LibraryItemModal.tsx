@@ -6,6 +6,8 @@ import FileViewer from './FileViewer';
 import { supabase } from '../../integrations/supabase/client';
 import ConfirmationModal from '../common/ConfirmationModal';
 import { getDocumentCoverUrl, getFileTypeFromUrl } from '../../src/utils/documentThumbnail';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/src/i18n/config';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const EyeIcon = () => <Icon className="h-5 w-5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
@@ -32,6 +34,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
   onDelete,
   onDownload
 }) => {
+  const { t } = useTranslation(['library', 'common']);
   const { addToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
@@ -85,7 +88,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
 
   const handleRead = () => {
     if (!item.file_url) {
-      addToast('Arquivo não disponível', 'error');
+      addToast(t('library:fileNotAvailable'), 'error');
       return;
     }
 
@@ -100,7 +103,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
 
   const handleDownload = async () => {
     if (!item.file_url) {
-      addToast('Arquivo não disponível', 'error');
+      addToast(t('library:fileNotAvailable'), 'error');
       return;
     }
 
@@ -128,7 +131,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Erro ao baixar arquivo:', error);
-      addToast('Erro ao baixar arquivo', 'error');
+      addToast(t('library:downloadError'), 'error');
     }
   };
 
@@ -144,7 +147,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
     const { error } = await supabase.storage.from('library-media').upload(filePath, file);
 
     if (error) {
-      addToast('Falha ao enviar o arquivo.', 'error');
+      addToast(t('library:uploadFailedMessage'), 'error');
       console.error(error);
     } else {
       const { data } = supabase.storage.from('library-media').getPublicUrl(filePath);
@@ -155,7 +158,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
 
   const handleSaveEdit = () => {
     if (!editForm.title.trim() || !editForm.author.trim()) {
-      addToast('Título e autor são obrigatórios', 'error');
+      addToast(t('library:titleAuthorRequired'), 'error');
       return;
     }
 
@@ -187,11 +190,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
 
   const getTypeLabel = () => {
     switch (item.type) {
-      case 'ebook': return 'Ebook';
-      case 'article': return 'Artigo';
-      case 'magazine': return 'Revista';
-      case 'document': return 'Documento';
-      case 'link': return 'Link';
+      case 'ebook': return t('library:ebook');
+      case 'article': return t('library:article');
+      case 'magazine': return t('library:magazine');
+      case 'document': return t('library:document');
+      case 'link': return t('library:link');
     }
   };
 
@@ -271,7 +274,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50"
                   >
                     <UploadIcon />
-                    <span>{isUploading ? 'Enviando...' : 'Alterar Capa'}</span>
+                    <span>{isUploading ? t('library:uploading') : t('library:changeCover')}</span>
                   </button>
                 </>
               )}
@@ -292,7 +295,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                       </span>
                     </div>
                     <p className="text-base text-gray-600 dark:text-gray-400">
-                      por {item.author}
+                      {t('library:by')} {item.author}
                     </p>
                   </div>
                 </>
@@ -300,23 +303,23 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Tipo
+                      {t('library:type')}
                     </label>
                     <select
                       value={editForm.type}
                       onChange={(e) => setEditForm({ ...editForm, type: e.target.value as any })}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                     >
-                      <option value="ebook">Ebook</option>
-                      <option value="article">Artigo</option>
-                      <option value="magazine">Revista</option>
-                      <option value="document">Documento</option>
-                      <option value="link">Link</option>
+                      <option value="ebook">{t('library:ebook')}</option>
+                      <option value="article">{t('library:article')}</option>
+                      <option value="magazine">{t('library:magazine')}</option>
+                      <option value="document">{t('library:document')}</option>
+                      <option value="link">{t('library:link')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Título
+                      {t('library:fieldTitle')}
                     </label>
                     <input
                       type="text"
@@ -327,7 +330,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Autor
+                      {t('library:author')}
                     </label>
                     <input
                       type="text"
@@ -344,7 +347,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 <>
                   {item.description && (
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Descrição</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('library:description')}</h3>
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                         {item.description}
                       </p>
@@ -354,7 +357,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   {/* Tags */}
                   {item.tags && item.tags.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tags</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('library:tags')}</h3>
                       <div className="flex flex-wrap gap-2">
                         {item.tags.map((tag, index) => (
                           <span
@@ -371,17 +374,17 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   {/* Type */}
                   {item.type && (
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Tipo</h3>
-                      <p className="text-gray-700 dark:text-gray-300">{item.type}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('library:type')}</h3>
+                      <p className="text-gray-700 dark:text-gray-300">{getTypeLabel()}</p>
                     </div>
                   )}
 
                   {/* Published Date */}
                   {item.published_date && (
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Data de Publicação</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('library:publishedDate')}</h3>
                       <p className="text-gray-700 dark:text-gray-300">
-                        {new Date(item.published_date).toLocaleDateString('pt-BR')}
+                        {new Date(item.published_date).toLocaleDateString(i18n.language === 'pt' ? 'pt-BR' : 'en-US')}
                       </p>
                     </div>
                   )}
@@ -390,11 +393,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   <div className="flex items-center gap-6 text-gray-600 dark:text-gray-400 mt-auto">
                     <div className="flex items-center gap-2">
                       <EyeIcon />
-                      <span className="text-sm font-medium">{item.views} visualizações</span>
+                      <span className="text-sm font-medium">{item.views} {t('library:viewsLabel')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <DownloadIcon />
-                      <span className="text-sm font-medium">{item.downloads} downloads</span>
+                      <span className="text-sm font-medium">{item.downloads} {t('library:downloadsLabel')}</span>
                     </div>
                   </div>
                 </>
@@ -402,26 +405,26 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Descrição
+                      {t('library:description')}
                     </label>
                     <textarea
                       value={editForm.description}
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                       rows={4}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      placeholder="Descrição do item"
+                      placeholder={t('library:itemDescriptionPlaceholder')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Tags (separadas por vírgula)
+                      {t('library:tags')}
                     </label>
                     <input
                       type="text"
                       value={editForm.tags}
                       onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
                       className="w-full px-3 py-2 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      placeholder="Ex: romance, aventura, suspense"
+                      placeholder={t('library:tagsPlaceholder')}
                     />
                   </div>
                 </div>
@@ -442,7 +445,7 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                   className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                 >
                   <BookOpenIcon />
-                  <span>Abrir Link</span>
+                  <span>{t('library:openLink')}</span>
                 </button>
               ) : (
                 <>
@@ -451,14 +454,14 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                   >
                     <BookOpenIcon />
-                    <span>Ler Online</span>
+                    <span>{t('library:readOnline')}</span>
                   </button>
                   <button
                     onClick={handleDownload}
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                   >
                     <DownloadIcon />
-                    <span>Download</span>
+                    <span>{t('library:download')}</span>
                   </button>
                 </>
               )}
@@ -474,14 +477,14 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <EditIcon />
-                      <span>Editar</span>
+                      <span>{t('library:edit')}</span>
                     </button>
                     <button
                       onClick={handleDelete}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <TrashIcon />
-                      <span>Excluir</span>
+                      <span>{t('library:delete')}</span>
                     </button>
                   </>
                 ) : (
@@ -494,14 +497,14 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <EditIcon />
-                      <span>Salvar</span>
+                      <span>{t('library:save')}</span>
                     </button>
                     <button
                       onClick={() => setIsEditing(false)}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-200"
                     >
                       <TrashIcon />
-                      <span>Cancelar</span>
+                      <span>{t('library:cancel')}</span>
                     </button>
                   </>
                 )}
@@ -518,10 +521,10 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
       isOpen={isDeleteModalOpen}
       onClose={() => setIsDeleteModalOpen(false)}
       onConfirm={confirmDelete}
-      title="Excluir Item da Biblioteca?"
-      message={`Tem certeza que deseja excluir permanentemente "${item.title}"? Esta ação não pode ser desfeita.`}
-      confirmText="Sim, excluir"
-      cancelText="Cancelar"
+      title={t('library:deleteItemTitle')}
+      message={t('library:deleteItemMessage', { title: item.title })}
+      confirmText={t('library:confirmDelete')}
+      cancelText={t('library:cancel')}
       isDestructive={true}
     />
     </>

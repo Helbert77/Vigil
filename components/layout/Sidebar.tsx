@@ -7,6 +7,7 @@ import { User } from '@/types';
 import { DiamondIcon } from '@/src/components/icons/DiamondIcon';
 import { canAccessLibrary, getLibraryAccessDeniedMessage } from '@/src/utils/libraryAccess';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 const HomeIcon = () => <Icon><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></Icon>;
 const UserIcon = () => <Icon><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></Icon>;
@@ -42,6 +43,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, unreadNotificationsCount, unreadMessagesCount, isCollapsed, pendingModerationCount, pendingAppealsCount, pendingAdsCount = 0 }) => {
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
   const { addToast } = useToast();
+  const { t } = useTranslation(['navigation', 'posts']);
 
   // Debug: verificar se pendingAdsCount está sendo recebido
   useEffect(() => {
@@ -92,14 +94,14 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
         <nav className={`space-y-1 ${isCollapsed ? 'px-1' : 'px-2 md:px-0'}`}>
           <NavLink
             icon={<HomeIcon />}
-            label="Home"
+            label={t('navigation:home')}
             isActive={currentPage === 'Home'}
             onClick={() => setCurrentPage('Home')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<BellIcon />}
-            label="Notifications"
+            label={t('navigation:notifications')}
             isActive={currentPage === 'Notifications'}
             onClick={() => setCurrentPage('Notifications')}
             notificationCount={unreadNotificationsCount}
@@ -107,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
           />
           <NavLink
             icon={<MailIcon />}
-            label="Messages"
+            label={t('navigation:messages')}
             isActive={currentPage === 'Messages'}
             onClick={() => setCurrentPage('Messages')}
             notificationCount={unreadMessagesCount}
@@ -123,63 +125,63 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
           />
           <NavLink
             icon={<BookmarkIcon />}
-            label="Saved"
+            label={t('navigation:saved')}
             isActive={currentPage === 'Saved'}
             onClick={() => setCurrentPage('Saved')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<UsersIcon />}
-            label="Communities"
+            label={t('navigation:communities')}
             isActive={currentPage === 'Communities'}
             onClick={() => setCurrentPage('Communities')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<LibraryIcon />}
-            label="Biblioteca"
+            label={t('navigation:library')}
             isActive={currentPage === 'Library'}
             onClick={handleLibraryClick}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<TimelineIcon />}
-            label="Timeline"
+            label={t('navigation:timeline')}
             isActive={currentPage === 'Timeline'}
             onClick={() => setCurrentPage('Timeline')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<UserIcon />}
-            label="Profile"
+            label={t('navigation:profile')}
             isActive={currentPage === 'Profile'}
             onClick={() => setCurrentPage('Profile')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<SettingsIcon />}
-            label="Settings"
+            label={t('navigation:settings')}
             isActive={currentPage === 'Settings'}
             onClick={() => setCurrentPage('Settings')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<MegaphoneIcon />}
-            label="Meus Anúncios"
+            label={t('navigation:myAds')}
             isActive={currentPage === 'MyAds'}
             onClick={() => setCurrentPage('MyAds')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<AnalyticsIcon />}
-            label="Analytics"
+            label={t('navigation:adsDashboard')}
             isActive={currentPage === 'AdsDashboard'}
             onClick={() => setCurrentPage('AdsDashboard')}
             isCollapsed={isCollapsed}
           />
           <NavLink
             icon={<DiamondIcon />}
-            label="Premium"
+            label={t('navigation:premium')}
             isActive={currentPage === 'Premium'}
             onClick={() => setCurrentPage('Premium')}
             isCollapsed={isCollapsed}
@@ -189,21 +191,21 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
               <div className="border-t border-light-border dark:border-dark-border my-2 md:my-3"></div>
               <NavLink
                 icon={<AdminIcon />}
-                label="Admin"
+                label={t('navigation:admin')}
                 isActive={currentPage === 'Admin'}
                 onClick={() => setCurrentPage('Admin')}
                 isCollapsed={isCollapsed}
               />
               <NavLink
                 icon={<DashboardIcon />}
-                label="Dashboard"
+                label={t('navigation:dashboard')}
                 isActive={currentPage === 'Dashboard'}
                 onClick={() => setCurrentPage('Dashboard')}
                 isCollapsed={isCollapsed}
               />
               <NavLink
                 icon={<ShieldIcon />}
-                label="Moderação"
+                label={t('navigation:moderation')}
                 isActive={currentPage === 'Moderation'}
                 onClick={() => setCurrentPage('Moderation')}
                 notificationCount={pendingModerationCount}
@@ -211,7 +213,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
               />
               <NavLink
                 icon={<GavelIcon />}
-                label="Apelações"
+                label={t('navigation:appeals')}
                 isActive={currentPage === 'Appeals'}
                 onClick={() => setCurrentPage('Appeals')}
                 notificationCount={pendingAppealsCount}
@@ -219,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
               />
               <NavLink
                 icon={<CheckCircleIcon />}
-                label="Aprovar Anúncios"
+                label={t('ads:myAds.status.pending')}
                 isActive={currentPage === 'AdApprovalQueue'}
                 onClick={() => setCurrentPage('AdApprovalQueue')}
                 notificationCount={pendingAdsCount > 0 ? pendingAdsCount : undefined}
@@ -232,7 +234,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
         {/* Post Button */}
         <div className={`mt-4 md:mt-6 px-2 md:px-0 ${isCollapsed ? 'flex justify-center' : ''}`}>
           {isCollapsed ? (
-            <Tooltip text="Post" position="right">
+            <Tooltip text={t('posts:post')} position="right">
               <button
                 onClick={handlePostClick}
                 className="w-12 h-12 bg-primary hover:bg-gray-600 text-white font-bold rounded-full flex items-center justify-center transition-all duration-200 transform active:scale-95 shadow-lg"
@@ -245,7 +247,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, currentPage, setCurrentPage, un
               onClick={handlePostClick}
               className="w-full bg-primary hover:bg-gray-600 text-white font-bold py-3 md:py-2 px-4 rounded-full transition-all duration-200 transform active:scale-95 shadow-lg text-base md:text-sm"
             >
-              Criar Post
+              {t('posts:createPost')}
             </button>
           )}
         </div>

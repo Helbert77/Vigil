@@ -4,8 +4,10 @@ import { Navigate } from 'react-router-dom';
 import { AnalyticsDashboard } from '../src/components/admin/AnalyticsDashboard';
 import CouponManagement from '../src/components/admin/CouponManagement';
 import Card from '../components/common/Card';
+import { useTranslation } from 'react-i18next';
 
 const Admin: React.FC = () => {
+  const { t } = useTranslation(['admin', 'common']);
   const { session, user } = useSession();
   const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'content' | 'coupons'>('analytics');
 
@@ -23,10 +25,10 @@ const Admin: React.FC = () => {
         <Card className="p-8 max-w-md text-center">
           <div className="text-6xl mb-4">🚫</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Acesso Negado
+            {t('admin:accessDenied')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Você não tem permissão para acessar esta área.
+            {t('admin:noPermission')}
           </p>
         </Card>
       </div>
@@ -40,10 +42,10 @@ const Admin: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              🛡️ Painel de Administração
+              🛡️ {t('admin:title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Gerencie e monitore a plataforma Vigil
+              {t('admin:subtitle')}
             </p>
           </div>
 
@@ -57,7 +59,7 @@ const Admin: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              📊 Analytics
+              📊 {t('admin:tabs.analytics')}
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -67,7 +69,7 @@ const Admin: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              👥 Usuários
+              👥 {t('admin:tabs.users')}
             </button>
             <button
               onClick={() => setActiveTab('content')}
@@ -77,7 +79,7 @@ const Admin: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              📝 Conteúdo
+              📝 {t('admin:tabs.content')}
             </button>
             <button
               onClick={() => setActiveTab('coupons')}
@@ -87,7 +89,7 @@ const Admin: React.FC = () => {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              🎟️ Cupons
+              🎟️ {t('admin:tabs.coupons')}
             </button>
           </div>
         </div>
@@ -101,10 +103,10 @@ const Admin: React.FC = () => {
           <div className="p-4 md:p-6">
             <Card className="p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Gerenciamento de Usuários
+                {t('admin:userManagement')}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Em desenvolvimento...
+                {t('admin:inDevelopment')}
               </p>
             </Card>
           </div>
@@ -114,10 +116,10 @@ const Admin: React.FC = () => {
           <div className="p-4 md:p-6">
             <Card className="p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Moderação de Conteúdo
+                {t('admin:contentModeration')}
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
-                Em desenvolvimento...
+                {t('admin:inDevelopment')}
               </p>
             </Card>
           </div>

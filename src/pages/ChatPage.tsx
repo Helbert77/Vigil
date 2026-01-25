@@ -11,6 +11,7 @@ import { ChevronLeftIcon } from '@/components/icons/ChevronLeftIcon';
 import { supabase } from '@/integrations/supabase/client';
 import { GeolocationPresenceProvider, useGeolocationPresence } from '@/src/contexts/GeolocationPresenceContext';
 import LocationPermissionModal from '@/src/components/chat/LocationPermissionModal';
+import { useTranslation } from 'react-i18next';
 import {
   fetchChatRooms,
   fetchChatBuddies,
@@ -127,6 +128,7 @@ interface Buddy {
 
 // Componente interno que usa o contexto de geolocalização
 function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageProps) {
+  const { t } = useTranslation(['chat', 'messages', 'common']);
   const { session } = useSession();
   const { addToast } = useToast();
   
@@ -514,7 +516,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         // Check if there's a room to open from sessionStorage (e.g., from notification)
         // This will be handled by the useEffect that watches chatRooms
       } catch (error: any) {
-        addToast('Erro ao carregar dados iniciais', 'error');
+        addToast(t('chat:errors.loadInitialData'), 'error');
       } finally {
         setIsInitializing(false);
       }
@@ -907,9 +909,9 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await fetchChatRooms(roomCategoryFilter || undefined);
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.loadRooms');
         setRoomsError(errorMessage);
-        addToast('Erro ao carregar salas de chat', 'error');
+        addToast(t('chat:errors.loadRooms'), 'error');
       } else {
         setChatRooms(data || []);
         // Load online count for each room em paralelo (não bloquear renderização)
@@ -918,9 +920,9 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         });
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao carregar salas de chat';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.loadRooms');
       setRoomsError(errorMessage);
-      addToast('Erro ao carregar salas de chat', 'error');
+      addToast(t('chat:errors.loadRooms'), 'error');
     } finally {
       setLoadingRooms(false);
     }
@@ -959,7 +961,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await fetchChatBuddies(user.id);
 
       if (error) {
-        setBuddiesError('Erro ao carregar buddies');
+        setBuddiesError(t('chat:errors.loadBuddies'));
         return;
       }
 
@@ -986,7 +988,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         setBuddies([]);
       }
     } catch (error) {
-      setBuddiesError('Erro ao carregar buddies');
+      setBuddiesError(t('chat:errors.loadBuddies'));
     } finally {
       setLoadingBuddies(false);
     }
@@ -1002,7 +1004,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await fetchMessages(conversationId);
 
       if (error) {
-        addToast('Erro ao carregar mensagens', 'error');
+        addToast(t('chat:errors.loadMessages'), 'error');
       } else {
         setMessages(data || []);
       }
@@ -1028,7 +1030,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
 
       setMessageSubscription(subscription);
     } catch (error: any) {
-      addToast('Erro ao carregar mensagens', 'error');
+      addToast(t('chat:errors.loadMessages'), 'error');
     } finally {
       setLoadingMessages(false);
     }
@@ -1093,10 +1095,10 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
               }
             }, 500);
           } else {
-            throw new Error(data?.error || 'Erro ao limpar mensagens');
+            throw new Error(data?.error || t('chat:errors.clearMessages'));
           }
         } catch (error: any) {
-          const errorMessage = error?.message || 'Erro ao limpar mensagens. Tente novamente.';
+          const errorMessage = error?.message || t('chat:errors.clearMessagesTryAgain');
           addToast(errorMessage, 'error');
         } finally {
           setIsSending(false);
@@ -1208,7 +1210,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
           // IMPORTANTE: Não recarregar mensagens aqui
           // O filtro será aplicado automaticamente na próxima vez que as mensagens forem carregadas
         } catch (error: any) {
-          const errorMessage = error?.message || 'Erro ao ocultar mensagens. Tente novamente.';
+          const errorMessage = error?.message || t('chat:errors.hideMessages');
           addToast(errorMessage, 'error');
         } finally {
           setIsSending(false);
@@ -1264,7 +1266,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         if (error) {
           // Remover mensagem otimista em caso de erro
           setMessages(prev => prev.filter(msg => msg.id !== tempMessageId));
-          const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
+          const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.sendMessage');
           addToast(errorMessage, 'error');
           setIsSending(false);
           return;
@@ -1301,7 +1303,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
           }
         }, 100);
       } catch (error: any) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.sendMessage');
         addToast(errorMessage, 'error');
       } finally {
         setIsSending(false);
@@ -1324,7 +1326,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       });
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.sendMessage');
         addToast(errorMessage, 'error');
         return;
       }
@@ -1352,7 +1354,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       }, 100);
 
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao enviar mensagem';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.sendMessage');
       addToast(errorMessage, 'error');
     } finally {
       setIsSending(false);
@@ -1405,7 +1407,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await requestRoomAccess(room.id);
       
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso';
+        const errorMessage = error instanceof Error ? error.message : t('chat:errors.requestAccess');
         addToast(errorMessage, 'error');
       } else {
         // Reload invitations to update UI
@@ -1419,7 +1421,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao solicitar acesso à sala';
+      const errorMessage = error instanceof Error ? error.message : t('chat:errors.requestRoomAccess');
       addToast(errorMessage, 'error');
     } finally {
       setRequestingAccessRoomIds(prev => {
@@ -1478,7 +1480,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
             ? error.message
             : typeof error === 'string'
             ? error
-            : 'Erro ao entrar na sala';
+            : t('chat:errors.joinRoom');
         addToast(errorMessage, 'error');
       } else {
         setJoinedRoomIds(prev => new Set([...prev, room.id]));
@@ -1505,7 +1507,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         });
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao entrar na sala';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('messages:joinRoomError');
       addToast(errorMessage, 'error');
     }
   };
@@ -1544,7 +1546,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await leaveChatRoom(room.id);
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao sair da sala';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.leaveRoom');
         addToast(errorMessage, 'error');
       } else {
         setJoinedRoomIds(prev => {
@@ -1573,7 +1575,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         }
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao sair da sala';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.leaveRoom');
       addToast(errorMessage, 'error');
     }
   };
@@ -1588,7 +1590,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await fetchRoomMessages(roomId);
 
       if (error) {
-        addToast('Erro ao carregar mensagens da sala', 'error');
+        addToast(t('messages:loadMessagesError'), 'error');
         setLoadingMessages(false);
         return null;
       } else {
@@ -1682,7 +1684,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       setLoadingMessages(false);
       return subscription;
     } catch (error: any) {
-      addToast('Erro ao carregar mensagens da sala', 'error');
+      addToast(t('chat:errors.loadRoomMessages'), 'error');
       setLoadingMessages(false);
       return null;
     }
@@ -1706,7 +1708,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await createChatRoom(payload as any);
 
       if (error) {
-        let errorMessage = 'Erro ao criar sala';
+        let errorMessage = t('chat:errors.createRoom');
         
         if (error instanceof Error) {
           errorMessage = error.message;
@@ -1719,7 +1721,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
           
           // Se for erro de plano, garantir mensagem clara
           if (errorMessage.includes('Pro') || errorMessage.includes('Premium') || errorMessage.includes('plano')) {
-            errorMessage = 'Apenas usuários Pro ou Premium podem criar salas privadas';
+            errorMessage = t('chat:errors.createPrivateRoomPlanRequired');
           }
         }
         
@@ -1733,7 +1735,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         loadChatRooms();
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao criar sala';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.createRoom');
       addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingRoom(false);
@@ -1761,7 +1763,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data: followersData, error: followersError } = await fetchFollowersWithProfiles(session.user.id);
       
       if (followersError) {
-        addToast('Erro ao buscar seguidores', 'error');
+        addToast(t('chat:errors.loadFollowers'), 'error');
         setLoadingFollowers(false);
         return;
       }
@@ -1796,7 +1798,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       setAvailableUsers(mapped);
       setLoadingFollowers(false);
     } catch (e) {
-      addToast('Erro ao buscar seguidores', 'error');
+      addToast(t('chat:errors.loadFollowers'), 'error');
       setLoadingFollowers(false);
     }
   };
@@ -1821,7 +1823,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await updateChatRoom(roomToEdit.id, roomFormData);
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao atualizar sala';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.updateRoom');
         addToast(errorMessage, 'error');
       } else {
         setShowEditRoomModal(false);
@@ -1834,7 +1836,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         }
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao atualizar sala';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.updateRoom');
       addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingRoom(false);
@@ -1849,7 +1851,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       const { data, error } = await deleteChatRoom(roomToDelete.id);
 
       if (error) {
-        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao excluir sala';
+        const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.deleteRoom');
         addToast(errorMessage, 'error');
       } else {
         setShowDeleteRoomModal(false);
@@ -1874,7 +1876,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
         });
       }
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : 'Erro ao excluir sala';
+      const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : t('chat:errors.deleteRoom');
       addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingRoom(false);
@@ -1928,7 +1930,7 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
             window.location.href = 'app-settings:';
           } else {
             // Other iOS browsers - show instructions
-            alert('IMPORTANTE: Primeiro ative a localização no iOS!\n\n1. Abra o app "Ajustes"\n2. Toque em "Privacidade e Segurança"\n3. Toque em "Serviços de Localização"\n4. Ative os Serviços de Localização\n\nDepois configure o navegador:\n5. Volte ao navegador e encontre este site na lista\n6. Permita o acesso à localização\n7. Recarregue esta página');
+            alert(t('chat:locationSettings.iosAlert'));
           }
         } else if (isAndroid) {
           // Android - try to open settings
@@ -1936,11 +1938,11 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
             window.location.href = 'android.settings.LOCATION_SOURCE_SETTINGS';
           } catch (e) {
             // Fallback for Android
-            alert('IMPORTANTE: Primeiro ative a localização no Android!\n\n1. Abra "Configurações"\n2. Procure por "Localização" ou "GPS"\n3. Ative a localização\n\nDepois configure o navegador:\n4. Permita acesso à localização para este navegador\n5. Recarregue esta página');
+            alert(t('chat:locationSettings.androidAlert'));
           }
         }
       } catch (error) {
-        alert('Não foi possível abrir as configurações automaticamente. Procure por "Localização" ou "Privacidade" nas configurações do seu dispositivo.');
+        alert(t('chat:locationSettings.errorOpeningSettings'));
       }
     } else {
       // Desktop browsers
@@ -1952,92 +1954,23 @@ function ChatPageContent({ user, onUpdateUser, onNavigateToMessages }: ChatPageP
       try {
         if (isChrome) {
           // Chrome desktop - show instructions since chrome:// URLs can't be opened programmatically
-          alert(`IMPORTANTE: Primeiro ative a localização no seu dispositivo!
-
-📱 No celular/tablet:
-1. Abra "Configurações" do dispositivo
-2. Procure por "Localização" ou "GPS"
-3. Ative a localização
-
-💻 No computador:
-1. Clique no ícone de localização na barra de tarefas (canto inferior direito)
-2. Ative a localização
-
-Depois, configure no Chrome:
-1. Clique nos 3 pontos (⋮) no canto superior direito
-2. Clique em "Configurações"
-3. Procure por "Privacidade e segurança" no menu esquerdo
-4. Clique em "Configurações do site"
-5. Role para baixo e clique em "Localização"
-6. Certifique-se de que está ativado
-7. Recarregue esta página e tente novamente`);
+          alert(t('chat:locationSettings.chromeDesktopAlert'));
         } else if (isEdge) {
           // Edge desktop - show instructions since edge:// URLs can't be opened programmatically
-          alert(`IMPORTANTE: Primeiro ative a localização no seu dispositivo!
-
-📱 No celular/tablet:
-1. Abra "Configurações" do dispositivo
-2. Procure por "Localização" ou "GPS"
-3. Ative a localização
-
-💻 No computador:
-1. Clique no ícone de localização na barra de tarefas (canto inferior direito)
-2. Ative a localização
-
-Depois, configure no Edge:
-1. Clique nos 3 pontos (⋯) no canto superior direito
-2. Clique em "Configurações"
-3. Procure por "Cookies e permissões do site" no menu esquerdo
-4. Clique em "Localização"
-5. Certifique-se de que está ativado
-6. Recarregue esta página e tente novamente`);
+          alert(t('chat:locationSettings.edgeDesktopAlert'));
         } else if (isFirefox) {
           // Firefox desktop - show instructions
-          alert(`IMPORTANTE: Primeiro ative a localização no seu dispositivo!
-
-📱 No celular/tablet:
-1. Abra "Configurações" do dispositivo
-2. Procure por "Localização" ou "GPS"
-3. Ative a localização
-
-💻 No computador:
-1. Clique no ícone de localização na barra de tarefas (canto inferior direito)
-2. Ative a localização
-
-Depois, configure no Firefox:
-1. Clique no menu (☰) no canto superior direito
-2. Clique em "Configurações"
-3. Procure por "Privacidade e Segurança" no menu esquerdo
-4. Role para baixo até "Permissões"
-5. Clique em "Configurações" ao lado de "Acesso à localização"
-6. Certifique-se de que está ativado para este site
-7. Recarregue esta página e tente novamente`);
+          alert(t('chat:locationSettings.firefoxDesktopAlert'));
         } else if (isSafari && isMac) {
           // Safari on macOS - show instructions
-          alert('Para ativar localização no Safari:\n\n1. Clique em Safari > Preferências\n2. Clique na aba "Privacidade"\n3. Marque "Solicitar permissão para usar a localização"');
+          alert(t('chat:locationSettings.safariMacAlert'));
         } else {
         // Fallback for other browsers
         window.open('about:blank', '_blank');
-        alert(`IMPORTANTE: Primeiro ative a localização no seu dispositivo!
-
-📱 No celular/tablet:
-• Abra "Configurações" do dispositivo
-• Procure por "Localização" ou "GPS"
-• Ative a localização
-
-💻 No computador:
-• Clique no ícone de localização na barra de tarefas
-• Ative a localização
-
-Depois configure no navegador:
-• Chrome/Edge: "Configurações > Privacidade > Localização"
-• Firefox: "Configurações > Privacidade > Acesso à localização"
-• Safari: "Preferências > Privacidade > Localização"
-
-Recarregue esta página após ativar.`);
+        alert(t('chat:locationSettings.genericAlert'));
         }
       } catch (error) {
-        alert('Não foi possível abrir as configurações automaticamente. Procure por "Localização" ou "Privacidade" nas configurações do seu navegador.');
+        alert(t('chat:locationSettings.errorOpeningBrowserSettings'));
       }
     }
   };
@@ -2060,9 +1993,9 @@ Recarregue esta página após ativar.`);
       if (diffInHours < 24) {
         return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
       }
-      // Less than 48 hours: show "Ontem" + time
+      // Less than 48 hours: show "Yesterday" + time
       if (diffInHours < 48) {
-        return `Ontem ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+        return `${t('chat:messages.yesterday')} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
       }
       // More than 48 hours: show date + time
       return `${date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -2089,7 +2022,7 @@ Recarregue esta página após ativar.`);
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 text-center mx-4">
             <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-primary mx-auto mb-3 md:mb-4"></div>
-            <p className="text-sm md:text-base text-gray-900 dark:text-white">Carregando chat...</p>
+            <p className="text-sm md:text-base text-gray-900 dark:text-white">{t('chat:messages.loading')}</p>
           </div>
         </div>
       )}
@@ -2104,7 +2037,7 @@ Recarregue esta página após ativar.`);
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
           }`}
         >
-          👥 Buddies
+          👥 {t('messages:buddies')}
         </button>
         <button
           onClick={() => setMobileView('center')}
@@ -2142,7 +2075,7 @@ Recarregue esta página após ativar.`);
         <button
           onClick={() => setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
           className="hidden md:block absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          aria-label={isLeftSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+          aria-label={isLeftSidebarCollapsed ? t('common:expand') : t('common:collapse')}
         >
           <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isLeftSidebarCollapsed ? 'rotate-180' : ''}`} />
         </button>
@@ -2162,7 +2095,7 @@ Recarregue esta página após ativar.`);
                   className="w-full mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xs md:text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <span className="text-base">🎯</span>
-                  <span>Voltar ao Radar</span>
+                  <span>{t('messages:backToRadar')}</span>
                 </button>
                 
                 <div className="flex items-center justify-between gap-2">
@@ -2175,7 +2108,7 @@ Recarregue esta página após ativar.`);
               </div>
               {roomParticipants.length === 0 ? (
                 <div className="p-4 md:p-6 text-center text-gray-500 dark:text-gray-400">
-                  <p className="text-xs md:text-sm">Nenhum participante na sala</p>
+                  <p className="text-xs md:text-sm">{t('messages:noParticipants')}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-light-border dark:divide-dark-border">
@@ -2229,7 +2162,7 @@ Recarregue esta página após ativar.`);
                 </div>
               ) : filteredBuddies.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                  <p>Nenhum buddy encontrado</p>
+                  <p>{t('messages:noBuddiesFound')}</p>
                 </div>
               ) : (
                 filteredBuddies.map((buddy) => (
@@ -2269,7 +2202,7 @@ Recarregue esta página após ativar.`);
                     )}
                   </div>
                   <p className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 truncate">
-                    {buddy.lastMessage || 'Sem mensagens'}
+                    {buddy.lastMessage || t('chat:messages.noMessagesYet')}
                   </p>
                   <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-500">
                     {formatTimestamp(buddy.lastActivity)}
@@ -2295,17 +2228,17 @@ Recarregue esta página após ativar.`);
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="font-orbitron text-base md:text-xl font-bold text-blue-500">
-                🎯 Radar Discovery
+                🎯 {t('messages:radarDiscovery')}
               </h3>
               <button
                 onClick={() => setShowLocationPermissionModal(true)}
                 className="text-xs text-blue-500 hover:text-blue-600 underline"
               >
-                ⚙️ Configurar
+                ⚙️ {t('common:configure')}
               </button>
             </div>
             <p className={`text-xs md:text-sm ${isDarkMode ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600'}`}>
-              {nearbyUsers.length} users found in your area (within {maxDistance}km)
+              {t('messages:usersFoundInArea', { count: nearbyUsers.length, distance: maxDistance })}
             </p>
           </div>
         </div>
@@ -2333,7 +2266,7 @@ Recarregue esta página após ativar.`);
                     <h3 className="font-bold text-xs md:text-sm text-gray-900 dark:text-white truncate">
                       {selectedRoom.name}
                       {!selectedRoom.is_public && (
-                        <span className="text-gray-600 dark:text-gray-400 ml-1" title="Sala Privada">🔒</span>
+                        <span className="text-gray-600 dark:text-gray-400 ml-1" title={t('messages:privateRoom')}>🔒</span>
                       )}
                     </h3>
                     {isRoomHot(selectedRoom.id, roomsMessageCountsLastHour) && <FireIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />}
@@ -2343,7 +2276,7 @@ Recarregue esta página após ativar.`);
                     )}
                   </div>
                   <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {selectedRoom.description || 'Sala de bate-papo'}
+                    {selectedRoom.description || t('messages:chatRoom')}
                   </p>
                 </div>
               </div>
@@ -2366,7 +2299,7 @@ Recarregue esta página após ativar.`);
                       : 'bg-gray-500'
                   }`} />
                   <span className="inline">
-                    {userActivityStatus === 'online' ? 'Conectado' : userActivityStatus === 'away' ? 'Ausente' : 'Offline'}
+                    {userActivityStatus === 'online' ? t('messages:connected') : userActivityStatus === 'away' ? t('messages:away') : t('messages:offline')}
                   </span>
                 </div>
 
@@ -2375,7 +2308,7 @@ Recarregue esta página após ativar.`);
                   <button
                     onClick={() => setShowChatOptionsMenu(!showChatOptionsMenu)}
                     className="flex flex-col items-center justify-center gap-0.5 w-5 h-5 md:w-6 md:h-6 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                    title="Opções"
+                    title={t('common:options')}
                   >
                     <div className="w-1 h-1 rounded-full bg-gray-600 dark:bg-gray-400"></div>
                     <div className="w-1 h-1 rounded-full bg-gray-600 dark:bg-gray-400"></div>
@@ -2393,7 +2326,7 @@ Recarregue esta página após ativar.`);
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span>🗑️</span>
-                          <span>{isSending ? 'Limpando...' : 'Limpar conversas'}</span>
+                          <span>{isSending ? t('messages:clearing') : t('messages:clearConversations')}</span>
                         </button>
                       )}
                     </div>
@@ -2426,8 +2359,8 @@ Recarregue esta página após ativar.`);
                 <LoadingSpinner />
               ) : messages.length === 0 ? (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-6 md:py-8">
-                  <p className="text-xs md:text-sm">Nenhuma mensagem ainda</p>
-                  <p className="text-[10px] md:text-xs mt-1">Seja o primeiro a escrever!</p>
+                  <p className="text-xs md:text-sm">{t('chat:messages.noMessages')}</p>
+                  <p className="text-[10px] md:text-xs mt-1">{t('chat:messages.beTheFirst')}</p>
                 </div>
               ) : (
                 messages.map((message, index) => {
@@ -2517,7 +2450,7 @@ Recarregue esta página após ativar.`);
                 <input
                   ref={messageInputRef}
                   type="text"
-                  placeholder={isOnline ? "Digite uma mensagem..." : "Offline - conexão necessária"}
+                  placeholder={isOnline ? t('chat:messages.placeholder') : t('chat:messages.placeholderOffline')}
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   disabled={isSending || !isOnline}
@@ -2599,7 +2532,7 @@ Recarregue esta página após ativar.`);
               }`}
           >
             <div className="flex items-center gap-2">
-              <span className="font-semibold">🚀 SALAS DE CHAT</span>
+              <span className="font-semibold">{t('chat:rooms.title')}</span>
               {joinedRoomIds.size > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-green-500 text-white text-xs font-bold">
                   {joinedRoomIds.size}
@@ -2623,7 +2556,7 @@ Recarregue esta página após ativar.`);
                   }}
                   className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                 >
-                  Criar Nova Sala
+                  {t('chat:rooms.createNewRoom')}
                 </button>
                 <select
                   value={roomCategoryFilter}
@@ -2633,10 +2566,10 @@ Recarregue esta página após ativar.`);
                   className="bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary flex-shrink-0"
                   title="Filtrar por categoria"
                 >
-                  <option value="">Todas</option>
-                  <option value="normal">Normal</option>
-                  <option value="hot">Hot</option>
-                  <option value="new">Nova</option>
+                  <option value="">{t('chat:rooms.all')}</option>
+                  <option value="normal">{t('chat:rooms.normal')}</option>
+                  <option value="hot">{t('chat:rooms.hot')}</option>
+                  <option value="new">{t('chat:rooms.new')}</option>
                 </select>
               </div>
               <div className="flex-1 overflow-y-auto space-y-3 thin-scrollbar min-h-0 max-h-full">
@@ -2649,12 +2582,12 @@ Recarregue esta página após ativar.`);
                       onClick={loadChatRooms}
                       className="mt-2 text-primary hover:text-primary/80 text-sm underline"
                     >
-                      Tentar novamente
+                      {t('chat:rooms.tryAgain')}
                     </button>
                   </div>
                 ) : chatRooms.length === 0 ? (
                   <div className="text-center text-gray-500 dark:text-gray-400 py-4">
-                    <p className="text-sm">Nenhuma sala disponível</p>
+                    <p className="text-sm">{t('chat:rooms.noRoomsAvailable')}</p>
                   </div>
                 ) : (
                   chatRooms.map((room) => (
@@ -2686,7 +2619,7 @@ Recarregue esta página após ativar.`);
                         >
                           {room.name}
                           {!room.is_public && (
-                            <span className="text-gray-600 dark:text-gray-400 ml-1" title="Sala Privada">🔒</span>
+                            <span className="text-gray-600 dark:text-gray-400 ml-1" title={t('messages:privateRoom')}>🔒</span>
                           )}
                           </h4>
 
@@ -2701,7 +2634,7 @@ Recarregue esta página após ativar.`);
                           {isRoomHot(room.id, roomsMessageCountsLastHour) && <span title="HOT"><FireIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
                           {isRoomNew(room.created_at) && <span title="NEW"><NewIcon className="h-3 w-3 md:h-4 md:w-4" /></span>}
                           {!room.is_public && (
-                            <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium ml-1">Privada</span>
+                            <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium ml-1">{t('chat:rooms.private')}</span>
                           )}
                           {canManageRoom(room) && (
                             <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
@@ -2711,7 +2644,7 @@ Recarregue esta página após ativar.`);
                                   openEditRoomModal(room);
                                 }}
                                 className="text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-                                title="Editar sala"
+                                title={t('messages:editRoom')}
                               >
                                 <EditIcon className="h-3 w-3 md:h-4 md:w-4" />
                               </button>
@@ -2721,7 +2654,7 @@ Recarregue esta página após ativar.`);
                                   openDeleteRoomModal(room);
                                 }}
                                 className="text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                                title="Excluir sala"
+                                title={t('messages:deleteRoom')}
                               >
                                 <TrashIcon className="h-3 w-3 md:h-4 md:w-4" />
                               </button>
@@ -2735,11 +2668,11 @@ Recarregue esta página após ativar.`);
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap">
                           <span className="text-[10px] md:text-xs text-gray-600 dark:text-gray-400 font-medium">
-                            {roomsOnlineCount.get(room.id) || 0} online
+                            {roomsOnlineCount.get(room.id) || 0} {t('chat:rooms.online')}
                           </span>
                           {joinedRoomIds.has(room.id) && (
                             <span className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                              ✓ Participando
+                              ✓ {t('messages:participating')}
                             </span>
                           )}
                         </div>
@@ -2752,7 +2685,7 @@ Recarregue esta página após ativar.`);
                               }}
                               className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-red-500 hover:bg-red-600 text-white font-medium"
                             >
-                              Sair
+                              {t('chat:rooms.leave')}
                             </button>
                           ) : (() => {
                             // Check if room is private (explicitly check for false, as undefined/null means public)
@@ -2773,7 +2706,7 @@ Recarregue esta página após ativar.`);
                                     }}
                                     className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
                                   >
-                                    Entrar
+                                    {t('messages:join')}
                                   </button>
                                 );
                               } else {
@@ -2788,7 +2721,7 @@ Recarregue esta página após ativar.`);
                                     disabled={isRequesting}
                                     className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-yellow-500 hover:bg-yellow-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    {isRequesting ? 'Enviando...' : 'Pedir acesso'}
+                                    {isRequesting ? t('chat:rooms.requesting') : t('chat:rooms.requestAccess')}
                                   </button>
                                 );
                               }
@@ -2803,7 +2736,7 @@ Recarregue esta página após ativar.`);
                                 }}
                                 className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 md:py-1 rounded transition-colors bg-primary hover:bg-primary/90 text-white font-medium"
                               >
-                                Entrar
+                                {t('messages:join')}
                               </button>
                             );
                           })()}
@@ -2825,7 +2758,7 @@ Recarregue esta página após ativar.`);
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
             {/* Header fixo */}
             <div className="flex items-center justify-between p-6 pb-4 border-b border-light-border dark:border-dark-border flex-shrink-0">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Criar Nova Sala</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('chat:createRoom.title')}</h3>
               <button
                 onClick={() => {
                   setShowCreateRoomModal(false);
@@ -2845,32 +2778,32 @@ Recarregue esta página após ativar.`);
               <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome da Sala *
+                  {t('chat:createRoom.roomName')} *
                 </label>
                 <input
                   type="text"
                   value={roomFormData.name}
                   onChange={(e) => setRoomFormData({ ...roomFormData, name: e.target.value })}
                   className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Digite o nome da sala"
+                  placeholder={t('chat:createRoom.roomNamePlaceholder')}
                   maxLength={100}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Descrição
+                  {t('chat:createRoom.description')}
                 </label>
                 <textarea
                   value={roomFormData.description}
                   onChange={(e) => setRoomFormData({ ...roomFormData, description: e.target.value })}
                   className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Digite a descrição da sala"
+                  placeholder={t('chat:createRoom.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Máximo de Participantes
+                  {t('chat:createRoom.maxParticipants')}
                 </label>
                 <input
                   type="number"
@@ -2904,13 +2837,13 @@ Recarregue esta página após ativar.`);
                   className="mr-2"
                 />
               <label htmlFor="is_public" className="text-sm text-gray-700 dark:text-gray-300">
-                Sala pública
+                {t('chat:createRoom.publicRoom')}
               </label>
               </div>
               {!roomFormData.is_public && (
                 <div className="space-y-3 border-t border-light-border dark:border-dark-border pt-3">
                   <div className="text-sm text-gray-700 dark:text-gray-300">
-                    Esta sala será privada. Selecione seguidores para enviar convites.
+                    {t('chat:createRoom.privateRoomInfo')}
                   </div>
                   <div className="flex gap-2">
                     <input
@@ -2923,14 +2856,14 @@ Recarregue esta página após ativar.`);
                           handleSearchInviteUsers(true);
                         }
                       }}
-                      placeholder="Buscar seguidores por nome ou username"
+                      placeholder={t('chat:createRoom.searchFollowers')}
                       className="flex-1 bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <button
                       onClick={() => handleSearchInviteUsers(true)}
                       className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium"
                     >
-                      Buscar
+                      {t('chat:createRoom.search')}
                     </button>
                   </div>
                   {selectedInvitees.length > 0 && (
@@ -2951,13 +2884,13 @@ Recarregue esta página após ativar.`);
                     {loadingFollowers ? (
                       <div className="p-3 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        <span>Carregando seguidores...</span>
+                        <span>{t('chat:createRoom.loadingFollowers')}</span>
                       </div>
                     ) : availableUsers.length === 0 ? (
                       <div className="p-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                         {userSearchQuery.trim() 
-                          ? 'Nenhum seguidor encontrado com esse termo' 
-                          : 'Você não está seguindo ninguém ainda'}
+                          ? t('chat:createRoom.noFollowersFound')
+                          : t('chat:createRoom.notFollowingAnyone')}
                       </div>
                     ) : (
                       availableUsers.map(u => (
@@ -2981,7 +2914,7 @@ Recarregue esta página após ativar.`);
                                 : 'bg-primary hover:bg-primary/90 text-white'
                             }`}
                           >
-                            {selectedInvitees.includes(u.id) ? 'Remover' : 'Convidar'}
+                            {selectedInvitees.includes(u.id) ? t('chat:createRoom.remove') : t('chat:createRoom.invite')}
                           </button>
                         </div>
                       ))
@@ -2998,7 +2931,7 @@ Recarregue esta página após ativar.`);
                 disabled={isSubmittingRoom || !roomFormData.name.trim()}
                 className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmittingRoom ? 'Criando...' : 'Criar Sala'}
+                {isSubmittingRoom ? t('chat:createRoom.creating') : t('chat:createRoom.create')}
               </button>
               <button
                 onClick={() => {
@@ -3011,7 +2944,7 @@ Recarregue esta página após ativar.`);
                 }}
                 className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
               >
-                Cancelar
+                {t('chat:createRoom.cancel')}
               </button>
             </div>
           </div>
@@ -3023,7 +2956,7 @@ Recarregue esta página após ativar.`);
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Editar Sala</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('chat:createRoom.editTitle')}</h3>
               <button
                 onClick={() => {
                   setShowEditRoomModal(false);
@@ -3038,26 +2971,26 @@ Recarregue esta página após ativar.`);
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nome da Sala *
+                  {t('chat:createRoom.roomName')} *
                 </label>
                 <input
                   type="text"
                   value={roomFormData.name}
                   onChange={(e) => setRoomFormData({ ...roomFormData, name: e.target.value })}
                   className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Digite o nome da sala"
+                  placeholder={t('chat:createRoom.roomNamePlaceholder')}
                   maxLength={100}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Descrição
+                  {t('chat:createRoom.description')}
                 </label>
                 <textarea
                   value={roomFormData.description}
                   onChange={(e) => setRoomFormData({ ...roomFormData, description: e.target.value })}
                   className="w-full bg-white dark:bg-gray-700 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Digite a descrição da sala"
+                  placeholder={t('chat:createRoom.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -3102,7 +3035,7 @@ Recarregue esta página após ativar.`);
                   }}
                   className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
                 >
-                  Cancelar
+                  {t('chat:createRoom.cancel')}
                 </button>
               </div>
             </div>
@@ -3115,7 +3048,7 @@ Recarregue esta página após ativar.`);
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Excluir Sala</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('chat:createRoom.deleteTitle')}</h3>
               <button
                 onClick={() => {
                   setShowDeleteRoomModal(false);
@@ -3128,10 +3061,10 @@ Recarregue esta página após ativar.`);
             </div>
             <div className="mb-6">
               <p className="text-gray-700 dark:text-gray-300 mb-2">
-                Tem certeza que deseja excluir a sala <strong>{roomToDelete.name}</strong>?
+                {t('chat:createRoom.deleteConfirmation')} <strong>{roomToDelete.name}</strong>?
               </p>
               <p className="text-sm text-red-600 dark:text-red-400">
-                Esta ação não pode ser desfeita. Todas as mensagens e participantes serão removidos.
+                {t('common:actions.cannotBeUndone')}
               </p>
             </div>
             <div className="flex gap-3">
@@ -3140,7 +3073,7 @@ Recarregue esta página após ativar.`);
                 disabled={isSubmittingRoom}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmittingRoom ? 'Excluindo...' : 'Excluir Sala'}
+                {isSubmittingRoom ? t('chat:createRoom.deleting') : t('chat:createRoom.delete')}
               </button>
               <button
                 onClick={() => {
@@ -3149,7 +3082,7 @@ Recarregue esta página após ativar.`);
                 }}
                 className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
               >
-                Cancelar
+                {t('chat:createRoom.cancel')}
               </button>
             </div>
           </div>
@@ -3161,7 +3094,7 @@ Recarregue esta página após ativar.`);
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">🎯 Radar Discovery</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('chat:radarModal.title')}</h3>
               <button
                 onClick={() => setShowLocationModal(false)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -3171,18 +3104,18 @@ Recarregue esta página após ativar.`);
             </div>
             <div className="mb-6">
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                O <strong>Radar Discovery</strong> encontra pessoas próximas com interesses similares para você conversar.
+                {t('chat:radarModal.description')}
               </p>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Para usar este recurso, precisamos acessar sua localização aproximada para mostrar apenas usuários da sua região.
+                {t('chat:radarModal.locationInfo')}
               </p>
               <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  <strong>Privacidade:</strong> Sua localização é usada apenas para melhorar suas conexões no app e nunca é armazenada ou compartilhada.
+                  <strong>{t('chat:locationModal.privacyTitle')}</strong> {t('chat:radarModal.privacyNote')}
                 </p>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Clique no botão abaixo para ativar a localização nas configurações do seu dispositivo.
+                {t('chat:radarModal.clickToActivate')}
               </p>
             </div>
             <div className="flex gap-3">
@@ -3193,13 +3126,13 @@ Recarregue esta página após ativar.`);
                 }}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
               >
-                Ativar Localização
+                {t('chat:locationModal.activateLocation')}
               </button>
               <button
                 onClick={() => setShowLocationModal(false)}
                 className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
               >
-                Agora Não
+                {t('chat:radarModal.notNow')}
               </button>
             </div>
           </div>

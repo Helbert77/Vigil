@@ -9,6 +9,7 @@ import ConfirmationModal from '@/components/common/ConfirmationModal';
 import AddEventModal from '../components/timeline/AddEventModal';
 import AddEventImageModal from '@/src/components/timeline/AddEventImageModal';
 import EventActionsMenu from '../components/timeline/EventActionsMenu';
+import { useTranslation } from 'react-i18next';
 
 // Icons
 const SearchIcon = () => <Icon><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
@@ -29,19 +30,20 @@ const CATEGORY_COLORS = {
   society: 'from-pink-500 to-pink-700'
 };
 
-const CATEGORY_LABELS = {
-  politics: 'Política',
-  science: 'Ciência',
-  health: 'Saúde',
-  religion: 'Religião',
-  technology: 'Tecnologia',
-  society: 'Sociedade'
-};
-
 const Timeline: React.FC = () => {
+  const { t } = useTranslation(['timeline', 'common']);
   const { events, loading, error, refetch } = useTimelineEvents();
   const { user: appUser } = useSession();
   const { addToast } = useToast();
+  
+  const CATEGORY_LABELS = {
+    politics: t('timeline:categories.politics'),
+    science: t('timeline:categories.science'),
+    health: t('timeline:categories.health'),
+    religion: t('timeline:categories.religion'),
+    technology: t('timeline:categories.technology'),
+    society: t('timeline:categories.society')
+  };
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
   const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
   const [isVoting, setIsVoting] = useState(false);
@@ -72,11 +74,11 @@ const Timeline: React.FC = () => {
     const totalVotes = upvotes + downvotes;
     const percentageTrue = totalVotes > 0 ? Math.round((upvotes / totalVotes) * 100) : 50;
 
-    let veracidadeLevel = 'média';
+    let veracidadeLevel = t('timeline:veracityMedium');
     if (percentageTrue <= 35) {
-      veracidadeLevel = 'baixa';
+      veracidadeLevel = t('timeline:veracityLow');
     } else if (percentageTrue >= 66) {
-      veracidadeLevel = 'alta';
+      veracidadeLevel = t('timeline:veracityHigh');
     }
 
     return { percentageTrue, veracidadeLevel, upvotes, downvotes };
@@ -271,15 +273,15 @@ const Timeline: React.FC = () => {
         <div className="max-w-6xl mx-auto w-full px-4 z-10">
           <div className="container mx-auto text-left">
           <h2 className="text-2xl md:text-3xl font-light text-black dark:text-slate-300 mb-4 italic">
-            Uma jornada através dos eventos mais influentes da nossa historia.
+            {t('timeline:description')}
           </h2>
             <p className="text-gray-500 dark:text-slate-400 text-lg mb-6">
-              Explore e ajude a desvendar a verdade contribuindo com novos eventos historicos,{' '}
+              {t('timeline:descriptionText')}{' '}
               <button
                 onClick={() => setShowAddModal(true)}
                 className="text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none rounded px-1 focus-subtle font-medium"
               >
-                Contribua
+                {t('timeline:contribute')}
               </button>
             </p>
           </div>
@@ -291,7 +293,7 @@ const Timeline: React.FC = () => {
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Buscar eventos..."
+                      placeholder={t('timeline:searchEvents')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent w-full text-gray-800 dark:text-gray-200"
@@ -390,7 +392,7 @@ const Timeline: React.FC = () => {
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
-                                <span className="text-xs font-medium mt-1">Adicionar Imagem</span>
+                                <span className="text-xs font-medium mt-1">{t('timeline:addImage')}</span>
                               </button>
                             ) : (
                               <div className="w-32 h-32"></div>
@@ -417,7 +419,7 @@ const Timeline: React.FC = () => {
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
-                                <span className="text-xs font-medium mt-1">Adicionar Imagem</span>
+                                <span className="text-xs font-medium mt-1">{t('timeline:addImage')}</span>
                               </button>
                             ) : (
                               <div className="w-32 h-32"></div>
@@ -637,7 +639,7 @@ const Timeline: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <h3 className="font-semibold text-gray-800 dark:text-white">
-                    Veracidade
+                    {t('timeline:veracity')}
                   </h3>
                   <button 
                     type="button"

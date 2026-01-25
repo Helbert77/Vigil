@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { Icon } from '../icons/Icon';
 import UserListItem from './UserListItem';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
 const ArrowLeftIcon = () => <Icon className="h-6 w-6"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
@@ -21,6 +22,7 @@ interface FollowListModalProps {
 }
 
 const FollowListModal: React.FC<FollowListModalProps> = ({ isOpen, onClose, initialUser, initialFollowers, initialFollowing, initialTab, currentUser, followedUserIds, onFollowToggle, onViewProfile, onFetchFollows }) => {
+  const { t } = useTranslation(['profile']);
   const [userStack, setUserStack] = useState<User[]>([initialUser]);
   const [currentLists, setCurrentLists] = useState({ followers: initialFollowers, following: initialFollowing });
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
@@ -63,7 +65,7 @@ const FollowListModal: React.FC<FollowListModalProps> = ({ isOpen, onClose, init
       return <div className="flex justify-center items-center h-32"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
     }
     if (users.length === 0) {
-      return <p className="text-center text-gray-500 dark:text-gray-400 py-8">Nenhum usuário encontrado.</p>;
+      return <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('profile:noUsersFound')}</p>;
     }
     return (
       <div className="space-y-2">
@@ -98,13 +100,13 @@ const FollowListModal: React.FC<FollowListModalProps> = ({ isOpen, onClose, init
                 onClick={() => setActiveTab('followers')}
                 className={`px-3 md:px-4 py-2 font-bold text-sm md:text-base truncate ${activeTab === 'followers' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}
               >
-                Seguidores
+                {t('profile:followers')}
               </button>
               <button
                 onClick={() => setActiveTab('following')}
                 className={`px-3 md:px-4 py-2 font-bold text-sm md:text-base truncate ${activeTab === 'following' ? 'text-primary border-b-2 border-primary' : 'text-gray-500'}`}
               >
-                Seguindo
+                {t('profile:following')}
               </button>
             </div>
           </div>

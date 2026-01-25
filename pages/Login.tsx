@@ -5,6 +5,7 @@ import { LogoIcon } from '@/components/icons/LogoIcon';
 import { Icon } from '@/components/icons/Icon';
 import { EyeIcon } from '@/components/icons/EyeIcon';
 import { EyeOffIcon } from '@/components/icons/EyeOffIcon';
+import { useTranslation } from 'react-i18next';
 
 // Ícones para os cartões de recursos
 const UsersIcon = () => <Icon className="h-8 w-8 mb-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -28,6 +29,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, children }) => (
 
 const Login: React.FC = () => {
   const { addToast } = useToast();
+  const { t } = useTranslation(['auth', 'common', 'errors']);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,11 +85,11 @@ const Login: React.FC = () => {
           if (currentExpiry && currentExpiry !== 'never' && Date.now() >= parseInt(currentExpiry)) {
             try {
               supabase.auth.signOut();
-              addToast('Sessão expirada por inatividade', 'info');
+              addToast(t('auth:sessionExpired'), 'info');
             } catch (error) {
               // Silenciar erros de logout automático
               // console.log('Logout automático por inatividade realizado');
-              addToast('Sessão expirada por inatividade', 'info');
+              addToast(t('auth:sessionExpired'), 'info');
             }
           }
         }, inactivityTimeout);
@@ -138,12 +140,12 @@ const Login: React.FC = () => {
       }
 
       // Sucesso!
-      setResetMessage('Link de redefinição de senha enviado para o seu e-mail!');
-      addToast('Link de redefinição de senha enviado!', 'success');
+      setResetMessage(t('auth:resetLinkSentMessage'));
+      addToast(t('auth:resetLinkSent'), 'success');
       setIsResettingPassword(false);
     } catch (error: any) {
-      setError(error.message || 'Erro ao enviar email de recuperação');
-      addToast(error.message || 'Erro ao enviar email', 'error');
+      setError(error.message || t('auth:errorSendingRecoveryEmail'));
+      addToast(error.message || t('auth:errorSendingEmail'), 'error');
     }
     
     setLoading(false);
@@ -155,7 +157,7 @@ const Login: React.FC = () => {
     setError(null);
 
     if (password !== confirmPassword) {
-      const errorMsg = "As senhas não coincidem.";
+      const errorMsg = t('auth:passwordsDoNotMatch');
       setError(errorMsg);
       addToast(errorMsg, 'error');
       setLoading(false);
@@ -178,7 +180,7 @@ const Login: React.FC = () => {
       setError(signUpError.message);
       addToast(signUpError.message, 'error');
     } else {
-      addToast('Conta criada com sucesso! Verifique seu e-mail para confirmar.', 'success');
+      addToast(t('auth:accountCreatedSuccess'), 'success');
       setIsCreatingAccount(false);
       setEmail('');
       setPassword('');
@@ -195,12 +197,12 @@ const Login: React.FC = () => {
       return (
         <>
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Redefinir Senha</h2>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Insira seu e-mail para receber o link.</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{t('auth:resetPassword')}</h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">{t('auth:resetPasswordInstructions')}</p>
           </div>
           <form onSubmit={handlePasswordReset} className="space-y-6">
             <div>
-              <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+              <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:email')}</label>
               <input
                 id="resetEmail"
                 name="resetEmail"
@@ -215,10 +217,10 @@ const Login: React.FC = () => {
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             {resetMessage && <p className="text-green-500 text-sm text-center">{resetMessage}</p>}
             <button type="submit" disabled={loading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50">
-              {loading ? 'Enviando...' : 'Enviar Link'}
+              {loading ? t('auth:sending') : t('auth:sendLink')}
             </button>
             <div className="text-center text-sm">
-              <button type="button" onClick={() => setIsResettingPassword(false)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">Voltar para o login</button>
+              <button type="button" onClick={() => setIsResettingPassword(false)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">{t('auth:backToLogin')}</button>
             </div>
           </form>
         </>
@@ -229,22 +231,22 @@ const Login: React.FC = () => {
       return (
         <>
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Crie sua Conta</h2>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">Junte-se à investigação.</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{t('auth:createAccount')}</h2>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">{t('auth:joinInvestigation')}</p>
           </div>
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="flex gap-4">
               <div className="flex-1">
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Primeiro Nome</label>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:firstName')}</label>
                 <input id="firstName" name="firstName" type="text" required className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               </div>
               <div className="flex-1">
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sobrenome</label>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:lastName')}</label>
                 <input id="lastName" name="lastName" type="text" className="mt-1 w-full px-3 py-2 border border-light-border dark:border-dark-border rounded-md shadow-sm bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-gray-200" value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
             </div>
             <div>
-              <label htmlFor="username-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome de Usuário</label>
+              <label htmlFor="username-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:username')}</label>
               <input
                 id="username-signup"
                 name="username"
@@ -257,7 +259,7 @@ const Login: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="email-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+              <label htmlFor="email-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:email')}</label>
               <input
                 id="email-signup"
                 name="email"
@@ -270,7 +272,7 @@ const Login: React.FC = () => {
               />
             </div>
             <div>
-              <label htmlFor="password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+              <label htmlFor="password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:password')}</label>
               <div className="relative">
                 <input
                   id="password-signup"
@@ -295,7 +297,7 @@ const Login: React.FC = () => {
               </div>
             </div>
             <div>
-              <label htmlFor="confirm-password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirmar Senha</label>
+              <label htmlFor="confirm-password-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:confirmPassword')}</label>
               <div className="relative">
                 <input
                   id="confirm-password-signup"
@@ -321,10 +323,10 @@ const Login: React.FC = () => {
             </div>
             {error && <p className="text-red-500 text-sm text-center">{error}</p>}
             <button type="submit" disabled={loading} className="w-full py-2 px-4 rounded-md shadow-sm text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50">
-              {loading ? 'Criando...' : 'Criar Conta'}
+              {loading ? t('auth:creatingAccount') : t('auth:createAccountButton')}
             </button>
             <div className="text-center text-sm">
-              <p className="text-gray-600 dark:text-gray-400">Já tem uma conta? <button type="button" onClick={() => setIsCreatingAccount(false)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">Faça login</button></p>
+              <p className="text-gray-600 dark:text-gray-400">{t('auth:alreadyHaveAccount')} <button type="button" onClick={() => setIsCreatingAccount(false)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">{t('auth:signIn')}</button></p>
             </div>
           </form>
         </>
@@ -334,12 +336,12 @@ const Login: React.FC = () => {
     return (
       <>
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Bem-vindo de volta</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">Entre na sua conta Vigil.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{t('auth:welcomeBack')}</h2>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{t('auth:signInToAccount')}</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+            <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:email')}</label>
             <input
               id="email-address"
               name="email"
@@ -352,7 +354,7 @@ const Login: React.FC = () => {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Senha</label>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('auth:password')}</label>
             <div className="relative">
               <input
                 id="password"
@@ -380,18 +382,18 @@ const Login: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input id="keep-logged-in" name="keep-logged-in" type="checkbox" className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-light-bg dark:bg-dark-bg" checked={keepLoggedIn} onChange={(e) => setKeepLoggedIn(e.target.checked)} />
-              <label htmlFor="keep-logged-in" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">Mantenha-me conectado</label>
+              <label htmlFor="keep-logged-in" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">{t('auth:keepLoggedIn')}</label>
             </div>
             <div className="text-sm">
-              <button type="button" onClick={() => setIsResettingPassword(true)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">Esqueceu a senha?</button>
+              <button type="button" onClick={() => setIsResettingPassword(true)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">{t('auth:forgotPassword')}</button>
             </div>
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <button type="submit" disabled={loading} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50">
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? t('auth:signingIn') : t('auth:signIn')}
           </button>
           <div className="text-center text-sm">
-            <p className="text-gray-600 dark:text-gray-400">Não tem uma conta? <button type="button" onClick={() => setIsCreatingAccount(true)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">Cadastre-se</button></p>
+            <p className="text-gray-600 dark:text-gray-400">{t('auth:dontHaveAccount')} <button type="button" onClick={() => setIsCreatingAccount(true)} className="font-medium text-primary hover:text-gray-600 dark:hover:text-gray-400">{t('auth:signUp')}</button></p>
           </div>
         </form>
       </>
@@ -413,19 +415,19 @@ const Login: React.FC = () => {
 
         {/* Right Section: Features */}
         <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center items-center text-center bg-gradient-to-br from-purple-600 to-blue-500 text-white order-1 md:order-2">
-          <h1 className="text-3xl font-bold mb-4">A rede social que mantém você conectado ao que realmente importa.</h1>
+          <h1 className="text-3xl font-bold mb-4">{t('auth:tagline')}</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8 w-full">
-            <FeatureCard icon={<UsersIcon />} title="Comunidade Ativa">
-              Conecte-se com pessoas que compartilham seus interesses.
+            <FeatureCard icon={<UsersIcon />} title={t('auth:features.activeCommunity')}>
+              {t('auth:features.activeCommunityDesc')}
             </FeatureCard>
-            <FeatureCard icon={<ShieldIcon />} title="Privacidade em Primeiro Lugar">
-              Seus dados são protegidos com segurança de ponta.
+            <FeatureCard icon={<ShieldIcon />} title={t('auth:features.privacyFirst')}>
+              {t('auth:features.privacyFirstDesc')}
             </FeatureCard>
-            <FeatureCard icon={<MessageSquareIcon />} title="Conversas Significativas">
-              Discussões que realmente importam, sem ruído.
+            <FeatureCard icon={<MessageSquareIcon />} title={t('auth:features.meaningfulConversations')}>
+              {t('auth:features.meaningfulConversationsDesc')}
             </FeatureCard>
-            <FeatureCard icon={<TrendingUpIcon />} title="Conteúdo em Alta">
-              Descubra tendências e compartilhe suas ideias.
+            <FeatureCard icon={<TrendingUpIcon />} title={t('auth:features.trendingContent')}>
+              {t('auth:features.trendingContentDesc')}
             </FeatureCard>
           </div>
         </div>
