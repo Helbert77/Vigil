@@ -92,13 +92,10 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       // Limpar parâmetro da URL
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [addToast, refreshUser, couponValidation, session]);
+  }, [addToast, refreshUser, couponValidation, session, t]);
 
   // Verificar se promoção está ativa
   const promotionActive = isPromotionActive();
-
-  // Debug: log para verificar se a promoção está ativa
-  // console.log('[PremiumPage] Promoção ativa:', promotionActive);
 
   // Função para calcular desconto percentual
   const calculateDiscount = (originalPrice: number, promoPrice: number) => {
@@ -115,42 +112,42 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
     basic: {
       monthly: {
         value: getCurrentPrice('basic', 'monthly', promotionActive),
-        display: formatPrice(getCurrentPrice('basic', 'monthly', promotionActive)) + '/mês',
-        original: promotionActive ? formatPrice(getCurrentPrice('basic', 'monthly', false)) + '/mês' : null,
+        display: formatPrice(getCurrentPrice('basic', 'monthly', promotionActive)) + '/' + t('premium:monthly').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('basic', 'monthly', false)) + '/' + t('premium:monthly').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('basic', 'monthly', false), getCurrentPrice('basic', 'monthly', true)) : 0
       },
       annually: {
         value: getCurrentPrice('basic', 'annually', promotionActive),
-        display: formatPrice(getCurrentPrice('basic', 'annually', promotionActive)) + '/ano',
-        original: promotionActive ? formatPrice(getCurrentPrice('basic', 'annually', false)) + '/ano' : null,
+        display: formatPrice(getCurrentPrice('basic', 'annually', promotionActive)) + '/' + t('premium:annually').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('basic', 'annually', false)) + '/' + t('premium:annually').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('basic', 'annually', false), getCurrentPrice('basic', 'annually', true)) : 0
       },
     },
     pro: {
       monthly: {
         value: getCurrentPrice('pro', 'monthly', promotionActive),
-        display: formatPrice(getCurrentPrice('pro', 'monthly', promotionActive)) + '/mês',
-        original: promotionActive ? formatPrice(getCurrentPrice('pro', 'monthly', false)) + '/mês' : null,
+        display: formatPrice(getCurrentPrice('pro', 'monthly', promotionActive)) + '/' + t('premium:monthly').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('pro', 'monthly', false)) + '/' + t('premium:monthly').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('pro', 'monthly', false), getCurrentPrice('pro', 'monthly', true)) : 0
       },
       annually: {
         value: getCurrentPrice('pro', 'annually', promotionActive),
-        display: formatPrice(getCurrentPrice('pro', 'annually', promotionActive)) + '/ano',
-        original: promotionActive ? formatPrice(getCurrentPrice('pro', 'annually', false)) + '/ano' : null,
+        display: formatPrice(getCurrentPrice('pro', 'annually', promotionActive)) + '/' + t('premium:annually').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('pro', 'annually', false)) + '/' + t('premium:annually').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('pro', 'annually', false), getCurrentPrice('pro', 'annually', true)) : 0
       },
     },
     premium: {
       monthly: {
         value: getCurrentPrice('premium', 'monthly', promotionActive),
-        display: formatPrice(getCurrentPrice('premium', 'monthly', promotionActive)) + '/mês',
-        original: promotionActive ? formatPrice(getCurrentPrice('premium', 'monthly', false)) + '/mês' : null,
+        display: formatPrice(getCurrentPrice('premium', 'monthly', promotionActive)) + '/' + t('premium:monthly').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('premium', 'monthly', false)) + '/' + t('premium:monthly').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('premium', 'monthly', false), getCurrentPrice('premium', 'monthly', true)) : 0
       },
       annually: {
         value: getCurrentPrice('premium', 'annually', promotionActive),
-        display: formatPrice(getCurrentPrice('premium', 'annually', promotionActive)) + '/ano',
-        original: promotionActive ? formatPrice(getCurrentPrice('premium', 'annually', false)) + '/ano' : null,
+        display: formatPrice(getCurrentPrice('premium', 'annually', promotionActive)) + '/' + t('premium:annually').toLowerCase(),
+        original: promotionActive ? formatPrice(getCurrentPrice('premium', 'annually', false)) + '/' + t('premium:annually').toLowerCase() : null,
         discount: promotionActive ? calculateDiscount(getCurrentPrice('premium', 'annually', false), getCurrentPrice('premium', 'annually', true)) : 0
       },
     },
@@ -206,18 +203,18 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
 
   const handleConfirmPlan = async () => {
     if (!session?.user) {
-      addToast("Você precisa estar logado para assinar um plano.", "error");
+      addToast(t('premium:errors.loginRequired'), "error");
       return;
     }
 
     if (currentPlan === selectedPlan) {
-      addToast(`Você já está no plano ${selectedPlan.toUpperCase()}.`, "info");
+      addToast(t('premium:errors.alreadyOnPlan', { plan: selectedPlan.toUpperCase() }), "info");
       return;
     }
 
     // Não permitir assinar plano Free via botão
     if (selectedPlan === 'free') {
-      addToast("Para cancelar sua assinatura, use a opção de cancelamento abaixo.", "info");
+      addToast(t('premium:errors.useCancelOption'), "info");
       return;
     }
 
@@ -253,18 +250,18 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       if (error) {
         console.error("PremiumPage: Error creating checkout session:", error);
         console.error("PremiumPage: Error details:", JSON.stringify(error, null, 2));
-        addToast(`Erro ao iniciar checkout: ${error.message || 'Tente novamente'}`, "error");
+        addToast(t('premium:errors.checkoutError', { message: error.message || 'Tente novamente' }), "error");
       } else if (data?.url) {
         // Redirecionar para o Stripe Checkout
-        addToast("Redirecionando para o checkout...", "info");
+        addToast(t('premium:errors.redirecting'), "info");
         window.location.href = data.url;
       } else {
         console.error("PremiumPage: No URL returned:", data);
-        addToast("Erro ao obter URL de checkout.", "error");
+        addToast(t('premium:errors.getUrlError'), "error");
       }
     } catch (error) {
       console.error("PremiumPage: Unexpected error during checkout:", error);
-      addToast("Ocorreu um erro inesperado ao processar o checkout.", "error");
+      addToast(t('premium:errors.unexpectedCheckoutError'), "error");
     } finally {
       setIsUpdatingPlan(false);
     }
@@ -273,7 +270,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   // Primeiro modal: coleta feedback
   const handleCancelSubscription = async (reason: string, details: string) => {
     if (!session?.user || !user) {
-      addToast("Você precisa estar logado.", "error");
+      addToast(t('premium:errors.loginRequiredGeneral'), "error");
       return;
     }
 
@@ -305,7 +302,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
   // Segundo modal: confirma cancelamento com explicações
   const handleConfirmCancellation = async () => {
     if (!session?.user || !user) {
-      addToast("Você precisa estar logado.", "error");
+      addToast(t('premium:errors.loginRequiredGeneral'), "error");
       return;
     }
 
@@ -325,12 +322,12 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       if (error || (data && !data.success)) {
         const errorMessage = error?.message || data?.error || 'Erro desconhecido';
         console.error("PremiumPage: Error cancelling subscription:", errorMessage);
-        addToast("Erro ao cancelar a assinatura. Tente novamente.", "error");
+        addToast(t('premium:errors.cancelError'), "error");
       } else {
         // Sucesso!
         const activeUntilFormatted = data.activeUntilFormatted || '';
         addToast(
-          `Assinatura cancelada! Você pode continuar usando até ${activeUntilFormatted}.`,
+          t('premium:messages.subscriptionCanceled', { date: activeUntilFormatted }),
           "success"
         );
         
@@ -346,20 +343,24 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
       }
     } catch (error) {
       console.error("PremiumPage: Unexpected error during cancellation:", error);
-      addToast("Ocorreu um erro inesperado ao cancelar a assinatura.", "error");
+      addToast(t('premium:errors.unexpectedCancelError'), "error");
     } finally {
       setIsCancelling(false);
     }
   };
 
+  const basicFeatures = t('premium:features.basic', { returnObjects: true }) as string[];
+  const proFeatures = t('premium:features.pro', { returnObjects: true }) as string[];
+  const premiumFeatures = t('premium:features.premium', { returnObjects: true }) as string[];
+
   return (
     <div className="py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h1 className="text-xl md:text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-          Escolha o quanto de verdade você quer enxergar
+          {t('premium:pageTitle')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-          Cada plano desbloqueia um novo nível de liberdade, acesso e conexão. O despertar começa com uma escolha.
+          {t('premium:pageSubtitle')}
         </p>
 
         {/* Banner de Trial Ativo */}
@@ -370,15 +371,15 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-2xl">🎉</span>
                   <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400">
-                    Você está em Período de Teste!
+                    {t('premium:trial.title')}
                   </h2>
                   <span className="text-2xl">✨</span>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-lg font-semibold mb-1">
-                  Aproveite todos os recursos do plano {user.plan.toUpperCase()} gratuitamente
+                  {t('premium:trial.enjoy', { plan: user.plan.toUpperCase() })}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
-                  Seu teste expira em: <span className="font-bold text-green-600 dark:text-green-400">
+                  {t('premium:trial.expires')} <span className="font-bold text-green-600 dark:text-green-400">
                     {new Date(user.trial_ends_at).toLocaleDateString('pt-BR', { 
                       day: '2-digit', 
                       month: 'long', 
@@ -394,7 +395,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     <span>
-                      {Math.ceil((new Date(user.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} dias restantes
+                      {Math.ceil((new Date(user.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} {t('premium:trial.daysLeft')}
                     </span>
                   </div>
                 </div>
@@ -411,12 +412,12 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-2xl">🎉</span>
                   <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-orange-600 dark:from-yellow-400 dark:to-orange-400">
-                    Promoção de Lançamento
+                    {t('premium:promo.title')}
                   </h2>
                   <span className="text-2xl">🚀</span>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 text-lg font-semibold mb-1">
-                  Preços especiais para os primeiros membros da comunidade Vigil
+                  {t('premium:promo.subtitle')}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
                   {t('premium:savePromo')}
@@ -425,7 +426,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  <span>Oferta por tempo limitado - Não perca!</span>
+                  <span>{t('premium:promo.limitedOffer')}</span>
                 </div>
               </div>
             </div>
@@ -448,7 +449,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                   setCouponCode(e.target.value.toUpperCase());
                   setCouponValidation(null);
                 }}
-                placeholder="Digite o código"
+                placeholder={t('premium:placeholders.enterCode')}
                 className="flex-1 px-4 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-white uppercase"
                 maxLength={50}
               />
@@ -469,7 +470,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
               }`}>
                 {couponValidation.valid ? (
                   <>
-                    <p className="font-bold">✅ Cupom Aplicado!</p>
+                    <p className="font-bold">{t('premium:couponApplied')}</p>
                     <p className="text-sm">{couponValidation.coupon.description}</p>
                     <p className="text-sm font-semibold mt-1">
                       {t('premium:freeDaysOfPlan', { days: couponValidation.coupon.trialDays, plan: couponValidation.coupon.plan.toUpperCase() })}
@@ -507,7 +508,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
                 : 'bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
               }`}
           >
-            Anual
+            {t('premium:annually')}
           </button>
           <button
             onClick={() => setBillingCycle('monthly')}
@@ -537,11 +538,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             price={prices.basic[billingCycle].display}
             originalPrice={prices.basic[billingCycle].original}
             promotionalDiscount={prices.basic[billingCycle].discount}
-            features={[
-              "Acesso ilimitado a recursos básicos",
-              "Editar Post",
-              "Posts mais longos",
-            ]}
+            features={basicFeatures}
             onSelect={() => {
               if (!couponValidation?.valid || couponValidation.coupon.plan === 'basic') {
                 setSelectedPlan("basic");
@@ -561,7 +558,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
         <div className="relative h-full">
           <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
             <span className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold inline-block">
-              mais vantajoso
+              {t('premium:labels.mostPopular')}
             </span>
           </div>
           <div className={`h-full relative ${couponValidation?.valid && couponValidation.coupon.plan !== 'pro' ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -577,13 +574,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
               price={prices.pro[billingCycle].display}
               originalPrice={prices.pro[billingCycle].original}
               promotionalDiscount={prices.pro[billingCycle].discount}
-              features={[
-                "Tudo do plano Basic",
-                "Selo verificado",
-                "Suporte prioritário por e-mail",
-                "Anúncios Reduzidos",
-                "Criar salas de chat Privativas",
-              ]}
+              features={proFeatures}
               onSelect={() => {
                 if (!couponValidation?.valid || couponValidation.coupon.plan === 'pro') {
                   setSelectedPlan("pro");
@@ -616,15 +607,7 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
             price={prices.premium[billingCycle].display}
             originalPrice={prices.premium[billingCycle].original}
             promotionalDiscount={prices.premium[billingCycle].discount}
-            features={[
-              "Tudo do plano Pro",
-              "Sem anúncios",
-              "Criar novas comunidades",
-              "Acesso total a página E-Books",
-              "Atendimento e Suporte via chat",
-              "Acesso antecipado a novos recursos",
-              "Criar salas de chat Privativas",
-            ]}
+            features={premiumFeatures}
             highlighted
             onSelect={() => {
               if (!couponValidation?.valid || couponValidation.coupon.plan === 'premium') {
@@ -651,18 +634,18 @@ export default function PremiumPage({ user: propUser, onUpdateUser }: PremiumPag
           {t('premium:yourCurrentPlan')}: {currentPlan.toUpperCase()}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Você pode fazer upgrade ou gerenciar sua assinatura a qualquer momento.
+          {t('premium:labels.upgradeOrManage')}
         </p>
       </Card>
 
       <div className="mt-16 text-center text-gray-500 dark:text-gray-400 text-sm">
         {currentPlan !== 'free' && (
           <button onClick={() => setIsCancelModalOpen(true)} className="underline hover:text-primary transition-colors">
-            Cancelar a qualquer momento.
+            {t('premium:labels.cancelAnytime')}
           </button>
         )}
-        {currentPlan !== 'free' && <span className="ml-1">Sem taxas ocultas.</span>}
-        {currentPlan === 'free' && <span>Sem taxas ocultas.</span>}
+        {currentPlan !== 'free' && <span className="ml-1">{t('premium:labels.noHiddenFees')}</span>}
+        {currentPlan === 'free' && <span>{t('premium:labels.noHiddenFees')}</span>}
       </div>
 
       <CancellationModal

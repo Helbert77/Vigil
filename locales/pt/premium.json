@@ -1,5 +1,7 @@
 {
   "title": "Planos Premium",
+  "pageTitle": "Escolha o quanto de verdade você quer enxergar",
+  "pageSubtitle": "Cada plano desbloqueia um novo nível de liberdade, acesso e conexão. O despertar começa com uma escolha.",
   "chooseYourPlan": "Escolha seu plano",
   "paymentProcessed": "Pagamento processado com sucesso! Aguarde a confirmação da assinatura.",
   "checkoutCanceled": "Checkout cancelado. Você pode tentar novamente quando quiser.",
@@ -29,5 +31,106 @@
   "couponNotValidForPlan": "Cupom não válido para este plano",
   "savePromo": "Economize até 25% nos planos mensais e garanta acesso vitalício aos preços promocionais!",
   "annualBonus": "Bônus anual",
-  "monthsFree": "{{months}} meses grátis"
+  "monthsFree": "{{months}} meses grátis",
+  "confirmCancellation": "Confirmar Cancelamento",
+  "plan": "Plano",
+  "cancellationWarningTitle": "Importante: Sua assinatura permanecerá ativa!",
+  "cancellationWarningText": "Você continuará tendo acesso a todos os recursos do plano {{plan}} até {{date}}. Após essa data, seu plano será automaticamente alterado para FREE.",
+  "whatHappensTitle": "O que acontece ao cancelar?",
+  "noFutureCharges": "Não haverá nenhuma cobrança futura após o cancelamento",
+  "dataPreserved": "Seus dados e conteúdo serão preservados (posts, comentários, comunidades)",
+  "reactivateAnytime": "Você pode reativar sua assinatura a qualquer momento antes de {{date}}",
+  "planDowngrade": "Após {{date}}, seu plano será alterado para FREE automaticamente",
+  "confirmationsTitle": "Confirmações que você receberá:",
+  "confirmationEmail": "Email de confirmação com todos os detalhes do cancelamento",
+  "appNotification": "Notificação no app confirmando o cancelamento",
+  "reminder": "Lembrete alguns dias antes do fim do período ativo",
+  "changedMindTitle": "Mudou de ideia?",
+  "changedMindText": "Não se preocupe! Você pode reativar sua assinatura a qualquer momento antes de {{date}}. Basta voltar à página Premium e clicar em 'Reativar Assinatura'.",
+  "confirmationFooter": "Ao confirmar, você receberá um email com todos os detalhes do cancelamento.",
+  "trial": {
+    "title": "Você está em Período de Teste!",
+    "enjoy": "Aproveite todos os recursos do plano {{plan}} gratuitamente",
+    "expires": "Seu teste expira em:",
+    "daysLeft": "dias restantes"
+  },
+  "promo": {
+    "title": "Promoção de Lançamento",
+    "subtitle": "Preços especiais para os primeiros membros da comunidade Vigil",
+    "limitedOffer": "Oferta por tempo limitado - Não perca!"
+  },
+  "placeholders": {
+    "enterCode": "Digite o código"
+  },
+  "labels": {
+    "mostPopular": "mais vantajoso",
+    "cancelAnytime": "Cancelar a qualquer momento.",
+    "noHiddenFees": "Sem taxas ocultas.",
+    "upgradeOrManage": "Você pode fazer upgrade ou gerenciar sua assinatura a qualquer momento."
+  },
+  "errors": {
+    "loginRequired": "Você precisa estar logado para assinar um plano.",
+    "loginRequiredGeneral": "Você precisa estar logado.",
+    "alreadyOnPlan": "Você já está no plano {{plan}}.",
+    "useCancelOption": "Para cancelar sua assinatura, use a opção de cancelamento abaixo.",
+    "checkoutError": "Erro ao iniciar checkout: {{message}}",
+    "redirecting": "Redirecionando para o checkout...",
+    "getUrlError": "Erro ao obter URL de checkout.",
+    "unexpectedCheckoutError": "Ocorreu um erro inesperado ao processar o checkout.",
+    "cancelError": "Erro ao cancelar a assinatura. Tente novamente.",
+    "unexpectedCancelError": "Ocorreu um erro inesperado ao cancelar a assinatura."
+  },
+  "messages": {
+    "subscriptionCanceled": "Assinatura cancelada! Você pode continuar usando até {{date}}."
+  },
+  "features": {
+    "basic": [
+      "Acesso ilimitado a recursos básicos",
+      "Editar Post",
+      "Posts mais longos"
+    ],
+    "pro": [
+      "Tudo do plano Basic",
+      "Selo verificado",
+      "Suporte prioritário por e-mail",
+      "Anúncios Reduzidos",
+      "Criar salas de chat Privativas"
+    ],
+    "premium": [
+      "Tudo do plano Pro",
+      "Sem anúncios",
+      "Criar novas comunidades",
+      "Acesso total a página E-Books",
+      "Atendimento e Suporte via chat",
+      "Acesso antecipado a novos recursos",
+      "Criar salas de chat Privativas"
+    ]
+  },
+  "comparison": {
+    "title": "Compare os Planos",
+    "resources": "Recursos",
+    "features": {
+      "charLimit": "Limite de caracteres por post",
+      "ads": "Anúncios",
+      "emailSupport": "Suporte por e-mail",
+      "chatSupport": "Suporte via chat",
+      "editPosts": "Editar posts",
+      "communityAccess": "Acesso a comunidades",
+      "libraryAccess": "Acesso à biblioteca",
+      "createCommunities": "Criar comunidades",
+      "verifiedBadge": "Selo verificado",
+      "earlyAccess": "Acesso antecipado",
+      "privateChatRooms": "Criar salas de chat Privativas"
+    }
+  },
+  "pricingCard": {
+    "currentPlan": "Plano Atual",
+    "choosePlan": "Escolher {{plan}}",
+    "trialDaysBanner": "TESTE GRÁTIS {{days}} DIAS",
+    "launchPriceBanner": "PREÇO DE LANÇAMENTO",
+    "bonusMonthsBanner": "+{{months}} MESES GRÁTIS",
+    "savePercent": "Economize {{percent}}%",
+    "startTrial": "Iniciar Teste Grátis",
+    "updating": "Atualizando..."
+  }
 }

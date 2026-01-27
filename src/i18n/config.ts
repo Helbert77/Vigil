@@ -24,6 +24,8 @@ import enAdmin from '@/locales/en/admin.json';
 import enAbout from '@/locales/en/about.json';
 import enPassword from '@/locales/en/password.json';
 import enChat from '@/locales/en/chat.json';
+import enSupport from '@/locales/en/support.json';
+import enLegal from '@/locales/en/legal.json';
 
 // Import Portuguese translations
 import ptCommon from '@/locales/pt/common.json';
@@ -48,6 +50,8 @@ import ptAdmin from '@/locales/pt/admin.json';
 import ptAbout from '@/locales/pt/about.json';
 import ptPassword from '@/locales/pt/password.json';
 import ptChat from '@/locales/pt/chat.json';
+import ptSupport from '@/locales/pt/support.json';
+import ptLegal from '@/locales/pt/legal.json';
 
 const resources = {
   en: {
@@ -73,6 +77,8 @@ const resources = {
     about: enAbout,
     password: enPassword,
     chat: enChat,
+    support: enSupport,
+    legal: enLegal,
   },
   pt: {
     common: ptCommon,
@@ -97,6 +103,8 @@ const resources = {
     about: ptAbout,
     password: ptPassword,
     chat: ptChat,
+    support: ptSupport,
+    legal: ptLegal,
   },
 };
 
@@ -134,6 +142,8 @@ i18n
       'about',
       'password',
       'chat',
+      'support',
+      'legal',
     ],
     defaultNS: 'common',
   });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { AdPackage, formatPrice, formatNumber } from '@/src/config/adPricing';
+import { useTranslation } from 'react-i18next';
 
 interface AdPackageCardProps {
   package: AdPackage;
@@ -20,6 +21,8 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
   onSelect,
   disabled = false,
 }) => {
+  const { t } = useTranslation(['ads']);
+  
   const getPackageColor = (name: string) => {
     switch (name) {
       case 'bronze':
@@ -50,6 +53,10 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
     }
   };
 
+  const translatedFeatures = t(`ads:packages.${pkg.name}.features`, { returnObjects: true }) as string[];
+  const displayName = t(`ads:packages.${pkg.name}.displayName`);
+  const badge = pkg.badge ? t(`ads:packages.${pkg.name}.badge`) : null;
+
   return (
     <div
       onClick={!disabled ? onSelect : undefined}
@@ -64,7 +71,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
       `}
     >
       {/* Badge de destaque */}
-      {pkg.badge && (
+      {badge && (
         <div className="absolute -top-3 -right-3">
           <span className={`
             inline-flex px-4 py-1 rounded-full text-xs font-semibold
@@ -74,7 +81,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
             }
             shadow-lg
           `}>
-            {pkg.badge}
+            {badge}
           </span>
         </div>
       )}
@@ -90,10 +97,10 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
           </div>
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              {pkg.displayName}
+              {displayName}
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Pacote {pkg.name}
+              {t('ads:packages.labels.package', { name: pkg.name })}
             </p>
           </div>
         </div>
@@ -112,7 +119,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
             {formatPrice(pkg.price)}
           </span>
           <span className="text-gray-500 dark:text-gray-400">
-            pagamento único
+            {t('ads:packages.labels.oneTimePayment')}
           </span>
         </div>
       </div>
@@ -124,7 +131,7 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
             {pkg.duration}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase">
-            Dias
+            {t('ads:packages.labels.days')}
           </div>
         </div>
         <div className="text-center">
@@ -132,14 +139,14 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
             {formatNumber(pkg.impressions)}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase">
-            Impressões
+            {t('ads:packages.labels.impressions')}
           </div>
         </div>
       </div>
 
       {/* Features */}
       <div className="space-y-3 mb-6">
-        {pkg.features.map((feature, index) => (
+        {Array.isArray(translatedFeatures) && translatedFeatures.map((feature, index) => (
           <div key={index} className="flex items-start space-x-2">
             <CheckIcon />
             <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -162,16 +169,15 @@ const AdPackageCard: React.FC<AdPackageCardProps> = ({
           ${disabled ? 'cursor-not-allowed' : 'hover:scale-105'}
         `}
       >
-        {isSelected ? 'Selecionado ✓' : 'Selecionar Pacote'}
+        {isSelected ? t('ads:packages.labels.selected') : t('ads:packages.labels.select')}
       </button>
 
       {/* Informação adicional */}
       <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400">
-        Custo por 1.000 impressões (CPM): {formatPrice((pkg.price / pkg.impressions) * 1000)}
+        {t('ads:packages.labels.cpmCost', { cost: formatPrice((pkg.price / pkg.impressions) * 1000) })}
       </p>
     </div>
   );
 };
 
 export default AdPackageCard;
-

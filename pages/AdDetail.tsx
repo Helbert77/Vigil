@@ -7,6 +7,7 @@ import CreateAdComment from '../components/ads/CreateAdComment';
 import AdCommentItem from '../components/ads/AdCommentItem';
 import { useToast } from '../hooks/useToast';
 import * as api from '../src/services/api';
+import { useTranslation } from 'react-i18next';
 
 const ArrowLeftIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></Icon>;
 
@@ -70,6 +71,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
   onSendMessage,
   allUsers,
 }) => {
+  const { t } = useTranslation(['ads', 'common']);
   const [comments, setComments] = useState<AdComment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [likedCommentIds, setLikedCommentIds] = useState<string[]>([]);
@@ -137,7 +139,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
       const result = await api.fetchAdComments(ad.id);
       
       if (result.error) {
-        addToast('Erro ao carregar comentários', 'error');
+        addToast(t('common:error'), 'error');
       } else {
         setComments(result.data || []);
       }
@@ -146,7 +148,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
     };
 
     fetchComments();
-  }, [ad.id, addToast]);
+  }, [ad.id, addToast, t]);
 
   const handleAddComment = async (commentText: string, imageUrl?: string, parentCommentId?: string) => {
     const result = await api.createAdComment({
@@ -158,7 +160,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
     });
 
     if (result.error) {
-      addToast('Erro ao publicar comentário', 'error');
+      addToast(t('common:error'), 'error');
     } else {
       const newComment: AdComment = {
         ...result.data,
@@ -215,7 +217,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
         setLikedCommentIds(likedCommentIds.filter(id => id !== commentId));
       }
     } else {
-      addToast('Erro ao curtir comentário', 'error');
+      addToast(t('common:error'), 'error');
     }
   };
 
@@ -232,7 +234,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
         // Toast removido - ícone muda visualmente
       }
     } else {
-      addToast('Erro ao salvar comentário', 'error');
+      addToast(t('common:error'), 'error');
     }
   };
 
@@ -293,12 +295,12 @@ const AdDetail: React.FC<AdDetailProps> = ({
         <button 
           onClick={handleBackButtonClick} 
           className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700" 
-          aria-label="Go back"
+          aria-label={t('common:goBack')}
         >
           <ArrowLeftIcon />
         </button>
         <h1 className="text-xl font-bold ml-4 text-gray-900 dark:text-white">
-          {focusComment ? 'Thread de Comentário' : 'Anúncio'}
+          {focusComment ? t('ads:commentThread') : t('ads:adDetail')}
         </h1>
       </div>
 
@@ -352,12 +354,12 @@ const AdDetail: React.FC<AdDetailProps> = ({
             adId={ad.id}
             onAddComment={(text, imageUrl) => handleAddComment(text, imageUrl, focusComment?.id)}
             allUsers={allUsers}
-            placeholder={focusComment ? "Adicione uma resposta..." : "Adicione um comentário..."}
+            placeholder={focusComment ? t('ads:addReply') : t('ads:addComment')}
           />
         </div>
         <div className="space-y-4 p-4 border-t border-light-border dark:border-dark-border">
           {isLoadingComments ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Carregando comentários...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t('ads:loadingComments')}</p>
           ) : focusComment ? (
             // Modo thread: mostrar o comentário focado e suas respostas
             <div>
@@ -367,7 +369,7 @@ const AdDetail: React.FC<AdDetailProps> = ({
             // Modo normal: mostrar todos os comentários raiz
             comments.map((comment: AdComment) => renderComment(comment))
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Nenhum comentário ainda. Inicie a conversa.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t('ads:noCommentsStart')}</p>
           )}
         </div>
       </Card>
@@ -376,4 +378,3 @@ const AdDetail: React.FC<AdDetailProps> = ({
 };
 
 export default AdDetail;
-

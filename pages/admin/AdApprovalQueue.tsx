@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/useToast';
 import { supabase } from '@/integrations/supabase/client';
 import { approveAd, rejectAd } from '@/src/services/adApprovalService';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
+import { useTranslation } from 'react-i18next';
 
 interface AdApprovalQueueProps {
   user: User;
@@ -33,6 +34,7 @@ interface PendingAd {
 
 const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }) => {
   const { addToast } = useToast();
+  const { t } = useTranslation(['ads', 'admin']);
   const [ads, setAds] = useState<PendingAd[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAd, setSelectedAd] = useState<PendingAd | null>(null);
@@ -58,7 +60,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       setAds(data as PendingAd[] || []);
     } catch (error: any) {
       console.error('Erro ao buscar anúncios pendentes:', error);
-      addToast('Erro ao carregar anúncios pendentes', 'error');
+      addToast(t('ads:approvalQueue.errors.fetch'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -67,12 +69,12 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
   useEffect(() => {
     // Verificar se o usuário tem permissão
     if (user.role !== 'admin' && user.role !== 'moderator') {
-      addToast('Você não tem permissão para acessar esta página', 'error');
+      addToast(t('ads:approvalQueue.errors.permission'), 'error');
       return;
     }
 
     fetchPendingAds();
-  }, [user.role]);
+  }, [user.role, t]);
 
 
   const handleApprove = async () => {
@@ -95,7 +97,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       fetchPendingAds();
       if (onAdProcessed) onAdProcessed();
     } catch (error: any) {
-      addToast(`Erro ao aprovar anúncio: ${error.message}`, 'error');
+      addToast(t('ads:approvalQueue.errors.approve', { error: error.message }), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -105,7 +107,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
     if (!selectedAd) return;
 
     if (!rejectionReason.trim()) {
-      addToast('Por favor, informe o motivo da rejeição', 'error');
+      addToast(t('ads:approvalQueue.errors.reasonRequired'), 'error');
       return;
     }
 
@@ -128,7 +130,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       fetchPendingAds();
       if (onAdProcessed) onAdProcessed();
     } catch (error: any) {
-      addToast(`Erro ao rejeitar anúncio: ${error.message}`, 'error');
+      addToast(t('ads:approvalQueue.errors.reject', { error: error.message }), 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -138,21 +140,21 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
     if (ad.payment_type === 'package' && ad.package_type) {
       return (
         <span className="px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full text-xs font-medium">
-          📦 Pacote {ad.package_type.toUpperCase()}
+          {t('ads:approvalQueue.badges.package', { type: ad.package_type.toUpperCase() })}
         </span>
       );
     }
     if (ad.payment_type === 'cpm') {
       return (
         <span className="px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-medium">
-          💰 CPM €{ad.cpm_rate?.toFixed(2)} - Budget €{ad.budget?.toFixed(2)}
+          {t('ads:approvalQueue.badges.cpm', { rate: ad.cpm_rate?.toFixed(2), budget: ad.budget?.toFixed(2) })}
         </span>
       );
     }
     if (ad.payment_type === 'credits') {
       return (
         <span className="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-medium">
-          💳 Créditos - Budget €{ad.budget?.toFixed(2)}
+          {t('ads:approvalQueue.badges.credits', { budget: ad.budget?.toFixed(2) })}
         </span>
       );
     }
@@ -163,10 +165,10 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
     return (
       <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg text-center">
         <h2 className="text-2xl font-bold text-red-800 dark:text-red-200 mb-2">
-          Acesso Negado
+          {t('admin:accessDenied')}
         </h2>
         <p className="text-red-600 dark:text-red-300">
-          Apenas administradores e moderadores podem acessar esta página.
+          {t('ads:approvalQueue.errors.permission')}
         </p>
       </div>
     );
@@ -178,10 +180,10 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
       <div className="flex flex-wrap gap-2 md:gap-4 justify-between items-center">
         <div className="flex-1 min-w-0">
           <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            Aprovar Anúncios
+            {t('ads:approvalQueue.title')}
           </h1>
           <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-0.5 md:mt-1">
-            {ads.length} anúncio{ads.length !== 1 ? 's' : ''} aguardando aprovação
+            {t('ads:approvalQueue.subtitle', { count: ads.length })}
           </p>
         </div>
         <button
@@ -189,7 +191,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
           className="bg-primary hover:bg-gray-600 text-white font-medium px-3 md:px-6 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-base whitespace-nowrap flex-shrink-0"
           disabled={isLoading}
         >
-          {isLoading ? 'Carregando...' : 'Atualizar'}
+          {isLoading ? t('ads:approvalQueue.loading') : t('ads:approvalQueue.refresh')}
         </button>
       </div>
 
@@ -202,10 +204,10 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
         <div className="bg-light-card dark:bg-dark-card p-12 rounded-lg shadow-sm border border-light-border dark:border-dark-border text-center">
           <div className="text-6xl mb-4">✅</div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Nenhum anúncio pendente
+            {t('ads:approvalQueue.noPendingAds')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400">
-            Todos os anúncios pagos foram aprovados ou rejeitados.
+            {t('ads:approvalQueue.noPendingAdsDesc')}
           </p>
         </div>
       ) : (
@@ -266,7 +268,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                       {ad.advertiser_name}
                     </p>
                     <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(ad.created_at).toLocaleDateString('pt-BR', {
+                      {new Date(ad.created_at).toLocaleDateString(t('common:localeCode') || 'pt-BR', {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',
@@ -297,7 +299,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                     }}
                     className="flex-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 font-medium px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-sm"
                   >
-                    ✓ Aprovar
+                    {t('ads:approvalQueue.actions.approve')}
                   </button>
                   <button
                     onClick={() => {
@@ -306,7 +308,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                     }}
                     className="flex-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-800 font-medium px-2 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors text-xs md:text-sm"
                   >
-                    ✗ Rejeitar
+                    {t('ads:approvalQueue.actions.reject')}
                   </button>
                 </div>
               </div>
@@ -323,10 +325,10 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
           setSelectedAd(null);
         }}
         onConfirm={handleApprove}
-        title="Aprovar Anúncio?"
-        message={`Tem certeza que deseja aprovar o anúncio "${selectedAd?.title}"? Ele será ativado e começará a ser exibido para os usuários.`}
-        confirmText={isProcessing ? 'Aprovando...' : 'Sim, aprovar'}
-        cancelText="Cancelar"
+        title={t('ads:approvalQueue.modals.approveTitle')}
+        message={t('ads:approvalQueue.modals.approveMessage', { title: selectedAd?.title })}
+        confirmText={isProcessing ? t('ads:approvalQueue.actions.approving') : t('ads:approvalQueue.actions.confirmApprove')}
+        cancelText={t('ads:approvalQueue.actions.cancel')}
         isDestructive={false}
       />
 
@@ -335,15 +337,15 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-light-card dark:bg-dark-card rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              Rejeitar Anúncio
+              {t('ads:approvalQueue.modals.rejectTitle')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Por favor, informe o motivo da rejeição do anúncio "{selectedAd?.title}":
+              {t('ads:approvalQueue.modals.rejectMessage', { title: selectedAd?.title })}
             </p>
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Ex: Conteúdo inadequado, violação das políticas, imagens de baixa qualidade..."
+              placeholder={t('ads:approvalQueue.modals.rejectPlaceholder')}
               className="w-full px-4 py-2 border border-light-border dark:border-dark-border rounded-lg bg-light-bg dark:bg-dark-bg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               rows={4}
               maxLength={500}
@@ -361,14 +363,14 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                 disabled={isProcessing}
                 className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
-                Cancelar
+                {t('ads:approvalQueue.actions.cancel')}
               </button>
               <button
                 onClick={handleReject}
                 disabled={isProcessing || !rejectionReason.trim()}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? 'Rejeitando...' : 'Rejeitar Anúncio'}
+                {isProcessing ? t('ads:approvalQueue.actions.rejecting') : t('ads:approvalQueue.actions.confirmReject')}
               </button>
             </div>
           </div>
@@ -379,4 +381,3 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
 };
 
 export default AdApprovalQueue;
-

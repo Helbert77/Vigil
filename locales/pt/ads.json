@@ -5,21 +5,29 @@
     "createAd": "Criar Anúncio",
     "noData": "Nenhum dado disponível",
     "noDataDesc": "Você ainda não tem anúncios ativos ou métricas registradas no período selecionado.",
-    "createFirstAd": "Criar Primeiro Anúncio"
+    "createFirstAd": "Criar Primeiro Anúncio",
+    "performanceByAd": "Desempenho por Anúncio",
+    "vsPrevious": "vs anterior",
+    "noDataPeriod": "Nenhum dado disponível para o período selecionado"
   },
   "metrics": {
     "impressions": "Impressões",
     "clicks": "Cliques",
     "engagement": "Engajamento",
     "totalCost": "Custo Total",
-    "totalViews": "Total de visualizações",
-    "ctr": "CTR",
-    "rate": "Taxa",
-    "avgCpc": "CPC médio",
+    "totalViews": "Visualizações Totais",
+    "ctr": "CTR (Taxa de Cliques)",
+    "rate": "Taxa de Conversão",
+    "avgCpc": "CPC Médio",
     "likes": "Curtidas",
     "shares": "Compartilhamentos",
     "saves": "Salvamentos",
-    "noClicks": "Sem cliques"
+    "noClicks": "Sem cliques",
+    "trend": {
+      "up": "Aumento de {{value}}%",
+      "down": "Queda de {{value}}%",
+      "neutral": "Sem alteração"
+    }
   },
   "period": {
     "label": "Período",
@@ -83,5 +91,187 @@
   },
   "adActions": "Ações do anúncio",
   "upgradePlan": "Atualizar Plano",
-  "ad": "Anúncio"
+  "ad": "Anúncio",
+  "learnMore": "Saiba Mais",
+  "advertiser": "Anunciante",
+  "sponsored": "Patrocinado",
+  "reportAd": "Denunciar Anúncio",
+  "hideAd": "Ocultar Anúncio",
+  "alreadyReported": "Você já denunciou este anúncio.",
+  "adSaved": "Anúncio salvo!",
+  "adUnsaved": "Anúncio removido dos salvos",
+  "copyLinkError": "Erro ao copiar link",
+  "adDetail": "Anúncio",
+  "commentThread": "Thread de Comentário",
+  "noCommentsStart": "Nenhum comentário ainda. Inicie a conversa.",
+  "addReply": "Adicione uma resposta...",
+  "addComment": "Adicione um comentário...",
+  "loadingComments": "Carregando comentários...",
+  "selectPlan": {
+    "backToMyAds": "Voltar para Meus Anúncios",
+    "title": "Escolha o Plano do seu Anúncio",
+    "subtitle": "Selecione um pacote fixo, defina um orçamento personalizado ou compre créditos",
+    "preview": "Preview do Anúncio",
+    "tabs": {
+      "fixedPackages": "Pacotes Fixos",
+      "packages": "Pacotes",
+      "customBudget": "Orçamento Personalizado (CPM)",
+      "cpm": "CPM",
+      "buyCredits": "Comprar Créditos",
+      "credits": "Créditos"
+    },
+    "tip": {
+      "label": "Dica:",
+      "gold": "O pacote Ouro oferece o melhor custo-benefício com alcance máximo e recursos premium!"
+    },
+    "credits": {
+      "currentBalance": "Saldo Atual",
+      "chooseAmount": "Escolha o valor",
+      "receive": "Recebe",
+      "howToUse": "Como usar os créditos?",
+      "usage1": "Use créditos para criar anúncios CPM personalizados",
+      "usage2": "1 crédito = €1,00",
+      "usage3": "CPM: €6,00 por 1.000 impressões",
+      "usage4": "Créditos não expiram",
+      "usage5": "Bônus automático em compras acima de €50",
+      "lastTransactions": "Últimas Transações"
+    },
+    "footer": {
+      "approvalInfo": "Após o pagamento, seu anúncio será enviado para aprovação",
+      "processing": "Processando...",
+      "buyCreditsBtn": "Comprar {{amount}} em Créditos",
+      "proceedPayment": "Prosseguir para Pagamento"
+    },
+    "errors": {
+      "adIdNotFound": "ID do anúncio não encontrado",
+      "adNotFound": "Anúncio não encontrado",
+      "noPermission": "Você não tem permissão para acessar este anúncio",
+      "selectPackage": "Selecione um pacote",
+      "setBudget": "Defina um orçamento",
+      "selectCreditAmount": "Selecione um valor de créditos"
+    }
+  },
+  "cpmCalculator": {
+    "title": "Calculadora CPM",
+    "subtitle": "Defina seu orçamento e veja quantas impressões você receberá",
+    "budgetLabel": "Orçamento do Anúncio",
+    "estimatedImpressions": "Impressões Estimadas",
+    "cpmPer1000": "CPM (por 1.000)",
+    "perImpression": "Por Impressão",
+    "howItWorks": "Como funciona o CPM?",
+    "rule1": "Você paga {{rate}} a cada 1.000 impressões",
+    "rule2": "Seu anúncio para automaticamente quando o orçamento acabar",
+    "rule3": "Você pode acompanhar o gasto em tempo real",
+    "rule4": "Sem surpresas: você define o limite máximo",
+    "useBudget": "Usar Orçamento de {{amount}}",
+    "invalidBudget": "Orçamento Inválido",
+    "wait": "Aguarde...",
+    "approvalWarning": "⚠️ Após o pagamento, seu anúncio passará por aprovação de um moderador antes de começar a ser exibido.",
+    "minBudgetError": "Orçamento mínimo: {{amount}}",
+    "maxBudgetError": "Orçamento máximo: {{amount}}"
+  },
+  "packages": {
+    "bronze": {
+      "displayName": "Bronze",
+      "features": [
+        "7 dias de exposição",
+        "5.000 impressões garantidas",
+        "Suporte por email"
+      ]
+    },
+    "silver": {
+      "displayName": "Prata",
+      "features": [
+        "15 dias de exposição",
+        "15.000 impressões garantidas",
+        "Destaque em 3 comunidades",
+        "Suporte prioritário"
+      ]
+    },
+    "gold": {
+      "displayName": "Ouro",
+      "badge": "Mais Popular",
+      "features": [
+        "30 dias de exposição",
+        "50.000 impressões garantidas",
+        "Destaque em todas as comunidades",
+        "Relatório detalhado",
+        "Suporte prioritário"
+      ]
+    },
+    "platinum": {
+      "displayName": "Platina",
+      "badge": "Melhor Valor",
+      "features": [
+        "60 dias de exposição",
+        "150.000 impressões garantidas",
+        "Destaque premium",
+        "Pin no topo por 3 dias",
+        "Relatório completo com insights",
+        "Suporte VIP 24/7"
+      ]
+    },
+    "labels": {
+      "package": "Pacote {{name}}",
+      "oneTimePayment": "pagamento único",
+      "days": "Dias",
+      "impressions": "Impressões",
+      "selected": "Selecionado ✓",
+      "select": "Selecionar Pacote",
+      "cpmCost": "Custo por 1.000 impressões (CPM): {{cost}}"
+    }
+  },
+  "table": {
+    "ad": "Anúncio",
+    "status": "Status",
+    "impressions": "Impressões",
+    "clicks": "Cliques",
+    "ctr": "CTR",
+    "spent": "Gasto",
+    "actions": "Ações",
+    "viewReport": "Ver Relatório"
+  },
+  "charts": {
+    "dailyPerformance": "Performance Diária",
+    "performanceOverTime": "Desempenho ao Longo do Tempo",
+    "impressions": "Impressões",
+    "clicks": "Cliques",
+    "cost": "Custo"
+  },
+  "approvalQueue": {
+    "title": "Aprovar Anúncios",
+    "subtitle": "{{count}} anúncio(s) aguardando aprovação",
+    "refresh": "Atualizar",
+    "loading": "Carregando...",
+    "noPendingAds": "Nenhum anúncio pendente",
+    "noPendingAdsDesc": "Todos os anúncios pagos foram aprovados ou rejeitados.",
+    "badges": {
+      "package": "📦 Pacote {{type}}",
+      "cpm": "💰 CPM €{{rate}} - Orçamento €{{budget}}",
+      "credits": "💳 Créditos - Orçamento €{{budget}}"
+    },
+    "actions": {
+      "approve": "✓ Aprovar",
+      "reject": "✗ Rejeitar",
+      "approving": "Aprovando...",
+      "rejecting": "Rejeitando...",
+      "cancel": "Cancelar",
+      "confirmApprove": "Sim, aprovar",
+      "confirmReject": "Rejeitar Anúncio"
+    },
+    "modals": {
+      "approveTitle": "Aprovar Anúncio?",
+      "approveMessage": "Tem certeza que deseja aprovar o anúncio \"{{title}}\"? Ele será ativado e começará a ser exibido para os usuários.",
+      "rejectTitle": "Rejeitar Anúncio",
+      "rejectMessage": "Por favor, informe o motivo da rejeição do anúncio \"{{title}}\":",
+      "rejectPlaceholder": "Ex: Conteúdo inadequado, violação das políticas, imagens de baixa qualidade..."
+    },
+    "errors": {
+      "fetch": "Erro ao carregar anúncios pendentes",
+      "permission": "Você não tem permissão para acessar esta página",
+      "approve": "Erro ao aprovar anúncio: {{error}}",
+      "reject": "Erro ao rejeitar anúncio: {{error}}",
+      "reasonRequired": "Por favor, informe o motivo da rejeição"
+    }
+  }
 }

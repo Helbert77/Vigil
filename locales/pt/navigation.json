@@ -19,5 +19,10 @@
   "admin": "Admin",
   "moderation": "Moderação",
   "appeals": "Recursos",
-  "dashboard": "Painel"
+  "dashboard": "Painel",
+  "terms": "Termos",
+  "privacy": "Privacidade",
+  "cookies": "Cookies",
+  "accessibility": "Acessibilidade",
+  "disclaimer": "Responsabilidade"
 }

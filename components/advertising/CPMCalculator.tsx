@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AD_PRICING_CONFIG, formatPrice, formatNumber, calculateCPMImpressions, getCostPerImpression, isValidBudget } from '@/src/config/adPricing';
+import { useTranslation } from 'react-i18next';
 
 interface CPMCalculatorProps {
   onBudgetConfirm: (budget: number, estimatedImpressions: number) => void;
@@ -7,6 +8,7 @@ interface CPMCalculatorProps {
 }
 
 const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled = false }) => {
+  const { t } = useTranslation(['ads']);
   const [budget, setBudget] = useState<number>(AD_PRICING_CONFIG.cpm.minBudget);
   const [estimatedImpressions, setEstimatedImpressions] = useState<number>(0);
   const [error, setError] = useState<string>('');
@@ -17,14 +19,14 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
 
     if (!isValidBudget(budget)) {
       if (budget < AD_PRICING_CONFIG.cpm.minBudget) {
-        setError(`Orçamento mínimo: ${formatPrice(AD_PRICING_CONFIG.cpm.minBudget)}`);
+        setError(t('ads:cpmCalculator.minBudgetError', { amount: formatPrice(AD_PRICING_CONFIG.cpm.minBudget) }));
       } else {
-        setError(`Orçamento máximo: ${formatPrice(AD_PRICING_CONFIG.cpm.maxBudget)}`);
+        setError(t('ads:cpmCalculator.maxBudgetError', { amount: formatPrice(AD_PRICING_CONFIG.cpm.maxBudget) }));
       }
     } else {
       setError('');
     }
-  }, [budget]);
+  }, [budget, t]);
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBudget(parseFloat(e.target.value));
@@ -47,17 +49,17 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 border-gray-200 dark:border-gray-700">
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Calculadora CPM
+          {t('ads:cpmCalculator.title')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 text-sm">
-          Defina seu orçamento e veja quantas impressões você receberá
+          {t('ads:cpmCalculator.subtitle')}
         </p>
       </div>
 
       {/* Exibição do orçamento */}
       <div className="mb-8 text-center">
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Orçamento do Anúncio
+          {t('ads:cpmCalculator.budgetLabel')}
         </label>
         <div className="flex items-center justify-center space-x-4">
           <input
@@ -110,7 +112,7 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
             {formatNumber(estimatedImpressions)}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase mt-1">
-            Impressões Estimadas
+            {t('ads:cpmCalculator.estimatedImpressions')}
           </div>
         </div>
 
@@ -119,7 +121,7 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
             {formatPrice(AD_PRICING_CONFIG.cpm.rate)}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase mt-1">
-            CPM (por 1.000)
+            {t('ads:cpmCalculator.cpmPer1000')}
           </div>
         </div>
 
@@ -128,7 +130,7 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
             {formatPrice(costPerImpression)}
           </div>
           <div className="text-xs text-gray-600 dark:text-gray-400 uppercase mt-1">
-            Por Impressão
+            {t('ads:cpmCalculator.perImpression')}
           </div>
         </div>
       </div>
@@ -139,13 +141,13 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Como funciona o CPM?
+          {t('ads:cpmCalculator.howItWorks')}
         </h4>
         <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-7">
-          <li>• Você paga {formatPrice(AD_PRICING_CONFIG.cpm.rate)} a cada 1.000 impressões</li>
-          <li>• Seu anúncio para automaticamente quando o orçamento acabar</li>
-          <li>• Você pode acompanhar o gasto em tempo real</li>
-          <li>• Sem surpresas: você define o limite máximo</li>
+          <li>• {t('ads:cpmCalculator.rule1', { rate: formatPrice(AD_PRICING_CONFIG.cpm.rate) })}</li>
+          <li>• {t('ads:cpmCalculator.rule2')}</li>
+          <li>• {t('ads:cpmCalculator.rule3')}</li>
+          <li>• {t('ads:cpmCalculator.rule4')}</li>
         </ul>
       </div>
 
@@ -164,20 +166,19 @@ const CPMCalculator: React.FC<CPMCalculatorProps> = ({ onBudgetConfirm, disabled
         `}
       >
         {disabled 
-          ? 'Aguarde...' 
+          ? t('ads:cpmCalculator.wait')
           : isValidBudget(budget)
-            ? `Usar Orçamento de ${formatPrice(budget)}`
-            : 'Orçamento Inválido'
+            ? t('ads:cpmCalculator.useBudget', { amount: formatPrice(budget) })
+            : t('ads:cpmCalculator.invalidBudget')
         }
       </button>
 
       {/* Aviso de aprovação */}
       <p className="mt-4 text-xs text-center text-gray-500 dark:text-gray-400">
-        ⚠️ Após o pagamento, seu anúncio passará por aprovação de um moderador antes de começar a ser exibido.
+        {t('ads:cpmCalculator.approvalWarning')}
       </p>
     </div>
   );
 };
 
 export default CPMCalculator;
-

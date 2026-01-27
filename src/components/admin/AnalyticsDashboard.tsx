@@ -3,9 +3,11 @@ import { ConversionMetrics, ConversionEvent } from '@/types';
 import * as api from '@/src/services/api';
 import { useToast } from '@/hooks/useToast';
 import Card from '@/components/common/Card';
+import { useTranslation } from 'react-i18next';
 
 export const AnalyticsDashboard: React.FC = () => {
   const { addToast } = useToast();
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const [metrics, setMetrics] = useState<ConversionMetrics[]>([]);
   const [events, setEvents] = useState<ConversionEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export const AnalyticsDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('[AnalyticsDashboard] Error loading analytics:', error);
-      addToast('Erro ao carregar analytics', 'error');
+      addToast(t('analytics.errors.loading'), 'error');
     } finally {
       setLoading(false);
     }
@@ -125,10 +127,10 @@ export const AnalyticsDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-            📊 Analytics de Conversão
+            📊 {t('analytics.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Métricas de trial e conversão de usuários
+            {t('analytics.subtitle')}
           </p>
         </div>
 
@@ -142,7 +144,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
-            7 dias
+            {t('analytics.periods.7d')}
           </button>
           <button
             onClick={() => setDateRange('30d')}
@@ -152,7 +154,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
-            30 dias
+            {t('analytics.periods.30d')}
           </button>
           <button
             onClick={() => setDateRange('90d')}
@@ -162,7 +164,7 @@ export const AnalyticsDashboard: React.FC = () => {
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
           >
-            90 dias
+            {t('analytics.periods.90d')}
           </button>
         </div>
       </div>
@@ -174,7 +176,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
             {totals.trials_started}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Trials Iniciados</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('analytics.cards.trialsStarted')}</div>
         </Card>
 
         <Card className="p-4 md:p-6">
@@ -182,7 +184,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">
             {totals.trials_converted}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Convertidos</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('analytics.cards.converted')}</div>
         </Card>
 
         <Card className="p-4 md:p-6">
@@ -190,7 +192,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400">
             {totals.conversion_rate.toFixed(1)}%
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Taxa de Conversão</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('analytics.cards.conversionRate')}</div>
         </Card>
 
         <Card className="p-4 md:p-6">
@@ -198,26 +200,26 @@ export const AnalyticsDashboard: React.FC = () => {
           <div className="text-2xl md:text-3xl font-bold text-purple-600 dark:text-purple-400">
             €{totals.revenue.toFixed(2)}
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">Receita Total</div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">{t('analytics.cards.totalRevenue')}</div>
         </Card>
       </div>
 
       {/* Metrics by Plan */}
       <Card className="p-4 md:p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Métricas por Plano
+          {t('analytics.metricsByPlan.title')}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Plano</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Trials</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Convertidos</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Expirados</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Cancelados</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Taxa Conv.</th>
-                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">Receita</th>
+                <th className="text-left py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.plan')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.trials')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.converted')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.expired')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.canceled')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.rate')}</th>
+                <th className="text-right py-3 px-2 text-gray-700 dark:text-gray-300 font-semibold">{t('analytics.metricsByPlan.columns.revenue')}</th>
               </tr>
             </thead>
             <tbody>
@@ -256,14 +258,14 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Conversion Funnel */}
       <Card className="p-4 md:p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Funil de Conversão
+          {t('analytics.funnel.title')}
         </h2>
         <div className="space-y-3">
           {/* Trial Started */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Trials Iniciados
+                {t('analytics.funnel.steps.started')}
               </span>
               <span className="text-sm font-bold text-gray-900 dark:text-white">
                 {totals.trials_started} (100%)
@@ -278,7 +280,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Convertidos para Pago
+                {t('analytics.funnel.steps.converted')}
               </span>
               <span className="text-sm font-bold text-green-600 dark:text-green-400">
                 {totals.trials_converted} ({totals.conversion_rate.toFixed(1)}%)
@@ -296,7 +298,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Expirados sem Conversão
+                {t('analytics.funnel.steps.expired')}
               </span>
               <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
                 {totals.trials_expired} ({totals.trials_started > 0 ? ((totals.trials_expired / totals.trials_started) * 100).toFixed(1) : 0}%)
@@ -314,7 +316,7 @@ export const AnalyticsDashboard: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Cancelados Durante Trial
+                {t('analytics.funnel.steps.canceled')}
               </span>
               <span className="text-sm font-bold text-red-600 dark:text-red-400">
                 {totals.trials_canceled} ({totals.trials_started > 0 ? ((totals.trials_canceled / totals.trials_started) * 100).toFixed(1) : 0}%)
@@ -333,13 +335,13 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Recent Events */}
       <Card className="p-4 md:p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Eventos Recentes
+          {t('analytics.recentEvents.title')}
         </h2>
         <div className="overflow-x-auto">
           <div className="space-y-2 min-w-[500px]">
             {events.length === 0 ? (
               <p className="text-center py-8 text-gray-500 dark:text-gray-400">
-                Nenhum evento registrado ainda
+                {t('analytics.recentEvents.noEvents')}
               </p>
             ) : (
               events.slice(0, 20).map((event: any) => (
@@ -368,11 +370,11 @@ export const AnalyticsDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
-                    {new Date(event.created_at).toLocaleDateString('pt-BR', {
+                    {new Date(event.created_at).toLocaleDateString(i18n.language || 'pt-BR', {
                       day: '2-digit',
                       month: 'short',
                       hour: '2-digit',
-                      minute: '2-digit',
+                      minute: '2-digit'
                     })}
                   </div>
                 </div>
@@ -384,4 +386,3 @@ export const AnalyticsDashboard: React.FC = () => {
     </div>
   );
 };
-

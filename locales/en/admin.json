@@ -11,5 +11,126 @@
   },
   "userManagement": "User Management",
   "contentModeration": "Content Moderation",
-  "inDevelopment": "In development..."
+  "inDevelopment": "In development...",
+  "analytics": {
+    "title": "Conversion Analytics",
+    "subtitle": "Trial and user conversion metrics",
+    "periods": {
+      "7d": "7 days",
+      "30d": "30 days",
+      "90d": "90 days"
+    },
+    "cards": {
+      "trialsStarted": "Trials Started",
+      "converted": "Converted",
+      "conversionRate": "Conversion Rate",
+      "totalRevenue": "Total Revenue"
+    },
+    "metricsByPlan": {
+      "title": "Metrics by Plan",
+      "columns": {
+        "plan": "Plan",
+        "trials": "Trials",
+        "converted": "Converted",
+        "expired": "Expired",
+        "canceled": "Canceled",
+        "rate": "Conv. Rate",
+        "revenue": "Revenue"
+      }
+    },
+    "funnel": {
+      "title": "Conversion Funnel",
+      "steps": {
+        "started": "Trials Started",
+        "converted": "Converted to Paid",
+        "expired": "Expired without Conversion",
+        "canceled": "Canceled During Trial"
+      }
+    },
+    "recentEvents": {
+      "title": "Recent Events",
+      "noEvents": "No events registered yet"
+    },
+    "errors": {
+      "loading": "Error loading analytics"
+    }
+  },
+  "coupons": {
+    "title": "Trial Coupon Management",
+    "subtitle": "Create and manage promotional coupons for free trials",
+    "createCoupon": "Create Coupon",
+    "cards": {
+      "total": "Total Coupons",
+      "active": "Active Coupons",
+      "totalUses": "Total Uses",
+      "depleted": "Depleted Coupons"
+    },
+    "table": {
+      "title": "Created Coupons",
+      "noCoupons": "No coupons created yet. Click \"Create Coupon\" to start.",
+      "columns": {
+        "code": "Code",
+        "plan": "Plan",
+        "days": "Days",
+        "uses": "Uses",
+        "validity": "Validity",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "from": "From: {{date}}",
+      "to": "To: {{date}}",
+      "noLimit": "No limit",
+      "copy": "Copy code",
+      "viewUsage": "View usage details"
+    },
+    "createModal": {
+      "title": "Create New Coupon",
+      "code": "Coupon Code",
+      "codePlaceholder": "Ex: PROMO2026",
+      "generateRandom": "Generate random code",
+      "plan": "Plan",
+      "trialDays": "Trial Days (1-30)",
+      "usageLimit": "Usage Limit (optional)",
+      "usageLimitPlaceholder": "Leave empty for unlimited",
+      "validFrom": "Valid from (optional)",
+      "validUntil": "Valid until (optional)",
+      "cancel": "Cancel",
+      "submit": "Create Coupon"
+    },
+    "usageModal": {
+      "title": "Usage Details - {{code}}",
+      "noUsage": "No usage recorded yet.",
+      "user": "User",
+      "emailNotAvailable": "Email not available",
+      "planDetails": "Plan: {{plan}} • {{days}} days"
+    },
+    "errors": {
+      "fetch": "Error loading coupons",
+      "fetchUsage": "Error loading coupon usages",
+      "notFound": "Coupon not found",
+      "codeRequired": "Coupon code is required",
+      "invalidDays": "Trial days must be between 1 and 30",
+      "create": "Error creating coupon",
+      "createUnknown": "Unknown error",
+      "toggle": "Error toggling coupon status",
+      "unauthorized": "You are not authenticated. Please log in again.",
+      "forbidden": "You do not have permission to create coupons.",
+      "codeExists": "This coupon code is already in use.",
+      "invalidCodeLength": "Coupon code must be between 3 and 20 characters.",
+      "invalidPlan": "Invalid plan. Choose: basic, pro or premium.",
+      "invalidDateRange": "End date must be after start date.",
+      "missingFields": "Please fill in all required fields.",
+      "databaseError": "Error saving to database. Please try again."
+    },
+    "success": {
+      "created": "Coupon created successfully!",
+      "activated": "Coupon activated successfully!",
+      "deactivated": "Coupon deactivated successfully!",
+      "copied": "Code copied!"
+    }
+  }
 }

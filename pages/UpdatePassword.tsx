@@ -209,8 +209,8 @@ const UpdatePassword: React.FC = () => {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     
     if (!currentSession) {
-      setErrors(['Sessão expirada. Por favor, solicite um novo link de recuperação.']);
-      addToast('Sessão expirada', 'error');
+      setErrors([t('password:errors.sessionExpired')]);
+      addToast(t('password:toasts.sessionExpired'), 'error');
       setLoading(false);
       return;
     }
@@ -234,8 +234,8 @@ const UpdatePassword: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-light-bg dark:bg-dark-bg p-4">
       <div className="w-full max-w-md p-8 space-y-6 bg-light-card dark:bg-dark-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="text-center">
-          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">Redefinir Senha</h1>
-          <p className="text-gray-600 dark:text-gray-400">Crie uma nova senha segura para sua conta.</p>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('password:title')}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{t('password:subtitle')}</p>
         </div>
 
         {/* Mensagens de erro */}
@@ -274,7 +274,7 @@ const UpdatePassword: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                  Senha atualizada com sucesso! Redirecionando...
+                  {t('password:success.redirecting')}
                 </p>
               </div>
             </div>
@@ -296,7 +296,7 @@ const UpdatePassword: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Digite sua nova senha"
+                placeholder={t('password:newPasswordPlaceholder')}
               />
               <button
                 type="button"
@@ -363,7 +363,7 @@ const UpdatePassword: React.FC = () => {
           {/* Campo Confirmar Senha */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Confirmar Nova Senha *
+              {t('password:confirmPassword')}
             </label>
             <div className="relative">
               <input

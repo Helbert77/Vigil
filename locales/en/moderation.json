@@ -62,5 +62,83 @@
   "deleteNoteConfirm": "Yes, delete",
   "system": "System",
   "notAvailable": "N/A",
-  "points": "pts"
+  "points": "pts",
+  "appealSent": "Appeal sent {{time}}",
+  "originalViolation": "Original Violation",
+  "originalContent": "Original Content:",
+  "userJustification": "User Justification",
+  "confirmActionTitle": "Confirm Action: {{action}}",
+  "internalNotesPlaceholder": "Add internal notes (optional)...",
+  "justifyActionTitle": "Justify Action: {{action}}",
+  "pageTitle": "Moderation Queue",
+  "sectionPosts": "Posts and Comments",
+  "emptyQueueMessage": "The moderation queue is empty. Good job!",
+  "processingActionError": "Error processing action.",
+  "actionExecutedSuccess": "Action \"{{action}}\" executed successfully.",
+  "appealsQueueTitle": "Appeals Queue",
+  "emptyAppealsMessage": "The appeals queue is empty.",
+  "appealApprovedSuccess": "Appeal approved successfully.",
+  "appealRejectedSuccess": "Appeal rejected successfully.",
+  "processAppealError": "Error processing appeal.",
+  "dashboard": {
+    "title": "Moderation Dashboard",
+    "timeframe": {
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days"
+    },
+    "actions": {
+      "clearCounters": "Clear Counters",
+      "clearing": "Clearing counters...",
+      "clearedSuccess": "Dashboard counters cleared successfully!",
+      "clearError": "Error clearing counters.",
+      "loadError": "Error loading dashboard metrics.",
+      "feedbackLoadError": "Error loading cancellation feedback."
+    },
+    "metrics": {
+      "pendingItems": "Pending Items",
+      "pendingItemsDesc": "Awaiting review",
+      "approvedItems": "Approved Items",
+      "rejectedItems": "Rejected Items",
+      "avgReviewTime": "Avg Review Time",
+      "warnedUsers": "Warned Users",
+      "suspendedUsers": "Suspended Users",
+      "bannedUsers": "Banned Users",
+      "periodDesc": "In the last {{days}} days"
+    },
+    "charts": {
+      "activityTitle": "Moderation Activity",
+      "createdItems": "Created Items",
+      "distributionTitle": "Violation Distribution"
+    },
+    "cancellationAnalytics": {
+      "title": "Cancellation Analytics",
+      "total": "Total Cancellations",
+      "highPrice": "High Price",
+      "notUsingFeatures": "Not Using Features",
+      "techIssues": "Technical Issues"
+    },
+    "feedback": {
+      "title": "Recent Cancellation Feedback",
+      "empty": "No recent cancellation feedback."
+    },
+    "modals": {
+      "clearCountersTitle": "Clear Dashboard Counters?",
+      "clearCountersMessage": "This action will permanently delete the violation history of all users and resolved items from the moderation queue. This action cannot be undone.",
+      "confirmClear": "Yes, clear all"
+    },
+    "feedbackCard": {
+      "anonymousUser": "Anonymous User",
+      "canceled": "Canceled",
+      "cancellationReason": "Cancellation Reason",
+      "additionalDetails": "Additional Details",
+      "reasons": {
+        "tooExpensive": "It's too expensive",
+        "notUsingFeatures": "I don't use premium features",
+        "foundBetterAlternative": "I found a better alternative",
+        "takingBreak": "I'm taking a break from the platform",
+        "techIssues": "Technical issues"
+      }
+    }
+  }
 }

@@ -1,0 +1,47 @@
+{
+  "title": "Support Center",
+  "prioritySupport": "Priority Support • Response within 24h",
+  "standardSupport": "We will respond within 48-72h",
+  "categories": {
+    "label": "Issue Category",
+    "technical": "🔧 Technical Support",
+    "technicalDesc": "Technical issues, bugs, errors",
+    "billing": "💳 Billing",
+    "billingDesc": "Questions about payment and plans",
+    "feature": "💡 Feature Suggestion",
+    "featureDesc": "New ideas and improvements",
+    "other": "📝 Other",
+    "otherDesc": "Other issues"
+  },
+  "fields": {
+    "subject": "Subject *",
+    "subjectPlaceholder": "Ex: Error uploading image",
+    "description": "Detailed Description *",
+    "descriptionPlaceholder": "Describe the issue in detail. Include steps to reproduce, error messages, etc.",
+    "attachments": "Attachments (Optional)",
+    "uploadText": "Click to upload or drag files",
+    "uploadFormats": "PNG, JPG, PDF, TXT up to 5MB",
+    "remove": "Remove",
+    "chars": "characters",
+    "charsMin": "characters (minimum 20)"
+  },
+  "autoInfo": {
+    "title": "ℹ️ The following information will be included automatically:",
+    "plan": "Plan:",
+    "user": "User:",
+    "browser": "Browser:",
+    "date": "Date/Time:"
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "sending": "Sending...",
+    "send": "Send Ticket"
+  },
+  "messages": {
+    "required": "Please fill in all required fields",
+    "minDetails": "Please provide more details (minimum 20 characters)",
+    "success": "Ticket sent successfully! We will respond shortly.",
+    "error": "Error sending ticket. Please try again.",
+    "fileSize": "Some files were ignored (max 5MB per file)"
+  }
+}

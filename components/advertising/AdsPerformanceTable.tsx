@@ -70,29 +70,29 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <EyeIcon />
-                  <span>{t('ads:dashboard.impressions')}</span>
+                  <span>{t('ads:metrics.impressions')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <MousePointerIcon />
-                  <span>{t('ads:dashboard.clicks')}</span>
+                  <span>{t('ads:metrics.clicks')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('ads:dashboard.ctr')}
+                {t('ads:metrics.ctr')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
                   <HeartIcon />
-                  <span>{t('ads:dashboard.engagement')}</span>
+                  <span>{t('ads:metrics.engagement')}</span>
                 </div>
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('ads:dashboard.cost')}
+                {t('ads:metrics.totalCost')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('ads:dashboard.cpc')}
+                {t('ads:metrics.avgCpc')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('common:actions')}
@@ -140,7 +140,7 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                       onClick={() => onViewDetails(ad.id)}
                       className="text-primary hover:text-secondary text-sm font-medium transition-colors"
                     >
-                      {t('common:viewDetails')}
+                      {t('ads:table.viewReport')}
                     </button>
                   )}
                 </td>
@@ -154,4 +154,3 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
 };
 
 export default AdsPerformanceTable;
-

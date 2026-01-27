@@ -2,6 +2,7 @@ import React from 'react';
 import Card from '@/components/common/Card';
 import { Icon } from '@/components/icons/Icon';
 import { CheckIcon } from '@/src/components/icons/CheckIcon';
+import { useTranslation } from 'react-i18next';
 
 // Ícone X para recursos ausentes
 const XIcon = () => <Icon className="h-5 w-5 text-red-500 mx-auto"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
@@ -18,29 +19,31 @@ interface Feature {
   premium: string | boolean;
 }
 
-// Features com valores de texto (aparecem primeiro)
-const TEXT_FEATURES: Feature[] = [
-  { name: "Limite de caracteres por post", free: "280", basic: "1.000", pro: "5.000", premium: "25.000" },
-  { name: "Anúncios", free: true, basic: true, pro: true, premium: false },
-  { name: "Suporte por e-mail", free: true, basic: true, pro: true, premium: true },
-  { name: "Suporte via chat", free: false, basic: false, pro: false, premium: true },
-];
-
-// Features com ícones (aparecem depois)
-const ICON_FEATURES: Feature[] = [
-  { name: "Editar posts", free: false, basic: true, pro: true, premium: true },
-  { name: "Acesso a comunidades", free: false, basic: true, pro: true, premium: true },
-  { name: "Acesso à biblioteca", free: false, basic: false, pro: true, premium: true },
-  { name: "Criar comunidades", free: false, basic: false, pro: false, premium: true },
-  { name: "Selo verificado", free: false, basic: false, pro: true, premium: true },
-  { name: "Acesso antecipado", free: false, basic: false, pro: false, premium: true },
-  { name: "Criar salas de chat Privativas", free: false, basic: false, pro: true, premium: true },
-];
-
-// Combinar features: texto primeiro, ícones depois
-const FEATURES: Feature[] = [...TEXT_FEATURES, ...ICON_FEATURES];
-
 const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ currentPlan }) => {
+  const { t } = useTranslation(['premium']);
+
+  // Features com valores de texto (aparecem primeiro)
+  const TEXT_FEATURES: Feature[] = [
+    { name: t('premium:comparison.features.charLimit'), free: "280", basic: "1.000", pro: "5.000", premium: "25.000" },
+    { name: t('premium:comparison.features.ads'), free: true, basic: true, pro: true, premium: false },
+    { name: t('premium:comparison.features.emailSupport'), free: true, basic: true, pro: true, premium: true },
+    { name: t('premium:comparison.features.chatSupport'), free: false, basic: false, pro: false, premium: true },
+  ];
+
+  // Features com ícones (aparecem depois)
+  const ICON_FEATURES: Feature[] = [
+    { name: t('premium:comparison.features.editPosts'), free: false, basic: true, pro: true, premium: true },
+    { name: t('premium:comparison.features.communityAccess'), free: false, basic: true, pro: true, premium: true },
+    { name: t('premium:comparison.features.libraryAccess'), free: false, basic: false, pro: true, premium: true },
+    { name: t('premium:comparison.features.createCommunities'), free: false, basic: false, pro: false, premium: true },
+    { name: t('premium:comparison.features.verifiedBadge'), free: false, basic: false, pro: true, premium: true },
+    { name: t('premium:comparison.features.earlyAccess'), free: false, basic: false, pro: false, premium: true },
+    { name: t('premium:comparison.features.privateChatRooms'), free: false, basic: false, pro: true, premium: true },
+  ];
+
+  // Combinar features: texto primeiro, ícones depois
+  const FEATURES: Feature[] = [...TEXT_FEATURES, ...ICON_FEATURES];
+
   const getPlanClass = (plan: string) => {
     if (currentPlan.toLowerCase() === plan.toLowerCase()) {
       return 'bg-primary/10 dark:bg-primary/20 border-primary';
@@ -51,7 +54,7 @@ const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ current
   return (
     <div className="mt-16 max-w-6xl mx-auto">
       <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-        Compare os Planos
+        {t('premium:comparison.title')}
       </h2>
       <Card className="p-0 overflow-hidden border border-light-border dark:border-dark-border">
         <div className="overflow-x-auto">
@@ -59,7 +62,7 @@ const PricingComparisonTable: React.FC<PricingComparisonTableProps> = ({ current
             <thead className="bg-light-card dark:bg-dark-card">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                  Recursos
+                  {t('premium:comparison.resources')}
                 </th>
                 <th scope="col" className={`px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider ${getPlanClass('free')}`}>
                   Free

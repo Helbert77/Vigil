@@ -229,6 +229,10 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
     }
   ];
 
+  const toCamelCase = (str: string) => {
+    return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+  };
+
   const handleTopicClick = (topic: HelpTopic, category: HelpCategory) => {
     if (topic.id === 'contact') {
       window.location.href = 'mailto:suporte@myvigil.co';
@@ -236,8 +240,17 @@ const Help: React.FC<HelpProps> = ({ onNavigateBack, searchQuery = '' }) => {
       setSelectedTopic(topic);
       setSelectedTopicCategory(category);
       
-      // Carregar conteúdo do PRD se disponível
-      if (topic.prdNumber) {
+      const categoryKey = toCamelCase(category.id);
+      const topicKey = toCamelCase(topic.id);
+      const contentKey = `categories.${categoryKey}.topics.${topicKey}.fullContent`;
+      
+      const translatedContent = t(`help:${contentKey}`);
+      
+      // Verifica se a tradução existe (não retorna a própria chave)
+      if (translatedContent && translatedContent !== contentKey && !translatedContent.includes('categories.')) {
+        setPrdContent(translatedContent);
+      } else if (topic.prdNumber) {
+        // Fallback para PRD service
         const content = getPRDContent(topic.prdNumber);
         setPrdContent(content?.fullContent);
       } else {

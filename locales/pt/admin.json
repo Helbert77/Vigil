@@ -11,5 +11,126 @@
   },
   "userManagement": "Gerenciamento de Usuários",
   "contentModeration": "Moderação de Conteúdo",
-  "inDevelopment": "Em desenvolvimento..."
+  "inDevelopment": "Em desenvolvimento...",
+  "analytics": {
+    "title": "Analytics de Conversão",
+    "subtitle": "Métricas de trial e conversão de usuários",
+    "periods": {
+      "7d": "7 dias",
+      "30d": "30 dias",
+      "90d": "90 dias"
+    },
+    "cards": {
+      "trialsStarted": "Trials Iniciados",
+      "converted": "Convertidos",
+      "conversionRate": "Taxa de Conversão",
+      "totalRevenue": "Receita Total"
+    },
+    "metricsByPlan": {
+      "title": "Métricas por Plano",
+      "columns": {
+        "plan": "Plano",
+        "trials": "Trials",
+        "converted": "Convertidos",
+        "expired": "Expirados",
+        "canceled": "Cancelados",
+        "rate": "Taxa Conv.",
+        "revenue": "Receita"
+      }
+    },
+    "funnel": {
+      "title": "Funil de Conversão",
+      "steps": {
+        "started": "Trials Iniciados",
+        "converted": "Convertidos para Pago",
+        "expired": "Expirados sem Conversão",
+        "canceled": "Cancelados Durante Trial"
+      }
+    },
+    "recentEvents": {
+      "title": "Eventos Recentes",
+      "noEvents": "Nenhum evento registrado ainda"
+    },
+    "errors": {
+      "loading": "Erro ao carregar analytics"
+    }
+  },
+  "coupons": {
+    "title": "Gestão de Cupons de Trial",
+    "subtitle": "Crie e gerencie cupons promocionais para trials gratuitos",
+    "createCoupon": "Criar Cupom",
+    "cards": {
+      "total": "Total de Cupons",
+      "active": "Cupons Ativos",
+      "totalUses": "Total de Usos",
+      "depleted": "Cupons Esgotados"
+    },
+    "table": {
+      "title": "Cupons Criados",
+      "noCoupons": "Nenhum cupom criado ainda. Clique em \"Criar Cupom\" para começar.",
+      "columns": {
+        "code": "Código",
+        "plan": "Plano",
+        "days": "Dias",
+        "uses": "Usos",
+        "validity": "Validade",
+        "status": "Status",
+        "actions": "Ações"
+      },
+      "active": "Ativo",
+      "inactive": "Inativo",
+      "activate": "Ativar",
+      "deactivate": "Desativar",
+      "from": "De: {{date}}",
+      "to": "Até: {{date}}",
+      "noLimit": "Sem limite",
+      "copy": "Copiar código",
+      "viewUsage": "Ver detalhes de uso"
+    },
+    "createModal": {
+      "title": "Criar Novo Cupom",
+      "code": "Código do Cupom",
+      "codePlaceholder": "Ex: PROMO2026",
+      "generateRandom": "Gerar código aleatório",
+      "plan": "Plano",
+      "trialDays": "Dias de Trial (1-30)",
+      "usageLimit": "Limite de Usos (opcional)",
+      "usageLimitPlaceholder": "Deixe vazio para ilimitado",
+      "validFrom": "Válido de (opcional)",
+      "validUntil": "Válido até (opcional)",
+      "cancel": "Cancelar",
+      "submit": "Criar Cupom"
+    },
+    "usageModal": {
+      "title": "Detalhes de Uso - {{code}}",
+      "noUsage": "Nenhum uso registrado ainda.",
+      "user": "Usuário",
+      "emailNotAvailable": "Email não disponível",
+      "planDetails": "Plano: {{plan}} • {{days}} dias"
+    },
+    "errors": {
+      "fetch": "Erro ao carregar cupons",
+      "fetchUsage": "Erro ao carregar usos do cupom",
+      "notFound": "Cupom não encontrado",
+      "codeRequired": "Código do cupom é obrigatório",
+      "invalidDays": "Dias de trial deve ser entre 1 e 30",
+      "create": "Erro ao criar cupom",
+      "createUnknown": "Erro desconhecido",
+      "toggle": "Erro ao alterar status do cupom",
+      "unauthorized": "Você não está autenticado. Faça login novamente.",
+      "forbidden": "Você não tem permissão para criar cupons.",
+      "codeExists": "Este código de cupom já está em uso.",
+      "invalidCodeLength": "O código do cupom deve ter entre 3 e 20 caracteres.",
+      "invalidPlan": "Plano inválido. Escolha: basic, pro ou premium.",
+      "invalidDateRange": "A data de término deve ser posterior à data de início.",
+      "missingFields": "Preencha todos os campos obrigatórios.",
+      "databaseError": "Erro ao salvar no banco de dados. Tente novamente."
+    },
+    "success": {
+      "created": "Cupom criado com sucesso!",
+      "activated": "Cupom ativado com sucesso!",
+      "deactivated": "Cupom desativado com sucesso!",
+      "copied": "Código copiado!"
+    }
+  }
 }

@@ -19,5 +19,10 @@
   "admin": "Admin",
   "moderation": "Moderation",
   "appeals": "Appeals",
-  "dashboard": "Dashboard"
+  "dashboard": "Dashboard",
+  "terms": "Terms",
+  "privacy": "Privacy",
+  "cookies": "Cookies",
+  "accessibility": "Accessibility",
+  "disclaimer": "Disclaimer"
 }

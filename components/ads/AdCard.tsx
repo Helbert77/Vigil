@@ -12,6 +12,7 @@ import ResilientVideo from '@/src/components/common/ResilientVideo';
 import ReportModal from '@/src/components/post/ReportModal';
 import MediaViewer from '@/src/components/common/MediaViewer';
 import * as api from '@/src/services/api';
+import { useTranslation } from 'react-i18next';
 
 // Ícones
 const HeartIcon = ({ filled }: { filled: boolean }) => (
@@ -75,6 +76,7 @@ interface AdCardProps {
 }
 
 const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers = [], onSendMessage, isLiked = false, isSaved = false, onToggleLike, onToggleSave, onHideAd, onIncrementShares, onIncrementViews, onViewAd }) => {
+  const { t } = useTranslation(['ads', 'common', 'posts']);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showDmModal, setShowDmModal] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -146,7 +148,6 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
     onToggleSave(ad.id, isSaved);
     onTrackMetric(ad.id, 'save');
     
-    const toastMessage = !isSaved ? 'Anúncio salvo!' : 'Anúncio removido dos salvos';
     // Toast removido - ação visual já indica sucesso
   };
 
@@ -190,7 +191,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
           await copyToClipboard(shareUrl);
           // Toast removido - ação de copiar é instantânea
         } catch (error) {
-          addToast('Erro ao copiar link', 'error');
+          addToast(t('ads:copyLinkError'), 'error');
         }
         break;
       case 'whatsapp':
@@ -207,7 +208,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
           await copyToClipboard(shareUrl);
           // Toast removido - ação de copiar é instantânea
         } catch (error) {
-          addToast('Erro ao copiar link', 'error');
+          addToast(t('ads:copyLinkError'), 'error');
         }
         break;
     }
@@ -262,7 +263,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
       if (result.error) {
         if (result.error.code === 'DUPLICATE_REPORT') {
           console.warn('🚩 [AdCard] DENUNCIAR - Denúncia duplicada detectada');
-          addToast(result.error.message || 'Você já denunciou este anúncio.', 'info');
+          addToast(result.error.message || t('ads:alreadyReported'), 'info');
           setIsReportModalOpen(false);
           return;
         }
@@ -276,7 +277,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
       setIsReportModalOpen(false);
     } catch (err: any) {
       console.error('🚩 [AdCard] DENUNCIAR - Erro ao enviar:', err);
-      const errorMessage = err?.message || 'Erro ao enviar denúncia. Tente novamente.';
+      const errorMessage = err?.message || t('common:reportError');
       addToast(errorMessage, 'error');
     } finally {
       setIsSubmittingReport(false);
@@ -339,16 +340,16 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                   <span className="text-xs md:text-sm text-gray-500 dark:text-gray-400">·</span>
                   <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
                     <ExternalLinkIcon />
-                    <span>Patrocinado</span>
+                    <span>{t('ads:sponsored')}</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Anunciante</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('ads:advertiser')}</p>
               </div>
               
               {/* Menu de Ações */}
               <div className="pl-2 md:pl-4 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <div className="relative" ref={actionsMenuRef}>
-                  <Tooltip text="Mais ações" position="bottom">
+                  <Tooltip text={t('common:moreActions')} position="bottom">
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -365,7 +366,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                   </Tooltip>
                   {showActionsMenu && (
                     <div className="absolute right-0 mt-2 w-48 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-20">
-                      <Tooltip text="Denunciar este anúncio">
+                      <Tooltip text={t('ads:reportAd')}>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -377,10 +378,10 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                           role="menuitem"
                         >
                           <FlagIcon />
-                          <span>Denunciar Anúncio</span>
+                          <span>{t('ads:reportAd')}</span>
                         </button>
                       </Tooltip>
-                      <Tooltip text="Ocultar este anúncio">
+                      <Tooltip text={t('ads:hideAd')}>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -392,7 +393,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                           role="menuitem"
                         >
                           <EyeOffIcon />
-                          <span>Ocultar Anúncio</span>
+                          <span>{t('ads:hideAd')}</span>
                         </button>
                       </Tooltip>
                     </div>
@@ -468,20 +469,20 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
           }}
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
         >
-          <span>Saiba Mais</span>
+          <span>{t('ads:learnMore')}</span>
           <ExternalLinkIcon />
         </button>
 
         {/* Botões de ação (igual ao PostCard) */}
         <div className="flex justify-around mt-3 md:mt-4 pt-2 border-t border-light-border dark:border-dark-border" onClick={(e) => e.stopPropagation()}>
-            <Tooltip text="Curtir">
+            <Tooltip text={t('common:like')}>
               <button onClick={handleLike} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-500 transition-colors duration-200 transform active:scale-110">
                 <HeartIcon filled={isLiked} />
                 <span className="text-xs md:text-sm">{ad.likes || 0}</span>
               </button>
             </Tooltip>
 
-            <Tooltip text="Comentar">
+            <Tooltip text={t('posts:comment')}>
               <button onClick={handleComment} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-500 transition-colors duration-200 transform active:scale-110">
                 <MessageCircleIcon />
                 <span className="text-xs md:text-sm">{ad.comments || 0}</span>
@@ -489,7 +490,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
             </Tooltip>
 
             <div className="relative" ref={shareContainerRef} onClick={(e) => e.stopPropagation()}>
-              <Tooltip text="Compartilhar">
+              <Tooltip text={t('posts:share')}>
                 <button 
                   onClick={(e) => {
                     e.preventDefault();
@@ -506,11 +507,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
                 <div className="share-menu absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-48 md:w-56 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-10 overflow-hidden">
                   <button onClick={(e) => handleActionClick(e, () => { setShowDmModal(true); setShowShareMenu(false); })} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                     <SendIcon />
-                    <span className="truncate">Direct Message</span>
+                    <span className="truncate">{t('posts:directMessage')}</span>
                   </button>
                   <button onClick={(e) => handleShare(e, 'copy')} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                     <LinkIcon />
-                    <span className="truncate">Copy Link</span>
+                    <span className="truncate">{t('posts:copyLink')}</span>
                   </button>
                   <button onClick={(e) => handleShare(e, 'whatsapp')} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                     <WhatsAppIcon />
@@ -532,13 +533,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
               )}
             </div>
 
-            <Tooltip text="Salvar">
+            <Tooltip text={t('common:save')}>
               <button onClick={handleSave} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-500 transition-colors duration-200 transform active:scale-110">
                 <BookmarkIcon filled={isSaved} />
               </button>
             </Tooltip>
 
-            <Tooltip text="Visualizações">
+            <Tooltip text={t('posts:views')}>
               <div className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400">
                 <EyeIcon />
                 <span className="text-xs md:text-sm">{ad.views || 0}</span>
@@ -582,4 +583,3 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
 };
 
 export default memo(AdCard);
-

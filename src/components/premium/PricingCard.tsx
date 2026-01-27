@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import Button from "@/src/components/common/Button";
 import { CheckIcon } from "@/src/components/icons/CheckIcon";
+import { useTranslation } from 'react-i18next';
 
 interface PricingCardProps {
   title: string;
@@ -44,8 +45,12 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   annualBonus,
   isPromotional = false,
 }) => {
+  const { t } = useTranslation(['premium']);
   const isCurrentPlan = currentPlan?.toLowerCase() === title.toLowerCase();
-  const buttonText = isCurrentPlan ? 'Plano Atual' : `Escolher ${title}`;
+  
+  const buttonText = isCurrentPlan 
+    ? t('premium:pricingCard.currentPlan') 
+    : t('premium:pricingCard.choosePlan', { plan: title });
 
   return (
     <motion.div
@@ -64,17 +69,17 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         <div className="flex flex-wrap gap-2 mb-3">
           {showTrialButton && trialDays && (
             <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-              TESTE GRÁTIS {trialDays} DIAS
+              {t('premium:pricingCard.trialDaysBanner', { days: trialDays })}
             </span>
           )}
           {isPromotional && (
             <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-              PREÇO DE LANÇAMENTO
+              {t('premium:pricingCard.launchPriceBanner')}
             </span>
           )}
           {annualBonus && billingCycle === 'annually' && (
             <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-              +{annualBonus.freeMonths} MESES GRÁTIS
+              {t('premium:pricingCard.bonusMonthsBanner', { months: annualBonus.freeMonths })}
             </span>
           )}
         </div>
@@ -104,7 +109,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         </div>
         {billingCycle === 'annually' && annualSavingsPercentage !== undefined && annualSavingsPercentage > 0 && (
           <p className={`text-xs md:text-sm font-medium mb-4 md:mb-6 ${highlighted ? 'text-green-200' : 'text-green-600 dark:text-green-400'}`}>
-            Economize {Math.round(annualSavingsPercentage)}%
+            {t('premium:pricingCard.savePercent', { percent: Math.round(annualSavingsPercentage) })}
           </p>
         )}
         <ul className="space-y-2 md:space-y-3">
@@ -125,7 +130,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
             }}
             className="w-full text-sm md:text-base bg-green-600 text-white hover:bg-green-700"
           >
-            Iniciar Teste Grátis
+            {t('premium:pricingCard.startTrial')}
           </Button>
         )}
       <Button
@@ -138,7 +143,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         `}
         disabled={!isSelected || isCurrentPlan || isUpdatingPlan}
       >
-        {isUpdatingPlan && isSelected ? 'Atualizando...' : buttonText}
+        {isUpdatingPlan && isSelected ? t('premium:pricingCard.updating') : buttonText}
       </Button>
       </div>
     </motion.div>

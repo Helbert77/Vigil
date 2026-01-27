@@ -1,6 +1,7 @@
 import React from 'react';
 import GenericModal from '../../src/components/common/GenericModal';
 import { Icon } from '../icons/Icon';
+import { useTranslation, Trans } from 'react-i18next';
 
 const BookOpenIcon = () => <Icon className="h-6 w-6"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></Icon>;
 
@@ -23,6 +24,8 @@ const HelpModal: React.FC<HelpModalProps> = ({
   categoryIcon,
   categoryColor
 }) => {
+  const { t } = useTranslation('help');
+
   return (
     <GenericModal isOpen={isOpen} onClose={onClose} title="" size="xl">
       {/* Header Info */}
@@ -98,16 +101,16 @@ const HelpModal: React.FC<HelpModalProps> = ({
             <BookOpenIcon />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            Conteúdo em Desenvolvimento
+            {t('modal.contentDeveloping')}
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            A documentação completa para este tópico estará disponível em breve.
+            {t('modal.documentationSoon')}
           </p>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 max-w-md mx-auto">
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>Precisa de ajuda agora?</strong>
+              <strong>{t('modal.needHelpNow')}</strong>
               <br />
-              Entre em contato com nosso suporte em{' '}
+              {t('modal.contactSupportAt')}{' '}
               <a
                 href="mailto:suporte@myvigil.co"
                 className="underline hover:text-blue-600 dark:hover:text-blue-300"
@@ -122,19 +125,19 @@ const HelpModal: React.FC<HelpModalProps> = ({
       {/* Footer */}
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-light-border dark:border-dark-border">
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          Ainda tem dúvidas?{' '}
+          {t('modal.stillHaveQuestions')}{' '}
           <a
             href="mailto:suporte@myvigil.co"
             className="text-primary hover:underline font-medium"
           >
-            Fale com o suporte
+            {t('modal.contactSupport')}
           </a>
         </div>
         <button
           onClick={onClose}
           className="bg-primary hover:bg-primary/90 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
         >
-          Fechar
+          {t('modal.close')}
         </button>
       </div>
     </GenericModal>

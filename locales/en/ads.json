@@ -5,21 +5,29 @@
     "createAd": "Create Ad",
     "noData": "No data available",
     "noDataDesc": "You don't have active ads or recorded metrics in the selected period yet.",
-    "createFirstAd": "Create First Ad"
+    "createFirstAd": "Create First Ad",
+    "performanceByAd": "Performance by Ad",
+    "vsPrevious": "vs previous",
+    "noDataPeriod": "No data available for the selected period"
   },
   "metrics": {
     "impressions": "Impressions",
     "clicks": "Clicks",
     "engagement": "Engagement",
     "totalCost": "Total Cost",
-    "totalViews": "Total views",
-    "ctr": "CTR",
-    "rate": "Rate",
+    "totalViews": "Total Views",
+    "ctr": "CTR (Click Through Rate)",
+    "rate": "Conversion Rate",
     "avgCpc": "Avg CPC",
     "likes": "Likes",
     "shares": "Shares",
     "saves": "Saves",
-    "noClicks": "No clicks"
+    "noClicks": "No clicks",
+    "trend": {
+      "up": "{{value}}% increase",
+      "down": "{{value}}% decrease",
+      "neutral": "No change"
+    }
   },
   "period": {
     "label": "Period",
@@ -83,5 +91,187 @@
   },
   "adActions": "Ad actions",
   "upgradePlan": "Upgrade Plan",
-  "ad": "Ad"
+  "ad": "Ad",
+  "learnMore": "Learn More",
+  "advertiser": "Advertiser",
+  "sponsored": "Sponsored",
+  "reportAd": "Report Ad",
+  "hideAd": "Hide Ad",
+  "alreadyReported": "You have already reported this ad.",
+  "adSaved": "Ad saved!",
+  "adUnsaved": "Ad removed from saved items",
+  "copyLinkError": "Error copying link",
+  "adDetail": "Ad",
+  "commentThread": "Comment Thread",
+  "noCommentsStart": "No comments yet. Start the conversation.",
+  "addReply": "Add a reply...",
+  "addComment": "Add a comment...",
+  "loadingComments": "Loading comments...",
+  "selectPlan": {
+    "backToMyAds": "Back to My Ads",
+    "title": "Choose Your Ad Plan",
+    "subtitle": "Select a fixed package, set a custom budget or buy credits",
+    "preview": "Ad Preview",
+    "tabs": {
+      "fixedPackages": "Fixed Packages",
+      "packages": "Packages",
+      "customBudget": "Custom Budget (CPM)",
+      "cpm": "CPM",
+      "buyCredits": "Buy Credits",
+      "credits": "Credits"
+    },
+    "tip": {
+      "label": "Tip:",
+      "gold": "The Gold package offers the best value with maximum reach and premium features!"
+    },
+    "credits": {
+      "currentBalance": "Current Balance",
+      "chooseAmount": "Choose Amount",
+      "receive": "Receive",
+      "howToUse": "How to use credits?",
+      "usage1": "Use credits to create custom CPM ads",
+      "usage2": "1 credit = €1.00",
+      "usage3": "CPM: €6.00 per 1,000 impressions",
+      "usage4": "Credits do not expire",
+      "usage5": "Automatic bonus on purchases over €50",
+      "lastTransactions": "Last Transactions"
+    },
+    "footer": {
+      "approvalInfo": "After payment, your ad will be submitted for approval",
+      "processing": "Processing...",
+      "buyCreditsBtn": "Buy {{amount}} in Credits",
+      "proceedPayment": "Proceed to Payment"
+    },
+    "errors": {
+      "adIdNotFound": "Ad ID not found",
+      "adNotFound": "Ad not found",
+      "noPermission": "You do not have permission to access this ad",
+      "selectPackage": "Select a package",
+      "setBudget": "Set a budget",
+      "selectCreditAmount": "Select a credit amount"
+    }
+  },
+  "cpmCalculator": {
+    "title": "CPM Calculator",
+    "subtitle": "Set your budget and see how many impressions you will receive",
+    "budgetLabel": "Ad Budget",
+    "estimatedImpressions": "Estimated Impressions",
+    "cpmPer1000": "CPM (per 1,000)",
+    "perImpression": "Per Impression",
+    "howItWorks": "How CPM works?",
+    "rule1": "You pay {{rate}} for every 1,000 impressions",
+    "rule2": "Your ad stops automatically when the budget runs out",
+    "rule3": "You can track spending in real-time",
+    "rule4": "No surprises: you set the maximum limit",
+    "useBudget": "Use Budget of {{amount}}",
+    "invalidBudget": "Invalid Budget",
+    "wait": "Wait...",
+    "approvalWarning": "⚠️ After payment, your ad will go through moderator approval before starting to display.",
+    "minBudgetError": "Minimum budget: {{amount}}",
+    "maxBudgetError": "Maximum budget: {{amount}}"
+  },
+  "packages": {
+    "bronze": {
+      "displayName": "Bronze",
+      "features": [
+        "7 days exposure",
+        "5,000 guaranteed impressions",
+        "Email support"
+      ]
+    },
+    "silver": {
+      "displayName": "Silver",
+      "features": [
+        "15 days exposure",
+        "15,000 guaranteed impressions",
+        "Featured in 3 communities",
+        "Priority support"
+      ]
+    },
+    "gold": {
+      "displayName": "Gold",
+      "badge": "Most Popular",
+      "features": [
+        "30 days exposure",
+        "50,000 guaranteed impressions",
+        "Featured in all communities",
+        "Detailed report",
+        "Priority support"
+      ]
+    },
+    "platinum": {
+      "displayName": "Platinum",
+      "badge": "Best Value",
+      "features": [
+        "60 days exposure",
+        "150,000 guaranteed impressions",
+        "Premium highlight",
+        "Pinned at top for 3 days",
+        "Full insights report",
+        "VIP Support 24/7"
+      ]
+    },
+    "labels": {
+      "package": "{{name}} Package",
+      "oneTimePayment": "one-time payment",
+      "days": "Days",
+      "impressions": "Impressions",
+      "selected": "Selected ✓",
+      "select": "Select Package",
+      "cpmCost": "Cost per 1,000 impressions (CPM): {{cost}}"
+    }
+  },
+  "table": {
+    "ad": "Ad",
+    "status": "Status",
+    "impressions": "Impressions",
+    "clicks": "Clicks",
+    "ctr": "CTR",
+    "spent": "Spent",
+    "actions": "Actions",
+    "viewReport": "View Report"
+  },
+  "charts": {
+    "dailyPerformance": "Daily Performance",
+    "performanceOverTime": "Performance Over Time",
+    "impressions": "Impressions",
+    "clicks": "Clicks",
+    "cost": "Cost"
+  },
+  "approvalQueue": {
+    "title": "Approve Ads",
+    "subtitle": "{{count}} ad(s) awaiting approval",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "noPendingAds": "No pending ads",
+    "noPendingAdsDesc": "All paid ads have been approved or rejected.",
+    "badges": {
+      "package": "📦 {{type}} Package",
+      "cpm": "💰 CPM €{{rate}} - Budget €{{budget}}",
+      "credits": "💳 Credits - Budget €{{budget}}"
+    },
+    "actions": {
+      "approve": "✓ Approve",
+      "reject": "✗ Reject",
+      "approving": "Approving...",
+      "rejecting": "Rejecting...",
+      "cancel": "Cancel",
+      "confirmApprove": "Yes, approve",
+      "confirmReject": "Reject Ad"
+    },
+    "modals": {
+      "approveTitle": "Approve Ad?",
+      "approveMessage": "Are you sure you want to approve the ad \"{{title}}\"? It will be activated and start displaying to users.",
+      "rejectTitle": "Reject Ad",
+      "rejectMessage": "Please provide a reason for rejecting the ad \"{{title}}\":",
+      "rejectPlaceholder": "Ex: Inappropriate content, policy violation, low quality images..."
+    },
+    "errors": {
+      "fetch": "Error loading pending ads",
+      "permission": "You do not have permission to access this page",
+      "approve": "Error approving ad: {{error}}",
+      "reject": "Error rejecting ad: {{error}}",
+      "reasonRequired": "Please provide a reason for rejection"
+    }
+  }
 }

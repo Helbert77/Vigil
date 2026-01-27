@@ -62,5 +62,83 @@
   "deleteNoteConfirm": "Sim, apagar",
   "system": "Sistema",
   "notAvailable": "N/A",
-  "points": "pts"
+  "points": "pts",
+  "appealSent": "Apelação enviada {{time}}",
+  "originalViolation": "Violação Original",
+  "originalContent": "Conteúdo Original:",
+  "userJustification": "Justificativa do Usuário",
+  "confirmActionTitle": "Confirmar Ação: {{action}}",
+  "internalNotesPlaceholder": "Adicionar notas internas (opcional)...",
+  "justifyActionTitle": "Justificar Ação: {{action}}",
+  "pageTitle": "Fila de Moderação",
+  "sectionPosts": "Posts e Comentários",
+  "emptyQueueMessage": "A fila de moderação está vazia. Bom trabalho!",
+  "processingActionError": "Erro ao processar a ação.",
+  "actionExecutedSuccess": "Ação \"{{action}}\" executada com sucesso.",
+  "appealsQueueTitle": "Fila de Apelações",
+  "emptyAppealsMessage": "A fila de apelações está vazia.",
+  "appealApprovedSuccess": "Apelação aprovada com sucesso.",
+  "appealRejectedSuccess": "Apelação rejeitada com sucesso.",
+  "processAppealError": "Erro ao processar apelação.",
+  "dashboard": {
+    "title": "Dashboard de Moderação",
+    "timeframe": {
+      "last7Days": "Últimos 7 dias",
+      "last30Days": "Últimos 30 dias",
+      "last90Days": "Últimos 90 dias"
+    },
+    "actions": {
+      "clearCounters": "Limpar Contadores",
+      "clearing": "Limpando contadores...",
+      "clearedSuccess": "Contadores do dashboard zerados com sucesso!",
+      "clearError": "Erro ao zerar os contadores.",
+      "loadError": "Erro ao carregar as métricas do dashboard.",
+      "feedbackLoadError": "Erro ao carregar feedback de cancelamento."
+    },
+    "metrics": {
+      "pendingItems": "Itens Pendentes",
+      "pendingItemsDesc": "Aguardando revisão",
+      "approvedItems": "Itens Aprovados",
+      "rejectedItems": "Itens Rejeitados",
+      "avgReviewTime": "Tempo Médio de Revisão",
+      "warnedUsers": "Usuários Advertidos",
+      "suspendedUsers": "Usuários Suspensos",
+      "bannedUsers": "Usuários Banidos",
+      "periodDesc": "Nos últimos {{days}} dias"
+    },
+    "charts": {
+      "activityTitle": "Atividade de Moderação",
+      "createdItems": "Itens Criados",
+      "distributionTitle": "Distribuição de Violações"
+    },
+    "cancellationAnalytics": {
+      "title": "Analytics de Cancelamento",
+      "total": "Total de Cancelamentos",
+      "highPrice": "Preço Alto",
+      "notUsingFeatures": "Não Usa Recursos",
+      "techIssues": "Problemas Técnicos"
+    },
+    "feedback": {
+      "title": "Feedback de Cancelamento Recente",
+      "empty": "Nenhum feedback de cancelamento recente."
+    },
+    "modals": {
+      "clearCountersTitle": "Limpar Contadores do Dashboard?",
+      "clearCountersMessage": "Esta ação irá apagar permanentemente o histórico de violações de todos os usuários e os itens já resolvidos da fila de moderação. Esta ação não pode ser desfeita.",
+      "confirmClear": "Sim, limpar tudo"
+    },
+    "feedbackCard": {
+      "anonymousUser": "Usuário Anônimo",
+      "canceled": "Cancelado",
+      "cancellationReason": "Motivo do Cancelamento",
+      "additionalDetails": "Detalhes Adicionais",
+      "reasons": {
+        "tooExpensive": "É muito caro",
+        "notUsingFeatures": "Não uso os recursos premium",
+        "foundBetterAlternative": "Encontrei uma alternativa melhor",
+        "takingBreak": "Estou dando um tempo da plataforma",
+        "techIssues": "Problemas técnicos"
+      }
+    }
+  }
 }

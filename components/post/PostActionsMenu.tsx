@@ -89,7 +89,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
       }
       
       // Feedback de sucesso ao usuário
-      addToast('Denúncia enviada com sucesso! Nossa equipe irá analisar o conteúdo.', 'success');
+      addToast(t('posts:reportSubmitted'), 'success');
       setIsReportModalOpen(false);
       logger.info('Denúncia registrada na fila de moderação', { postId: post.id, reportId: result.data?.id }, 'ui', 'PostActionsMenu');
     } catch (err: any) {
@@ -103,13 +103,13 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
 
   return (
     <div className="relative" ref={menuRef}>
-      <Tooltip text="Mais ações" position="bottom">
+      <Tooltip text={t('common:moreActions')} position="bottom">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
           aria-haspopup="menu"
           aria-expanded={isOpen}
-          aria-label="Abrir menu de ações do post"
+          aria-label={t('common:openPostActions')}
         >
           <MoreHorizontalIcon />
         </button>
@@ -121,7 +121,7 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
             <button
               onClick={handleEdit}
               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label="Editar post"
+              aria-label={t('posts:editPost')}
               role="menuitem"
             >
               <EditIcon />
@@ -131,44 +131,44 @@ const PostActionsMenu: React.FC<PostActionsMenuProps> = ({ post, currentUser, on
 
           {/* Apagar: visível para o autor do post */}
           {isCurrentUserPost && (
-            <Tooltip text="Apagar seu post permanentemente">
+            <Tooltip text={t('posts:deletePost')}>
               <button
                 onClick={handleDelete}
                 className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Apagar meu post"
+                aria-label={t('common:deleteMyPost')}
                 role="menuitem"
               >
                 <TrashIcon />
-                <span>Apagar Meu Post</span>
+                <span>{t('common:deleteMyPost')}</span>
               </button>
             </Tooltip>
           )}
 
           {/* Apagar: exclusivo para admin/moderador (em posts de outros usuários) */}
           {isModerator && !isCurrentUserPost && (
-            <Tooltip text="Apagar permanentemente o post">
+            <Tooltip text={t('posts:deletePost')}>
               <button
                 onClick={handleDelete}
                 className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Apagar post"
+                aria-label={t('common:deletePost')}
                 role="menuitem"
               >
                 <TrashIcon />
-                <span>Apagar Post</span>
+                <span>{t('common:deletePost')}</span>
               </button>
             </Tooltip>
           )}
 
           {/* Denunciar: visível para todos */}
-          <Tooltip text="Denunciar este post para moderação">
+          <Tooltip text={t('posts:reportPost')}>
             <button
               onClick={handleOpenReport}
               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label={t('common:report')}
+              aria-label={t('common:reportPost')}
               role="menuitem"
             >
               <FlagIcon />
-              <span>Denunciar Post</span>
+              <span>{t('common:reportPost')}</span>
             </button>
           </Tooltip>
 

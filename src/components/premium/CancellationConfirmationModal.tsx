@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '@/components/common/Card';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => (
   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,6 +37,8 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
   plan,
   activeUntil,
 }) => {
+  const { t } = useTranslation(['premium', 'common']);
+
   if (!isOpen) return null;
 
   const planNames: Record<string, string> = {
@@ -67,10 +70,10 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-              Confirmar Cancelamento
+              {t('premium:confirmCancellation')}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Plano {planName}
+              {t('premium:plan')} {planName}
             </p>
           </div>
           <button
@@ -90,13 +93,10 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
             </div>
             <div className="ml-3">
               <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-                ⏰ Importante: Sua assinatura permanecerá ativa!
+                ⏰ {t('premium:cancellationWarningTitle')}
               </h3>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Você continuará tendo acesso a todos os recursos do plano{' '}
-                <strong>{planName}</strong> até{' '}
-                <strong className="underline">{formattedDate}</strong>. Após essa data, seu plano
-                será automaticamente alterado para <strong>FREE</strong>.
+                {t('premium:cancellationWarningText', { plan: planName, date: formattedDate })}
               </p>
             </div>
           </div>
@@ -105,7 +105,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
         {/* O que acontece */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            📋 O que acontece ao cancelar?
+            📋 {t('premium:whatHappensTitle')}
           </h3>
           <div className="space-y-3">
             <div className="flex items-start">
@@ -115,8 +115,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                 </div>
               </div>
               <p className="ml-3 text-sm text-gray-700 dark:text-gray-300">
-                Você continua usando <strong>todos os recursos</strong> do plano {planName} até{' '}
-                {formattedDate}
+                {t('premium:cancellationWarningText', { plan: planName, date: formattedDate })}
               </p>
             </div>
 
@@ -127,7 +126,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                 </div>
               </div>
               <p className="ml-3 text-sm text-gray-700 dark:text-gray-300">
-                <strong>Não haverá nenhuma cobrança futura</strong> após o cancelamento
+                {t('premium:noFutureCharges')}
               </p>
             </div>
 
@@ -138,8 +137,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                 </div>
               </div>
               <p className="ml-3 text-sm text-gray-700 dark:text-gray-300">
-                Seus <strong>dados e conteúdo serão preservados</strong> (posts, comentários,
-                comunidades)
+                {t('premium:dataPreserved')}
               </p>
             </div>
 
@@ -150,8 +148,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                 </div>
               </div>
               <p className="ml-3 text-sm text-gray-700 dark:text-gray-300">
-                Você pode <strong>reativar sua assinatura</strong> a qualquer momento antes de{' '}
-                {formattedDate}
+                {t('premium:reactivateAnytime', { date: formattedDate })}
               </p>
             </div>
 
@@ -162,8 +159,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                 </div>
               </div>
               <p className="ml-3 text-sm text-gray-700 dark:text-gray-300">
-                Após {formattedDate}, seu plano será alterado para{' '}
-                <strong>FREE automaticamente</strong>
+                {t('premium:planDowngrade', { date: formattedDate })}
               </p>
             </div>
           </div>
@@ -172,25 +168,25 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
         {/* O que você receberá */}
         <div className="mb-6">
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            📧 Confirmações que você receberá:
+            {t('premium:confirmationsTitle')}
           </h3>
           <div className="space-y-2">
             <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
               <span className="mr-2">📧</span>
               <span>
-                <strong>Email de confirmação</strong> com todos os detalhes do cancelamento
+                {t('premium:confirmationEmail')}
               </span>
             </div>
             <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
               <span className="mr-2">🔔</span>
               <span>
-                <strong>Notificação no app</strong> confirmando o cancelamento
+                {t('premium:appNotification')}
               </span>
             </div>
             <div className="flex items-center text-sm text-gray-700 dark:text-gray-300">
               <span className="mr-2">📅</span>
               <span>
-                <strong>Lembrete</strong> alguns dias antes do fim do período ativo
+                {t('premium:reminder')}
               </span>
             </div>
           </div>
@@ -199,12 +195,10 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
         {/* Mudou de ideia */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-2">
-            🔄 Mudou de ideia?
+            🔄 {t('premium:changedMindTitle')}
           </h3>
           <p className="text-sm text-blue-800 dark:text-blue-300">
-            Não se preocupe! Você pode reativar sua assinatura a qualquer momento antes de{' '}
-            <strong>{formattedDate}</strong>. Basta voltar à página Premium e clicar em "Reativar
-            Assinatura".
+            {t('premium:changedMindText', { date: formattedDate })}
           </p>
         </div>
 
@@ -215,7 +209,7 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
             disabled={isProcessing}
             className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Voltar
+            {t('common:back')}
           </button>
           <button
             onClick={onConfirm}
@@ -244,17 +238,17 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Processando...
+                {t('common:processing')}
               </>
             ) : (
-              'Confirmar Cancelamento'
+              t('premium:confirmCancellation')
             )}
           </button>
         </div>
 
         {/* Footer note */}
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-          Ao confirmar, você receberá um email com todos os detalhes do cancelamento.
+          {t('premium:confirmationFooter')}
         </p>
       </Card>
     </div>
@@ -262,4 +256,3 @@ const CancellationConfirmationModal: React.FC<CancellationConfirmationModalProps
 };
 
 export default CancellationConfirmationModal;
-

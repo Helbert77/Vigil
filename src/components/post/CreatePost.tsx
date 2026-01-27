@@ -94,7 +94,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
     if (mediaType === 'poll') {
       const validOptions = pollOptions.map((opt: string) => opt.trim()).filter((opt: string) => opt.length > 0);
       if (validOptions.length < 2) {
-        addToast('Por favor, forneça pelo menos duas opções para a enquete.', 'info');
+        addToast(t('posts:pollMinTwoOptions'), 'info');
         return;
       }
       
@@ -136,7 +136,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
 
     if (uploadError) {
       console.error(`Error uploading ${fileMainType}:`, uploadError);
-      addToast(`Falha ao enviar ${fileMainType}. Por favor, tente novamente.`, 'error');
+      addToast(t('posts:uploadFailed', { type: fileMainType }), 'error');
       setIsUploading(false);
       return;
     }
@@ -157,7 +157,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
             setMediaType('audio');
         }
     } else {
-      addToast('Não foi possível obter o URL da mídia após o upload.', 'error');
+      addToast(t('posts:couldNotGetMediaUrl'), 'error');
     }
     setIsUploading(false);
   };
@@ -240,7 +240,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
 
     if (uploadError) {
       console.error(`Error uploading ${fileType}:`, uploadError);
-      addToast(`Falha ao enviar ${fileType}. Tente novamente.`, 'error');
+      addToast(t('posts:uploadFailedRetry', { type: fileType }), 'error');
     } else {
       const { data } = supabase.storage
         .from('posts-media')
@@ -250,7 +250,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
         setEvidenceItems(prev => prev.map(item => item.id === currentItemIdForUpload ? { ...item, type: fileType, content: data.publicUrl } : item));
         // Toast removido - arquivo aparece no preview
       } else {
-        addToast('Não foi possível obter o URL da mídia.', 'error');
+        addToast(t('posts:couldNotGetMediaUrlShort'), 'error');
       }
     }
     setUploadingEvidenceId(null);
@@ -348,7 +348,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
             <textarea
               id="create-post-textarea"
               ref={textareaRef}
-              placeholder="Que verdade você descobriu?"
+              placeholder={t('posts:whatTruthDiscovered')}
               className="w-full bg-transparent p-2 focus:outline-none resize-none text-lg"
               rows={3}
               value={text}
@@ -363,15 +363,15 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
           <InfoIcon />
           <div>
             <p className="font-semibold text-blue-800 dark:text-blue-200">
-              Você excedeu o limite de {characterLimit} caracteres.
+              {t('posts:limitExceeded', { limit: characterLimit })}
             </p>
             <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Para criar posts maiores e artigos, considere fazer o upgrade. 
+              {t('posts:upgradeForLongerPosts')} 
               <button 
                 onClick={() => setCurrentPage('Premium')} 
                 className="font-bold hover:underline ml-1"
               >
-                Faça upgrade para o Premium.
+                {t('posts:upgradeToPremium')}
               </button>
             </p>
           </div>
@@ -382,7 +382,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
         {isUploading && (
           <div className="flex items-center space-x-2 text-gray-500">
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-            <span>Enviando mídia...</span>
+            <span>{t('posts:uploading')}</span>
           </div>
         )}
 
@@ -402,7 +402,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <label htmlFor="sensitive-check" className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                      Marcar mídia como sensível (ex: violência, conteúdo adulto)
+                      {t('posts:markMediaSensitiveDesc')}
                   </label>
               </div>
           </div>
@@ -420,7 +420,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                       <div key={index} className="flex items-center space-x-2">
                           <input 
                               type="text" 
-                              placeholder={`Option ${index + 1}`}
+                              placeholder={`${t('posts:option')} ${index + 1}`}
                               value={option}
                               onChange={(e: React.ChangeEvent<HTMLInputElement>) => updatePollOption(index, e.target.value)}
                               className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-2 px-3 focus:outline-none focus:ring-1 focus:ring-primary"
@@ -428,22 +428,22 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                           {pollOptions.length > 2 && <button onClick={() => removePollOption(index)} className="p-1 text-gray-500 hover:text-red-500"><XIcon/></button>}
                       </div>
                   ))}
-                  {pollOptions.length < 4 && <button onClick={addPollOption} className="text-sm text-primary font-semibold">Add option</button>}
+                  {pollOptions.length < 4 && <button onClick={addPollOption} className="text-sm text-primary font-semibold">{t('posts:addOption')}</button>}
               </div>
 
               <div className="pt-2">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Poll duration</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('posts:pollDuration')}</p>
                   <div className="flex items-center gap-2 mb-2" style={{ maxWidth: '280px' }}>
                       <div className="w-20 flex-shrink-0">
-                          <label htmlFor="poll-days" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Days</label>
+                          <label htmlFor="poll-days" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('posts:days')}</label>
                           <input type="number" id="poll-days" value={pollDays} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollDays(Math.min(7, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="7" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                       <div className="w-20 flex-shrink-0">
-                          <label htmlFor="poll-hours" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hours</label>
+                          <label htmlFor="poll-hours" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('posts:hours')}</label>
                           <input type="number" id="poll-hours" value={pollHours} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollHours(Math.min(23, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="23" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                       <div className="w-20 flex-shrink-0">
-                          <label htmlFor="poll-minutes" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minutes</label>
+                          <label htmlFor="poll-minutes" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('posts:minutes')}</label>
                           <input type="number" id="poll-minutes" value={pollMinutes} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPollMinutes(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))} min="0" max="59" className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
                       </div>
                   </div>
@@ -473,25 +473,25 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                     }} 
                     className="bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md px-2 py-1 font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="text">Texto</option>
-                    <option value="media">Mídia</option>
-                    <option value="link">Link</option>
+                    <option value="text">{t('posts:text')}</option>
+                    <option value="media">{t('posts:image')}/{t('posts:video')}</option>
+                    <option value="link">{t('posts:link')}</option>
                   </select>
                   <button onClick={() => removeEvidenceItem(item.id)} className="text-gray-500 hover:text-red-500"><XIcon /></button>
                 </div>
-                <input type="text" placeholder="Título da Evidência" value={item.title} onChange={(e) => updateEvidenceItem(item.id, 'title', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 mb-2" />
+                <input type="text" placeholder={t('posts:evidenceTitle')} value={item.title} onChange={(e) => updateEvidenceItem(item.id, 'title', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2 mb-2" />
                 {item.type === 'text' && (
                   <textarea placeholder={t('posts:describeEvidence')} value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" rows={3}></textarea>
                 )}
                 {item.type === 'link' && (
-                  <input type="text" placeholder="URL do Link" value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" />
+                  <input type="text" placeholder={t('posts:linkUrl')} value={item.content} onChange={(e) => updateEvidenceItem(item.id, 'content', e.target.value)} className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md py-1 px-2" />
                 )}
                 {(item.type === 'image' || item.type === 'video') && (
                   <div>
                     {item.content ? (
                       <div className="flex items-center space-x-2">
-                        <p className="text-sm text-green-500 truncate flex-1">Mídia carregada: {item.content}</p>
-                        <button onClick={() => updateEvidenceItem(item.id, 'content', '')} className="text-red-500 text-sm">Remover</button>
+                        <p className="text-sm text-green-500 truncate flex-1">{t('posts:mediaUploaded', { content: item.content })}</p>
+                        <button onClick={() => updateEvidenceItem(item.id, 'content', '')} className="text-red-500 text-sm">{t('posts:removeItem')}</button>
                       </div>
                     ) : (
                       <button
@@ -499,14 +499,14 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                         disabled={uploadingEvidenceId === item.id}
                         className="w-full text-sm bg-primary/10 text-primary font-semibold py-2 rounded-md hover:bg-primary/20 disabled:opacity-50"
                       >
-                        {uploadingEvidenceId === item.id ? 'Enviando...' : 'Fazer upload de Mídia'}
+                        {uploadingEvidenceId === item.id ? t('posts:uploading') : t('posts:uploadMedia')}
                       </button>
                     )}
                   </div>
                 )}
               </div>
             ))}
-            <button onClick={addEvidenceItem} className="text-sm text-primary font-semibold">+ Adicionar Evidência</button>
+            <button onClick={addEvidenceItem} className="text-sm text-primary font-semibold">+ {t('posts:addEvidenceItem')}</button>
             <div className="mt-2">
               <button 
                 onClick={handleRemoveMedia}
@@ -530,10 +530,10 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                style={{ display: 'none' }}
                accept="image/*,video/*"
              />
-             <Tooltip text="Mídia">
+             <Tooltip text={t('posts:addMedia')}>
                <button onClick={() => handleAttachmentButtonClick('media')} disabled={!!mediaType || isUploading} className="p-2 hover:text-blue-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add media"><ImageIcon /></button>
              </Tooltip>
-             <Tooltip text="Criar enquete">
+             <Tooltip text={t('posts:createPoll')}>
                <button onClick={() => handleAttachmentButtonClick('poll')} disabled={!!mediaType} className="p-2 hover:text-orange-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" aria-label="Add poll"><PollIcon /></button>
              </Tooltip>
              <Tooltip text={t('posts:addEvidenceBoard')}>
@@ -570,7 +570,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary flex-shrink-0"
                  />
                  <label htmlFor="post-to-community" className="text-gray-600 dark:text-gray-400">
-                   Tornar público
+                   {t('posts:makePublic')}
                  </label>
                </div>
              )}
@@ -583,7 +583,7 @@ const CreatePost: React.FC<CreatePostProps> = ({ onAddPost, user, community, all
              onClick={handlePost}
              disabled={isPostDisabled}
              className="bg-primary hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex-shrink-0">
-             Postar
+             {t('posts:post')}
              </button>
          </div>
        </div>

@@ -351,7 +351,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
             // Toast removido - ação de copiar é instantânea
           })
           .catch(err => {
-            addToast('Could not copy link. Please try again.', 'error');
+            addToast(t('posts:linkCopied'), 'error');
           });
         break;
       case 'copy':
@@ -360,7 +360,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
             // Toast removido - ação de copiar é instantânea
           })
           .catch(err => {
-            addToast('Could not copy link. Please try again.', 'error');
+            addToast(t('posts:linkCopied'), 'error');
           });
         break;
     }
@@ -525,8 +525,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                       autoFocus
                     />
                     <div className="flex justify-end space-x-2 mt-2">
-                      <button onClick={handleCancelEdit} className="text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-300">Cancelar</button>
-                      <button onClick={handleSaveEdit} className="bg-primary text-white text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-600 transition-colors">Salvar</button>
+                      <button onClick={handleCancelEdit} className="text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-300">{t('common:cancel')}</button>
+                      <button onClick={handleSaveEdit} className="bg-primary text-white text-xs md:text-sm font-bold py-1 px-3 rounded-full hover:bg-gray-600 transition-colors">{t('common:save')}</button>
                     </div>
                   </div>
                 ) : (
@@ -580,12 +580,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                     {showSensitiveWarning && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-lg" onClick={(e) => e.stopPropagation()}>
                         <EyeOffIcon />
-                        <p className="text-white font-semibold mt-2 mb-4 text-sm md:text-base">Conteúdo Sensível</p>
+                        <p className="text-white font-semibold mt-2 mb-4 text-sm md:text-base">{t('posts:sensitiveContent')}</p>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setIsMediaVisible(true); }} 
                           className="bg-white/90 text-black font-bold py-2 px-4 md:px-6 rounded-full backdrop-blur-sm hover:bg-white transition-colors text-sm md:text-base"
                         >
-                          Ver Conteúdo
+                          {t('posts:viewContent')}
                         </button>
                       </div>
                     )}
@@ -612,13 +612,13 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
             </div>
 
             <div className="postcard-actions flex justify-around mt-3 md:mt-4 pt-2 border-t border-light-border dark:border-dark-border" onClick={(e) => e.stopPropagation()}>
-              <Tooltip text="Curtir">
+              <Tooltip text={t('common:like')}>
                 <button onClick={handleLike} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-500 transition-colors duration-200 transform active:scale-110">
                   <HeartIcon filled={!!post.liked_by_user} />
                   <span className="text-xs md:text-sm">{post.likes}</span>
                 </button>
               </Tooltip>
-              <Tooltip text="Comentar">
+              <Tooltip text={t('posts:comment')}>
                 <button onClick={(e) => handleActionClick(e, () => onViewPost(post.id))} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-500 transition-colors duration-200 transform active:scale-110">
                   <MessageCircleIcon />
                   <span className="text-xs md:text-sm">{post.commentsCount}</span>
@@ -635,11 +635,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                   <div className="share-menu-mobile absolute bottom-full right-1/2 translate-x-1/2 mb-2 w-48 md:w-56 bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg shadow-lg z-10 overflow-hidden">
                       <button onClick={(e) => handleActionClick(e, () => { setShowDmModal(true); setShowShareMenu(false); })} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                           <SendIcon />
-                          <span className="truncate">Direct Message</span>
+                          <span className="truncate">{t('posts:directMessage')}</span>
                       </button>
                       <button onClick={(e) => handleShare(e, 'copy')} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                           <LinkIcon />
-                          <span className="truncate">Copy Link</span>
+                          <span className="truncate">{t('posts:copyLink')}</span>
                       </button>
                       <button onClick={(e) => handleShare(e, 'whatsapp')} className="w-full text-left flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 text-xs md:text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">
                           <WhatsAppIcon />
@@ -660,12 +660,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
                   </div>
                 )}
               </div>
-              <Tooltip text="Salvar">
+              <Tooltip text={t('common:save')}>
                 <button onClick={(e) => handleActionClick(e, () => onToggleSave(post.id))} className="flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400 hover:text-yellow-500 dark:hover:text-yellow-500 transition-colors duration-200 transform active:scale-110">
                   <BookmarkIcon filled={isSaved} />
                 </button>
               </Tooltip>
-              <Tooltip text="Visualizações">
+              <Tooltip text={t('posts:views')}>
                 <div className="views-mobile flex items-center space-x-1 md:space-x-2 text-gray-500 dark:text-gray-400">
                   <EyeIcon />
                   <span className="text-xs md:text-sm">{post.views}</span>
@@ -695,9 +695,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdatePost, isSaved, onTogg
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
-        title="Apagar Post?"
-        message="Esta ação é irreversível. Você tem certeza de que deseja apagar este post permanentemente?"
-        confirmText="Sim, apagar"
+        title={t('posts:deleteTitle')}
+        message={t('posts:deleteMessage')}
+        confirmText={t('posts:deleteConfirmButton')}
         isDestructive={true}
       />
       {(post.imageUrl || post.videoUrl) && (

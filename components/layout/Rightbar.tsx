@@ -7,6 +7,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import CrossBrowserButton from '@/src/components/common/CrossBrowserButton';
 import { detectBrowser, initializeBrowserCompatibility } from '@/src/utils/browserCompatibility';
+import { useTranslation } from 'react-i18next';
 
 interface RightbarProps {
   onViewTag: (tag: string) => void;
@@ -38,48 +39,52 @@ interface UserToFollowProps {
   onOpenFollowModal: (user: User, tab: 'followers' | 'following') => void;
 }
 
-const UserToFollow: React.FC<UserToFollowProps> = ({ user, isFollowing, onFollowToggle, onViewProfile, isCurrentUser, onOpenFollowModal }) => (
-  <div key={user.id} className="flex items-center justify-between gap-3">
-    <div className="flex items-center space-x-3 flex-1 min-w-0">
-      <Avatar src={user.avatarUrl} alt={user.name} size="md" />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          <UserLink
-            user={user}
-            isFollowing={isFollowing}
-            onFollowToggle={onFollowToggle}
-            onViewProfile={onViewProfile}
-            isCurrentUser={isCurrentUser}
-            onOpenFollowModal={onOpenFollowModal}
-          >
-            <p className="font-bold text-gray-900 dark:text-white truncate text-sm md:text-base">
-              {user.name}
-            </p>
-          </UserLink>
-          {(user.plan === 'pro' || user.plan === 'premium') && (
-            <VerifiedBadgeIcon plan={user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-          )}
-          {user.role && ['admin', 'moderator'].includes(user.role) && (
-            <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
-          )}
+const UserToFollow: React.FC<UserToFollowProps> = ({ user, isFollowing, onFollowToggle, onViewProfile, isCurrentUser, onOpenFollowModal }) => {
+  const { t } = useTranslation(['common']);
+  
+  return (
+    <div key={user.id} className="flex items-center justify-between gap-3">
+      <div className="flex items-center space-x-3 flex-1 min-w-0">
+        <Avatar src={user.avatarUrl} alt={user.name} size="md" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1">
+            <UserLink
+              user={user}
+              isFollowing={isFollowing}
+              onFollowToggle={onFollowToggle}
+              onViewProfile={onViewProfile}
+              isCurrentUser={isCurrentUser}
+              onOpenFollowModal={onOpenFollowModal}
+            >
+              <p className="font-bold text-gray-900 dark:text-white truncate text-sm md:text-base">
+                {user.name}
+              </p>
+            </UserLink>
+            {(user.plan === 'pro' || user.plan === 'premium') && (
+              <VerifiedBadgeIcon plan={user.plan} className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+            )}
+            {user.role && ['admin', 'moderator'].includes(user.role) && (
+              <ModeratorBadgeIcon className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+            )}
+          </div>
+          <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{user.username}
+          </p>
         </div>
-        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
-          @{user.username}
-        </p>
       </div>
+      <button 
+        onClick={() => onFollowToggle(user.id)}
+        className={`font-bold py-1.5 px-3 md:py-1 md:px-4 rounded-full text-xs md:text-sm transition-colors duration-200 transform active:scale-95 flex-shrink-0 min-w-[70px] md:min-w-[80px] ${
+          isFollowing 
+            ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
+            : 'bg-primary hover:bg-gray-600 text-white'
+        }`}
+      >
+        {isFollowing ? t('following') : t('follow')}
+      </button>
     </div>
-    <button 
-      onClick={() => onFollowToggle(user.id)}
-      className={`font-bold py-1.5 px-3 md:py-1 md:px-4 rounded-full text-xs md:text-sm transition-colors duration-200 transform active:scale-95 flex-shrink-0 min-w-[70px] md:min-w-[80px] ${
-        isFollowing 
-          ? 'bg-transparent border border-primary text-primary hover:bg-primary/10'
-          : 'bg-primary hover:bg-gray-600 text-white'
-      }`}
-    >
-      {isFollowing ? 'Seguindo' : 'Seguir'}
-    </button>
-  </div>
-);
+  );
+};
 
 const Rightbar: React.FC<RightbarProps> = ({ 
   trendingTopics = [], 
@@ -102,6 +107,7 @@ const Rightbar: React.FC<RightbarProps> = ({
   onNavigateExploreUsers
 }) => {
   const browser = detectBrowser();
+  const { t } = useTranslation(['common', 'navigation', 'posts']);
 
   useEffect(() => {
     // Inicializa compatibilidade cross-browser apenas uma vez
@@ -118,17 +124,17 @@ const Rightbar: React.FC<RightbarProps> = ({
       {/* Premium Card */}
       <Card>
         <h2 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-gray-900 dark:text-white">
-          Torne-se Premium
+          {t('becomePremium')}
         </h2>
         <div className="text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-          Assine o plano Premium para desbloquear novos recursos e funcionalidades.
+          {t('subscribePremiumText')}
         </div>
         <div className="mt-3 md:mt-4">
           <button 
             onClick={onNavigatePremium}
             className="w-full md:w-auto bg-primary hover:bg-gray-600 text-white font-bold py-2 px-4 md:px-6 rounded-full transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
           >
-            Assinar
+            {t('subscribe')}
           </button>
         </div>
       </Card>
@@ -136,7 +142,7 @@ const Rightbar: React.FC<RightbarProps> = ({
       {/* Trending Topics Card */}
       <Card>
         <h2 className="text-base md:text-lg font-bold mb-1.5 md:mb-2 text-gray-900 dark:text-white">
-          Acontecendo Agora
+          {t('trendingTopics')}
         </h2>
         <div className="space-y-0.5 md:space-y-1">
           {trendingTopics && trendingTopics.length > 0 ? (
@@ -151,7 +157,7 @@ const Rightbar: React.FC<RightbarProps> = ({
                     #{topic.tag}
                   </p>
                   <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 leading-tight">
-                    {topic.post_count.toLocaleString()} posts
+                    {topic.post_count.toLocaleString()} {t('posts:posts')}
                   </p>
                 </div>
               ))}
@@ -163,11 +169,11 @@ const Rightbar: React.FC<RightbarProps> = ({
                     }}
                     className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm transition-colors duration-200 w-full text-left focus:outline-none rounded px-1 focus-subtle"
                     style={{ color: '#007BFF' }}
-                    aria-label="Mostrar mais tópicos em alta"
-                    title="Ver todos os tópicos em alta"
+                    aria-label={t('showMore')}
+                    title={t('showMore')}
                     disableFocusRing={true}
                   >
-                    Mostrar mais
+                    {t('showMore')}
                   </CrossBrowserButton>
                 </div>
               )}
@@ -175,10 +181,10 @@ const Rightbar: React.FC<RightbarProps> = ({
           ) : (
             <div className="text-center py-1.5 md:py-2">
               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                Nenhum tópico em alta no momento
+                {t('noTrending')}
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Seja o primeiro a usar hashtags!
+                {t('beFirstHashtag')}
               </p>
             </div>
           )}
@@ -188,7 +194,7 @@ const Rightbar: React.FC<RightbarProps> = ({
       {/* Users to Follow Card */}
       <Card>
         <h2 className="text-base md:text-lg font-bold mb-3 md:mb-4 text-gray-900 dark:text-white">
-          Quem Seguir
+          {t('whoToFollow')}
         </h2>
         <div className="space-y-3 md:space-y-4">
           {usersToFollow && usersToFollow.slice(0, 3).map((user) => (
@@ -209,18 +215,18 @@ const Rightbar: React.FC<RightbarProps> = ({
                   onNavigateExploreUsers?.();
                 }}
                 className="text-sm font-medium text-[#007BFF] hover:text-[#0056b3] transition-colors duration-200 hover:underline focus:outline-none rounded px-1 focus-subtle"
-                aria-label="Mostrar mais usuários para seguir"
-                title="Ver mais usuários para seguir"
+                aria-label={t('showMore')}
+                title={t('showMore')}
                 disableFocusRing={true}
               >
-                Mostrar mais
+                {t('showMore')}
               </CrossBrowserButton>
             </div>
           )}
           {usersToFollow && usersToFollow.length === 0 && (
             <div className="text-center py-3 md:py-4">
               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                Nenhuma sugestão no momento
+                {t('noSuggestions')}
               </p>
             </div>
           )}
@@ -231,34 +237,34 @@ const Rightbar: React.FC<RightbarProps> = ({
       <footer className="px-2 text-xs text-gray-500 dark:text-gray-400">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 leading-relaxed">
           <a onClick={onNavigateTerms} className="hover:underline cursor-pointer transition-colors">
-            Termos
+            {t('navigation:terms')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigatePrivacy} className="hover:underline cursor-pointer transition-colors">
-            Privacidade
+            {t('navigation:privacy')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateCookies} className="hover:underline cursor-pointer transition-colors">
-            Cookies
+            {t('navigation:cookies')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateHelp} className="hover:underline cursor-pointer transition-colors">
-            Ajuda
+            {t('navigation:help')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateAccessibility} className="hover:underline cursor-pointer transition-colors">
-            Acessibilidade
+            {t('navigation:accessibility')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateDisclaimer} className="hover:underline cursor-pointer transition-colors">
-            Responsabilidade
+            {t('navigation:disclaimer')}
           </a>
           <span className="hidden md:inline">|</span>
           <a onClick={onNavigateAbout} className="hover:underline cursor-pointer transition-colors">
-            Sobre
+            {t('navigation:about')}
           </a>
         </div>
-        <p className="mt-2 text-center md:text-left">© 2025 Vigil Corp.</p>
+        <p className="mt-2 text-center md:text-left">{t('rightsReserved', { year: new Date().getFullYear() })}</p>
       </footer>
     </div>
   );

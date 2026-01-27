@@ -1,5 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 interface DailyMetric {
   date: string;
@@ -14,6 +15,8 @@ interface AdPerformanceChartProps {
 }
 
 const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading }) => {
+  const { t } = useTranslation(['ads']);
+
   if (isLoading) {
     return (
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
@@ -28,10 +31,10 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
     return (
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          Performance Diária
+          {t('ads:charts.dailyPerformance')}
         </h3>
         <div className="flex justify-center items-center h-80 text-gray-500 dark:text-gray-400">
-          Nenhum dado disponível para o período selecionado
+          {t('ads:dashboard.noDataPeriod')}
         </div>
       </div>
     );
@@ -40,7 +43,7 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
   return (
     <div className="bg-light-card dark:bg-dark-card p-6 rounded-lg shadow-sm border border-light-border dark:border-dark-border">
       <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-        Performance Diária
+        {t('ads:charts.dailyPerformance')}
       </h3>
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={data}>
@@ -68,7 +71,7 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
             dataKey="impressions" 
             stroke="#3b82f6" 
             strokeWidth={2}
-            name="Impressões"
+            name={t('ads:metrics.impressions')}
             dot={{ fill: '#3b82f6', r: 4 }}
             activeDot={{ r: 6 }}
           />
@@ -77,7 +80,7 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
             dataKey="clicks" 
             stroke="#10b981" 
             strokeWidth={2}
-            name="Cliques"
+            name={t('ads:metrics.clicks')}
             dot={{ fill: '#10b981', r: 4 }}
             activeDot={{ r: 6 }}
           />
@@ -86,7 +89,7 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
             dataKey="engagement" 
             stroke="#f59e0b" 
             strokeWidth={2}
-            name="Engajamento"
+            name={t('ads:metrics.engagement')}
             dot={{ fill: '#f59e0b', r: 4 }}
             activeDot={{ r: 6 }}
           />
@@ -97,4 +100,3 @@ const AdPerformanceChart: React.FC<AdPerformanceChartProps> = ({ data, isLoading
 };
 
 export default AdPerformanceChart;
-

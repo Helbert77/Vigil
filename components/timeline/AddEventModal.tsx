@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/useToast';
 import { useSession } from '@/contexts/SessionContext';
 import { supabase } from '@/integrations/supabase/client';
 import * as api from '../../src/services/api';
+import { useTranslation } from 'react-i18next';
 
 const XIcon = () => <Icon><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></Icon>;
 
@@ -13,18 +14,19 @@ interface AddEventModalProps {
   onClose: () => void;
   onEventAdded: () => void;
   editingEvent?: TimelineEvent | null;
-  isModerationEdit?: boolean; // NOVO
-  queueItemId?: string; // NOVO
+  isModerationEdit?: boolean;
+  queueItemId?: string;
 }
 
 const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, editingEvent, isModerationEdit, queueItemId }) => {
+  const { t } = useTranslation(['timeline', 'common']);
   const { addToast } = useToast();
-  const { user } = useSession(); // NOVO
+  const { user } = useSession();
   const [loading, setLoading] = useState(false);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null);
   const isEditing = !!editingEvent;
-  const isAdminOrModerator = user?.role === 'admin' || user?.role === 'moderator'; // NOVO
+  const isAdminOrModerator = user?.role === 'admin' || user?.role === 'moderator';
 
   const [formData, setFormData] = useState({
     title: '',
@@ -70,7 +72,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
   const handleMediaUpload = async (file: File) => {
     if (!user) {
-      addToast('Você precisa estar logado para fazer upload de mídia.', 'error');
+      addToast(t('common:errorLogin'), 'error');
       return;
     }
 
@@ -85,7 +87,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
       if (uploadError) {
         console.error('Erro no upload:', uploadError);
-        addToast('Falha ao fazer upload da mídia. Tente novamente.', 'error');
+        addToast(t('common:errorUpload'), 'error');
         setIsUploadingMedia(false);
         return;
       }
@@ -95,13 +97,13 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       if (data.publicUrl) {
         setFormData(prev => ({ ...prev, image_url: data.publicUrl }));
         setMediaPreviewUrl(data.publicUrl);
-        addToast('Mídia carregada com sucesso!', 'success');
+        addToast(t('common:successUpload'), 'success');
       } else {
-        addToast('Não foi possível obter o URL da mídia.', 'error');
+        addToast(t('common:errorMediaUrl'), 'error');
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
-      addToast('Erro ao fazer upload da mídia. Tente novamente.', 'error');
+      addToast(t('common:errorUpload'), 'error');
     } finally {
       setIsUploadingMedia(false);
     }
@@ -111,12 +113,12 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      addToast('Por favor, insira um título para o evento', 'error');
+      addToast(t('timeline:errorTitle'), 'error');
       return;
     }
 
     if (isNaN(formData.year as any)) {
-      addToast('Por favor, insira um ano válido', 'error');
+      addToast(t('timeline:errorYear'), 'error');
       return;
     }
 
@@ -127,7 +129,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       // Se há um arquivo de mídia selecionado mas ainda não foi feito upload, fazer upload primeiro
       if (formData.media && !imageUrl) {
         if (!user) {
-          addToast('Você precisa estar logado para fazer upload de mídia.', 'error');
+          addToast(t('common:errorLogin'), 'error');
           setLoading(false);
           return;
         }
@@ -142,7 +144,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
         if (uploadError) {
           console.error('Erro no upload:', uploadError);
-          addToast('Falha ao fazer upload da mídia. Tente novamente.', 'error');
+          addToast(t('common:errorUpload'), 'error');
           setLoading(false);
           setIsUploadingMedia(false);
           return;
@@ -152,7 +154,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
         if (data.publicUrl) {
           imageUrl = data.publicUrl;
         } else {
-          addToast('Não foi possível obter o URL da mídia.', 'error');
+          addToast(t('common:errorMediaUrl'), 'error');
           setLoading(false);
           setIsUploadingMedia(false);
           return;
@@ -173,7 +175,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
-        addToast('Evento atualizado na fila!', 'success');
+        addToast(t('timeline:successEventUpdateQueue'), 'success');
         onEventAdded();
         onClose();
         return;
@@ -187,7 +189,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
-        addToast('Evento atualizado com sucesso!', 'success');
+        addToast(t('timeline:successEventUpdate'), 'success');
       } 
       // NOVO: Se é admin/moderador, criar direto na timeline
       else if (isAdminOrModerator) {
@@ -199,7 +201,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           y_position: 0
         });
         if (error) throw error;
-        addToast('Evento criado com sucesso!', 'success');
+        addToast(t('timeline:successEventCreate'), 'success');
       } 
       // NOVO: Se é usuário comum, submeter para moderação
       else {
@@ -209,14 +211,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           ...(imageUrl && { image_url: imageUrl })
         });
         if (error) throw error;
-        addToast('Evento submetido para moderação! Aguarde aprovação.', 'info');
+        addToast(t('timeline:infoEventModeration'), 'info');
       }
 
       onEventAdded();
       onClose();
     } catch (err) {
       console.error('Erro ao processar evento:', err);
-      addToast('Erro ao processar evento. Tente novamente.', 'error');
+      addToast(t('timeline:errorProcess'), 'error');
     } finally {
       setLoading(false);
     }
@@ -227,7 +229,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
       <div className="bg-light-card dark:bg-dark-card rounded-lg md:rounded-2xl max-w-3xl w-full max-h-[95vh] md:max-h-[90vh] flex flex-col border border-light-border dark:border-dark-border shadow-2xl">
         <div className="sticky top-0 bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-enhanced border-b border-light-border dark:border-dark-border p-3 md:p-6 flex items-center justify-between z-10">
           <h2 className="text-lg md:text-2xl font-bold text-gray-800 dark:text-white truncate pr-2">
-            {isEditing ? 'Editar Evento' : 'Adicionar Novo Evento'}
+            {isEditing ? t('timeline:editEventTitle') : t('timeline:addEventTitle')}
           </h2>
           <button
             onClick={onClose}
@@ -240,7 +242,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
         <form onSubmit={handleSubmit} className="p-3 md:p-6 space-y-3 md:space-y-4 overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Título *
+              {t('timeline:titleLabel')}
             </label>
             <input
               type="text"
@@ -256,7 +258,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Ano * (use números negativos para AC)
+                {t('timeline:yearLabel')}
               </label>
               <input
                 type="number"
@@ -271,7 +273,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Categoria *
+                {t('timeline:categoryLabel')}
               </label>
               <select
                 name="category"
@@ -280,19 +282,19 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                 required
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
               >
-                <option value="politics">Política</option>
-                <option value="science">Ciência</option>
-                <option value="health">Saúde</option>
-                <option value="religion">Religião</option>
-                <option value="technology">Tecnologia</option>
-                <option value="society">Sociedade</option>
+                <option value="politics">{t('timeline:categories.politics')}</option>
+                <option value="science">{t('timeline:categories.science')}</option>
+                <option value="health">{t('timeline:categories.health')}</option>
+                <option value="religion">{t('timeline:categories.religion')}</option>
+                <option value="technology">{t('timeline:categories.technology')}</option>
+                <option value="society">{t('timeline:categories.society')}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Descrição
+              {t('timeline:descriptionLabel')}
             </label>
             <textarea
               name="description"
@@ -300,7 +302,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
               onChange={handleChange}
               rows={4}
               className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-              placeholder="Descreva o evento..."
+              placeholder={t('timeline:descriptionPlaceholder')}
             />
           </div>
 
@@ -308,7 +310,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                País
+                {t('timeline:countryLabel')}
               </label>
               <input
                 type="text"
@@ -316,13 +318,13 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                 value={formData.country}
                 onChange={handleChange}
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-                placeholder="Ex: Brasil"
+                placeholder={t('timeline:countryPlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Adicionar Mídia
+                {t('timeline:addMediaLabel')}
               </label>
               <div className="relative">
                 <input
@@ -361,21 +363,21 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                   {isUploadingMedia ? (
                     <div className="flex items-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-cyan-500"></div>
-                      <span>Enviando mídia...</span>
+                      <span>{t('timeline:sendingMedia')}</span>
                     </div>
                   ) : formData.media || mediaPreviewUrl ? (
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="truncate">{formData.media?.name || 'Mídia carregada'}</span>
+                      <span className="truncate">{formData.media?.name || t('timeline:mediaUploaded')}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
-                      <span>Clique para adicionar mídia</span>
+                      <span>{t('timeline:clickToAddMedia')}</span>
                     </div>
                   )}
                 </div>
@@ -396,7 +398,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                           setMediaPreviewUrl(null);
                         }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
-                        title="Remover mídia"
+                        title={t('timeline:removeMedia')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -405,7 +407,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                     </>
                   ) : (
                     <div className="w-full p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-light-border dark:border-dark-border text-center text-sm text-gray-500 dark:text-gray-400 relative">
-                      Preview de vídeo não disponível
+                      {t('timeline:videoPreviewNotAvailable')}
                       <button
                         type="button"
                         onClick={() => {
@@ -413,7 +415,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                           setMediaPreviewUrl(null);
                         }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
-                        title="Remover mídia"
+                        title={t('timeline:removeMedia')}
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -429,7 +431,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Fonte 1
+                {t('timeline:source1Label')}
               </label>
               <input
                 type="url"
@@ -437,13 +439,13 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                 value={formData.source_1}
                 onChange={handleChange}
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-                placeholder="https://fonte1.com"
+                placeholder={t('timeline:source1Placeholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Fonte 2
+                {t('timeline:source2Label')}
               </label>
               <input
                 type="url"
@@ -451,7 +453,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
                 value={formData.source_2}
                 onChange={handleChange}
                 className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg py-3 md:py-2 px-4 focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 text-base"
-                placeholder="https://fonte2.com"
+                placeholder={t('timeline:source2Placeholder')}
               />
             </div>
           </div>
@@ -462,14 +464,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
               onClick={onClose}
               className="px-6 py-3 md:py-2 rounded-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-base font-medium"
             >
-              Cancelar
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || isUploadingMedia}
               className="px-6 py-3 md:py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-base"
             >
-              {loading || isUploadingMedia ? (isEditing ? 'Salvando...' : 'Criando...') : (isEditing ? 'Salvar Alterações' : 'Criar Evento')}
+              {loading || isUploadingMedia ? (isEditing ? t('common:saving') : t('common:creating')) : (isEditing ? t('timeline:saveChangesBtn') : t('timeline:createEventBtn'))}
             </button>
           </div>
         </form>

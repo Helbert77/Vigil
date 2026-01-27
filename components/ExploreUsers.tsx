@@ -5,6 +5,7 @@ import Avatar from './common/Avatar';
 import UserLink from './common/UserLink';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import { useTranslation } from 'react-i18next';
 
 interface ExploreUsersProps {
   currentUser: User;
@@ -40,6 +41,8 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
   onOpenFollowModal,
   isRemoving = false
 }) => {
+  const { t } = useTranslation(['common']);
+  
   // Calcular se o usuário é novo (menos de 30 dias)
   const isNewUser = useMemo(() => {
     if (!user.createdAt) return false;
@@ -55,13 +58,13 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
 
   const getBadgeText = () => {
     if (isNewUser) {
-      return 'Novo na plataforma';
+      return t('common:newOnPlatform');
     }
     switch (user.relationshipType) {
       case 'follower_of_followed':
-        return `Seguidor de ${user.relationshipDetail}`;
+        return t('common:followerOf', { name: user.relationshipDetail });
       case 'followed_by_followed':
-        return `Seguido por ${user.relationshipDetail}`;
+        return t('common:followedBy', { name: user.relationshipDetail });
       default:
         return '';
     }
@@ -130,10 +133,10 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
           {/* Contadores de seguindo/seguidores */}
           <div className="flex items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-600 dark:text-gray-400">
             <span>
-              <span className="font-semibold text-gray-900 dark:text-white">{user.followingCount || 0}</span> seguindo
+              <span className="font-semibold text-gray-900 dark:text-white">{user.followingCount || 0}</span> {t('common:followingCount')}
             </span>
             <span>
-              <span className="font-semibold text-gray-900 dark:text-white">{user.followersCount || 0}</span> seguidores
+              <span className="font-semibold text-gray-900 dark:text-white">{user.followersCount || 0}</span> {t('common:followersCount')}
             </span>
           </div>
 
@@ -156,7 +159,7 @@ const UserItem: React.FC<UserItemProps> = React.memo(({
             : 'bg-primary hover:bg-gray-600 text-white'
         }`}
       >
-        {isFollowing ? 'Seguindo' : 'Seguir'}
+        {isFollowing ? t('common:following') : t('common:follow')}
       </button>
     </div>
   );
@@ -171,6 +174,7 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
   onOpenFollowModal,
   onGoBack
 }) => {
+  const { t } = useTranslation(['common']);
   const [users, setUsers] = useState<UserWithRelation[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -294,14 +298,14 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
               <button
                 onClick={onGoBack}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-                aria-label="Voltar"
+                aria-label={t('common:goBack')}
               >
                 <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                Explorar Usuários
+                {t('common:exploreUsers')}
               </h1>
             </div>
           </div>
@@ -331,14 +335,14 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
             <button
               onClick={onGoBack}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-              aria-label="Voltar"
+              aria-label={t('common:goBack')}
             >
               <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-              Explorar Usuários
+              {t('common:exploreUsers')}
             </h1>
           </div>
         </div>
@@ -379,7 +383,7 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
         {!hasMore && users.length > 0 && (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400">
-              Você chegou ao fim da lista!
+              {t('common:endOfList')}
             </p>
           </div>
         )}
@@ -387,10 +391,10 @@ const ExploreUsers: React.FC<ExploreUsersProps> = React.memo(({
         {users.length === 0 && !loading && (
           <div className="text-center py-12">
             <p className="text-gray-500 dark:text-gray-400 mb-2">
-              Nenhum usuário encontrado
+              {t('common:noUsersFound')}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              Tente novamente mais tarde
+              {t('common:tryAgainLater')}
             </p>
           </div>
         )}

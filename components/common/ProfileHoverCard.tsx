@@ -4,6 +4,7 @@ import Avatar from '@/components/common/Avatar';
 import { Icon } from '@/components/icons/Icon';
 import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
+import { useTranslation } from 'react-i18next';
 
 const EyeIcon = () => <Icon className="h-4 w-4 md:h-5 md:w-5 mr-2 flex-shrink-0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></Icon>;
 
@@ -17,6 +18,8 @@ interface ProfileHoverCardProps {
 }
 
 const ProfileHoverCard: React.FC<ProfileHoverCardProps> = ({ user, isFollowing, onFollowToggle, onViewProfile, isCurrentUser, onOpenFollowModal }) => {
+  const { t } = useTranslation(['common']);
+  
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onFollowToggle(user.id);
@@ -42,7 +45,7 @@ const ProfileHoverCard: React.FC<ProfileHoverCardProps> = ({ user, isFollowing, 
                 : 'bg-primary hover:bg-gray-600 text-white'
             }`}
           >
-            {isFollowing ? 'Seguindo' : 'Seguir'}
+            {isFollowing ? t('common:following') : t('common:follow')}
           </button>
         )}
       </div>
@@ -54,13 +57,13 @@ const ProfileHoverCard: React.FC<ProfileHoverCardProps> = ({ user, isFollowing, 
         </div>
         <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">@{user.username}</p>
       </div>
-      <p className="text-xs md:text-sm mt-3 text-gray-700 dark:text-gray-300 line-clamp-3">{user.bio || 'Nenhuma biografia disponível.'}</p>
+      <p className="text-xs md:text-sm mt-3 text-gray-700 dark:text-gray-300 line-clamp-3">{user.bio || t('common:noBio')}</p>
       <div className="flex space-x-3 md:space-x-4 mt-3 text-xs md:text-sm text-gray-500 dark:text-gray-400">
         <button onClick={(e) => { e.stopPropagation(); onOpenFollowModal(user, 'following'); }} className="hover:underline min-w-0">
-          <span className="font-bold text-gray-800 dark:text-gray-200">{user.followingCount.toLocaleString()}</span> Seguindo
+          <span className="font-bold text-gray-800 dark:text-gray-200">{user.followingCount.toLocaleString()}</span> {t('common:following')}
         </button>
         <button onClick={(e) => { e.stopPropagation(); onOpenFollowModal(user, 'followers'); }} className="hover:underline min-w-0">
-          <span className="font-bold text-gray-800 dark:text-gray-200">{user.followersCount.toLocaleString()}</span> Seguidores
+          <span className="font-bold text-gray-800 dark:text-gray-200">{user.followersCount.toLocaleString()}</span> {t('common:followers')}
         </button>
       </div>
       <button
@@ -68,7 +71,7 @@ const ProfileHoverCard: React.FC<ProfileHoverCardProps> = ({ user, isFollowing, 
         className="w-full mt-3 md:mt-4 flex items-center justify-center bg-transparent border border-light-border dark:border-dark-border text-gray-800 dark:text-gray-200 font-bold py-2 px-3 md:px-4 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs md:text-sm"
       >
         <EyeIcon />
-        Resumo do perfil
+        {t('common:profileSummary')}
       </button>
     </div>
   );

@@ -1,0 +1,47 @@
+{
+  "title": "Central de Suporte",
+  "prioritySupport": "Suporte Prioritário • Resposta em até 24h",
+  "standardSupport": "Responderemos em até 48-72h",
+  "categories": {
+    "label": "Categoria do Problema",
+    "technical": "🔧 Suporte Técnico",
+    "technicalDesc": "Problemas técnicos, bugs, erros",
+    "billing": "💳 Faturamento",
+    "billingDesc": "Questões sobre pagamento e planos",
+    "feature": "💡 Sugestão de Feature",
+    "featureDesc": "Novas ideias e melhorias",
+    "other": "📝 Outros",
+    "otherDesc": "Outras questões"
+  },
+  "fields": {
+    "subject": "Assunto *",
+    "subjectPlaceholder": "Ex: Erro ao fazer upload de imagem",
+    "description": "Descrição Detalhada *",
+    "descriptionPlaceholder": "Descreva o problema em detalhes. Inclua passos para reproduzir, mensagens de erro, etc.",
+    "attachments": "Anexos (Opcional)",
+    "uploadText": "Clique para fazer upload ou arraste arquivos",
+    "uploadFormats": "PNG, JPG, PDF, TXT até 5MB",
+    "remove": "Remover",
+    "chars": "caracteres",
+    "charsMin": "caracteres (mínimo 20)"
+  },
+  "autoInfo": {
+    "title": "ℹ️ As seguintes informações serão incluídas automaticamente:",
+    "plan": "Plano:",
+    "user": "Usuário:",
+    "browser": "Navegador:",
+    "date": "Data/Hora:"
+  },
+  "buttons": {
+    "cancel": "Cancelar",
+    "sending": "Enviando...",
+    "send": "Enviar Ticket"
+  },
+  "messages": {
+    "required": "Por favor, preencha todos os campos obrigatórios",
+    "minDetails": "Por favor, forneça mais detalhes (mínimo 20 caracteres)",
+    "success": "Ticket enviado com sucesso! Responderemos em breve.",
+    "error": "Erro ao enviar ticket. Tente novamente.",
+    "fileSize": "Alguns arquivos foram ignorados (máx 5MB por arquivo)"
+  }
+}

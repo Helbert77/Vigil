@@ -6,12 +6,14 @@ import { AD_PRICING_CONFIG, getPackageArray, PackageType, formatPrice, calculate
 import AdPackageCard from '@/components/advertising/AdPackageCard';
 import CPMCalculator from '@/components/advertising/CPMCalculator';
 import { pushHistoryState } from '@/src/utils/history';
+import { useTranslation } from 'react-i18next';
 
 interface SelectAdPlanProps {
   user: User;
 }
 
 const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
+  const { t } = useTranslation(['ads']);
   const { addToast } = useToast();
 
   // Obter ad_id da URL
@@ -29,7 +31,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 
   useEffect(() => {
     if (!adId) {
-      addToast('ID do anúncio não encontrado', 'error');
+      addToast(t('ads:selectPlan.errors.adIdNotFound'), 'error');
       window.location.href = '/?page=MyAds';
       return;
     }
@@ -54,13 +56,13 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
       .single();
 
     if (error || !data) {
-      addToast('Anúncio não encontrado', 'error');
+      addToast(t('ads:selectPlan.errors.adNotFound'), 'error');
       window.location.href = '/?page=MyAds';
       return;
     }
 
     if (data.advertiser_id !== user.id) {
-      addToast('Você não tem permissão para acessar este anúncio', 'error');
+      addToast(t('ads:selectPlan.errors.noPermission'), 'error');
       window.location.href = '/?page=MyAds';
       return;
     }
@@ -96,17 +98,17 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
   const handleProceedToPayment = async () => {
     // Validações baseadas no que foi selecionado
     if (selectedTab === 'packages' && !selectedPackage) {
-      addToast('Selecione um pacote', 'error');
+      addToast(t('ads:selectPlan.errors.selectPackage'), 'error');
       return;
     }
 
     if (selectedTab === 'cpm' && !selectedCpmBudget) {
-      addToast('Defina um orçamento', 'error');
+      addToast(t('ads:selectPlan.errors.setBudget'), 'error');
       return;
     }
 
     if (selectedTab === 'credits' && !selectedCreditAmount) {
-      addToast('Selecione um valor de créditos', 'error');
+      addToast(t('ads:selectPlan.errors.selectCreditAmount'), 'error');
       return;
     }
 
@@ -241,21 +243,21 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Voltar para Meus Anúncios
+            {t('ads:selectPlan.backToMyAds')}
           </button>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Escolha o Plano do seu Anúncio
+            {t('ads:selectPlan.title')}
           </h1>
           <p className="text-base sm:text-lg text-gray-700 dark:text-gray-400">
-            Selecione um pacote fixo, defina um orçamento personalizado ou compre créditos
+            {t('ads:selectPlan.subtitle')}
           </p>
         </div>
 
         {/* Preview do anúncio */}
         <div className="bg-light-card dark:bg-dark-card rounded-xl p-6 shadow-lg mb-8 border border-light-border dark:border-dark-border">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Preview do Anúncio
+            {t('ads:selectPlan.preview')}
           </h3>
           <div className="flex items-start space-x-4">
             {adData.image_url && (
@@ -301,8 +303,8 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               }
             `}
           >
-            <span className="hidden sm:inline">Pacotes Fixos</span>
-            <span className="sm:hidden">Pacotes</span>
+            <span className="hidden sm:inline">{t('ads:selectPlan.tabs.fixedPackages')}</span>
+            <span className="sm:hidden">{t('ads:selectPlan.tabs.packages')}</span>
             {selectedTab === 'packages' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -320,8 +322,8 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               }
             `}
           >
-            <span className="hidden sm:inline">Orçamento Personalizado (CPM)</span>
-            <span className="sm:hidden">CPM</span>
+            <span className="hidden sm:inline">{t('ads:selectPlan.tabs.customBudget')}</span>
+            <span className="sm:hidden">{t('ads:selectPlan.tabs.cpm')}</span>
             {selectedTab === 'cpm' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -340,8 +342,8 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               }
             `}
           >
-            <span className="hidden sm:inline">Comprar Créditos</span>
-            <span className="sm:hidden">Créditos</span>
+            <span className="hidden sm:inline">{t('ads:selectPlan.tabs.buyCredits')}</span>
+            <span className="sm:hidden">{t('ads:selectPlan.tabs.credits')}</span>
             {selectedTab === 'credits' && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
@@ -365,7 +367,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 
             <div className="bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
               <p className="text-sm text-amber-800 dark:text-yellow-200">
-                💡 <strong>Dica:</strong> O pacote Ouro oferece o melhor custo-benefício com alcance máximo e recursos premium!
+                💡 <strong>{t('ads:selectPlan.tip.label')}</strong> {t('ads:selectPlan.tip.gold')}
               </p>
             </div>
           </div>
@@ -384,7 +386,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white mb-6 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm opacity-90">Saldo Atual</p>
+                  <p className="text-sm opacity-90">{t('ads:selectPlan.credits.currentBalance')}</p>
                   <p className="text-4xl font-bold">{formatPrice(balance)}</p>
                 </div>
                 <div className="text-5xl">💰</div>
@@ -394,7 +396,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             {/* Opções de créditos */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Escolha o valor
+                {t('ads:selectPlan.credits.chooseAmount')}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {AD_PRICING_CONFIG.credits.options.map((option) => {
@@ -430,7 +432,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
                         </div>
                         {option.bonus && (
                           <div className="text-sm text-green-600 dark:text-green-400 font-semibold mt-1">
-                            Recebe {formatPrice(totalWithBonus)}
+                            {t('ads:selectPlan.credits.receive')} {formatPrice(totalWithBonus)}
                           </div>
                         )}
                       </div>
@@ -446,14 +448,14 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Como usar os créditos?
+                {t('ads:selectPlan.credits.howToUse')}
               </h4>
               <ul className="text-sm text-sky-800 dark:text-blue-200 space-y-1 ml-7">
-                <li>• Use créditos para criar anúncios CPM personalizados</li>
-                <li>• 1 crédito = €1,00</li>
-                <li>• CPM: €6,00 por 1.000 impressões</li>
-                <li>• Créditos não expiram</li>
-                <li>• Bônus automático em compras acima de €50</li>
+                <li>• {t('ads:selectPlan.credits.usage1')}</li>
+                <li>• {t('ads:selectPlan.credits.usage2')}</li>
+                <li>• {t('ads:selectPlan.credits.usage3')}</li>
+                <li>• {t('ads:selectPlan.credits.usage4')}</li>
+                <li>• {t('ads:selectPlan.credits.usage5')}</li>
               </ul>
             </div>
 
@@ -461,7 +463,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
             {transactions.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                  Últimas Transações
+                  {t('ads:selectPlan.credits.lastTransactions')}
                 </h3>
                 <div className="space-y-2">
                   {transactions.map((transaction) => (
@@ -499,7 +501,7 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-4 sm:gap-0 sm:justify-between">
             <div className="flex-1">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Após o pagamento, seu anúncio será enviado para aprovação
+                {t('ads:selectPlan.footer.approvalInfo')}
               </p>
             </div>
             <button
@@ -519,10 +521,10 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
               `}
             >
               {isLoading
-                ? 'Processando...'
+                ? t('ads:selectPlan.footer.processing')
                 : selectedTab === 'credits' && selectedCreditAmount
-                  ? `Comprar ${formatPrice(selectedCreditAmount)} em Créditos →`
-                  : 'Prosseguir para Pagamento →'
+                  ? t('ads:selectPlan.footer.buyCreditsBtn', { amount: formatPrice(selectedCreditAmount) }) + ' →'
+                  : t('ads:selectPlan.footer.proceedPayment') + ' →'
               }
             </button>
           </div>
@@ -533,4 +535,3 @@ const SelectAdPlan: React.FC<SelectAdPlanProps> = ({ user }) => {
 };
 
 export default SelectAdPlan;
-

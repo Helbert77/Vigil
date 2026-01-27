@@ -1,14 +1,18 @@
 import React from 'react';
 import Avatar from '@/components/common/Avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface CancellationFeedbackCardProps {
   feedback: any;
 }
 
 const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ feedback }) => {
+  const { t, i18n } = useTranslation(['moderation', 'common']);
   const userProfile = feedback.profile;
+  
+  const currentLocale = i18n.language === 'pt' || i18n.language === 'pt-BR' ? ptBR : enUS;
 
   // Mapear razões para ícones e cores
   const reasonConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
@@ -19,7 +23,19 @@ const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ fee
     'Problemas técnicos': { icon: '⚠️', color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-50 dark:bg-yellow-900/20' },
   };
 
+  const reasonKeyMap: Record<string, string> = {
+    'É muito caro': 'tooExpensive',
+    'Não uso os recursos premium': 'notUsingFeatures',
+    'Encontrei uma alternativa melhor': 'foundBetterAlternative',
+    'Estou dando um tempo da plataforma': 'takingBreak',
+    'Problemas técnicos': 'techIssues',
+  };
+
   const config = reasonConfig[feedback.reason] || { icon: '❓', color: 'text-gray-600 dark:text-gray-400', bgColor: 'bg-gray-50 dark:bg-gray-900/20' };
+  
+  const translatedReason = reasonKeyMap[feedback.reason] 
+    ? t(`dashboard.feedbackCard.reasons.${reasonKeyMap[feedback.reason]}`)
+    : feedback.reason;
 
   return (
     <div className="bg-light-bg dark:bg-dark-bg p-4 rounded-lg border border-light-border dark:border-dark-border hover:shadow-md transition-shadow">
@@ -29,10 +45,10 @@ const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ fee
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
             <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-900 dark:text-white truncate">
-                {userProfile?.username || 'Usuário Anônimo'}
+                {userProfile?.username || t('dashboard.feedbackCard.anonymousUser')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Cancelado {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true, locale: ptBR })}
+                {t('dashboard.feedbackCard.canceled')} {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true, locale: currentLocale })}
               </p>
             </div>
             <span className="px-3 py-1 text-xs font-semibold bg-gray-200 dark:bg-gray-700 rounded-full whitespace-nowrap">
@@ -47,10 +63,10 @@ const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ fee
                 <span className="text-xl flex-shrink-0">{config.icon}</span>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-1">
-                    Motivo do Cancelamento
+                    {t('dashboard.feedbackCard.cancellationReason')}
                   </h4>
                   <p className={`text-sm font-medium ${config.color}`}>
-                    {feedback.reason}
+                    {translatedReason}
                   </p>
                 </div>
               </div>
@@ -61,7 +77,7 @@ const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ fee
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
                 <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                   <span>💬</span>
-                  Detalhes Adicionais
+                  {t('dashboard.feedbackCard.additionalDetails')}
                 </h4>
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                   {feedback.details}
@@ -73,7 +89,7 @@ const CancellationFeedbackCard: React.FC<CancellationFeedbackCardProps> = ({ fee
             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <span>📅</span>
-                {new Date(feedback.created_at).toLocaleDateString('pt-BR', {
+                {new Date(feedback.created_at).toLocaleDateString(i18n.language || 'pt-BR', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric',

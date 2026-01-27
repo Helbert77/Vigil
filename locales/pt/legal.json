@@ -1,0 +1,642 @@
+{
+  "termsOfService": {
+    "title": "Termos de Serviço",
+    "cardTitle": "Termos de Serviço do Vigil",
+    "lastUpdate": "Última atualização: 12 de dezembro de 2025",
+    "intro": "Ao acessar ou usar o Vigil, você concorda em cumprir e estar vinculado a estes Termos de Serviço. Por favor, leia-os atentamente antes de usar nossa plataforma.",
+    "sections": {
+      "definitions": {
+        "title": "1. Definições",
+        "vigil": "<strong>\"Vigil\"</strong> refere-se à plataforma de mídia social operada pela Vigil Technologies Ltd.",
+        "user": "<strong>\"Usuário\"</strong> refere-se a qualquer pessoa que acesse ou use os serviços do Vigil.",
+        "content": "<strong>\"Conteúdo\"</strong> inclui posts, comentários, imagens, vídeos, áudios, enquetes e qualquer outro material compartilhado na plataforma.",
+        "premiumServices": "<strong>\"Serviços Premium\"</strong> refere-se aos planos pagos Basic ($3.99), Pro ($8.99) e Premium ($19.99)."
+      },
+      "acceptance": {
+        "title": "2. Aceitação dos Termos",
+        "content": "Estes Termos de Serviço (\"Termos\") regem seu acesso e uso do aplicativo Vigil e de todos os serviços, recursos, conteúdo e funcionalidades oferecidos por nós. Se você não concordar com estes Termos, não use o Vigil. Você deve ter pelo menos 13 anos para usar nossos serviços."
+      },
+      "servicesDescription": {
+        "title": "3. Descrição dos Serviços",
+        "posts": "<strong>Posts e Interações:</strong> Criação de posts com texto (280-25.000 caracteres dependendo do plano), imagens, vídeos, áudio, enquetes e quadros de evidência para teorias. Sistema de likes, comentários e compartilhamentos.",
+        "communities": "<strong>Comunidades:</strong> Criação e participação em comunidades temáticas (disponível para usuários Pro e Premium).",
+        "library": "<strong>Biblioteca:</strong> Acesso a e-books e documentos (disponível para usuários Pro e Premium).",
+        "chatRooms": "<strong>Chat Rooms:</strong> Salas de chat em tempo real (disponível apenas para usuários Premium).",
+        "timeline": "<strong>Timeline Histórica:</strong> Visualização interativa de eventos históricos.",
+        "messages": "<strong>Mensagens Privadas:</strong> Sistema de mensagens diretas entre usuários.",
+        "notifications": "<strong>Notificações:</strong> Sistema de notificações em tempo real."
+      },
+      "plans": {
+        "title": "4. Planos e Assinaturas",
+        "free": "<strong>Free:</strong> 280 caracteres por post, com anúncios.",
+        "basic": "<strong>Basic ($3.99/mês):</strong> 1.000 caracteres, edição de posts.",
+        "pro": "<strong>Pro ($8.99/mês):</strong> 5.000 caracteres, acesso a comunidades e biblioteca, anúncios reduzidos.",
+        "premium": "<strong>Premium ($19.99/mês):</strong> 25.000 caracteres, criação de comunidades, chat rooms, sem anúncios.",
+        "paymentInfo": "Os pagamentos são processados através do Stripe. As assinaturas são renovadas automaticamente e podem ser canceladas a qualquer momento."
+      },
+      "conductRules": {
+        "title": "5. Regras de Conduta",
+        "intro": "Você concorda em não:",
+        "rules": [
+          "Publicar conteúdo ilegal, difamatório, obsceno, ameaçador ou que viole direitos de terceiros",
+          "Assediar, intimidar ou ameaçar outros usuários",
+          "Compartilhar informações falsas ou enganosas deliberadamente",
+          "Usar a plataforma para spam ou atividades comerciais não autorizadas",
+          "Tentar acessar contas de outros usuários ou comprometer a segurança da plataforma",
+          "Publicar teorias que incitem violência ou ódio contra grupos específicos"
+        ]
+      },
+      "intellectualProperty": {
+        "title": "6. Conteúdo do Usuário e Propriedade Intelectual",
+        "content1": "Você mantém a propriedade de todo o conteúdo que publica no Vigil. No entanto, ao publicar conteúdo, você nos concede uma licença mundial, não exclusiva, livre de royalties para usar, reproduzir, modificar, adaptar, publicar, traduzir, distribuir e exibir tal conteúdo em conexão com nossos serviços.",
+        "content2": "Você é responsável por garantir que possui todos os direitos necessários sobre o conteúdo que publica e que tal conteúdo não viola direitos de propriedade intelectual de terceiros."
+      },
+      "moderation": {
+        "title": "7. Moderação e Remoção de Conteúdo",
+        "intro": "Reservamo-nos o direito de revisar, moderar e remover qualquer conteúdo que viole estes Termos ou nossas diretrizes da comunidade. Nosso sistema de moderação inclui:",
+        "items": [
+          "Moderação automatizada para detectar conteúdo inadequado",
+          "Revisão manual por nossa equipe de moderação",
+          "Sistema de denúncias pelos usuários",
+          "Processo de apelação para decisões de moderação"
+        ]
+      },
+      "termination": {
+        "title": "8. Suspensão e Encerramento de Contas",
+        "intro": "Podemos suspender ou encerrar sua conta se você:",
+        "items": [
+          "Violar repetidamente estes Termos ou nossas diretrizes",
+          "Envolver-se em atividades que comprometam a segurança da plataforma",
+          "Usar a plataforma para atividades ilegais"
+        ],
+        "closing": "Você pode encerrar sua conta a qualquer momento através das configurações da conta. Após o encerramento, seus dados serão tratados conforme nossa Política de Privacidade."
+      },
+      "liability": {
+        "title": "9. Limitações de Responsabilidade",
+        "intro": "O Vigil é fornecido \"como está\" e \"conforme disponível\". Não garantimos que o serviço será ininterrupto, seguro ou livre de erros. Na máxima extensão permitida por lei, não seremos responsáveis por:",
+        "items": [
+          "Danos indiretos, incidentais, especiais ou consequenciais",
+          "Perda de lucros, dados ou oportunidades de negócio",
+          "Conteúdo publicado por outros usuários",
+          "Interrupções temporárias do serviço"
+        ]
+      },
+      "indemnification": {
+        "title": "10. Indenização",
+        "content": "Você concorda em indenizar e isentar o Vigil, suas afiliadas, diretores, funcionários e agentes de quaisquer reivindicações, responsabilidades, danos, perdas e despesas (incluindo honorários advocatícios) decorrentes do seu uso da plataforma ou violação destes Termos."
+      },
+      "disputeResolution": {
+        "title": "11. Resolução de Disputas",
+        "intro": "Qualquer disputa decorrente destes Termos será resolvida através de:",
+        "items": [
+          "Negociação direta entre as partes",
+          "Mediação, se necessário",
+          "Arbitragem vinculante como último recurso"
+        ]
+      },
+      "changes": {
+        "title": "12. Alterações nos Termos",
+        "content": "Reservamo-nos o direito de modificar estes Termos a qualquer momento. Notificaremos você sobre alterações significativas através da plataforma ou por e-mail. O uso continuado dos serviços após as alterações constitui aceitação dos novos Termos."
+      },
+      "governingLaw": {
+        "title": "13. Lei Aplicável e Jurisdição",
+        "content": "Estes Termos são regidos pelas leis do Brasil, sem considerar conflitos de disposições legais. Qualquer ação legal relacionada a estes Termos será submetida à jurisdição exclusiva dos tribunais brasileiros."
+      },
+      "contact": {
+        "title": "14. Contato",
+        "intro": "Para questões relacionadas a estes Termos, entre em contato conosco:",
+        "email": "<strong>E-mail:</strong> legal@vigil.com",
+        "company": "<strong>Empresa:</strong> Vigil Technologies Ltd.",
+        "address": "<strong>Endereço:</strong> [Endereço da empresa a ser definido]"
+      }
+    },
+    "footer": "Ao usar o Vigil, você reconhece que leu, compreendeu e concorda em estar vinculado a estes Termos de Serviço."
+  },
+  "privacyPolicy": {
+    "title": "Política de Privacidade",
+    "cardTitle": "Política de Privacidade do Vigil",
+    "lastUpdate": "Última atualização: 12 de dezembro de 2025",
+    "intro": "No Vigil, levamos sua privacidade a sério. Esta Política de Privacidade descreve como coletamos, usamos e protegemos suas informações pessoais em conformidade com a LGPD, GDPR e CCPA.",
+    "sections": {
+      "collectedInfo": {
+        "title": "1. Informações que Coletamos",
+        "direct": {
+          "title": "1.1 Informações Fornecidas Diretamente",
+          "items": [
+            "Dados de registro: nome de usuário, e-mail, senha (criptografada), data de nascimento",
+            "Informações de perfil: biografia, foto de perfil, localização (opcional)",
+            "Conteúdo: posts, comentários, mensagens privadas, uploads de mídia",
+            "Dados de pagamento: informações processadas pelo Stripe para assinaturas Premium",
+            "Comunicações: mensagens enviadas para nosso suporte"
+          ]
+        },
+        "automatic": {
+          "title": "1.2 Informações Coletadas Automaticamente",
+          "items": [
+            "Dados de uso: interações com posts, tempo gasto na plataforma, recursos utilizados",
+            "Informações técnicas: endereço IP, tipo de navegador, sistema operacional, dispositivo",
+            "Dados de localização: localização aproximada baseada no IP (se permitido)",
+            "Cookies e tecnologias similares: preferências, sessões, análise de uso",
+            "Logs de atividade: horários de acesso, ações realizadas na plataforma"
+          ]
+        },
+        "thirdParty": {
+          "title": "1.3 Informações de Terceiros",
+          "items": [
+            "Dados de autenticação social (se você optar por login com Google/Facebook)",
+            "Informações de pagamento do Stripe para processamento de assinaturas",
+            "Dados analíticos de provedores de serviços (Google Analytics, etc.)"
+          ]
+        }
+      },
+      "legalBasis": {
+        "title": "2. Base Legal para Processamento (LGPD/GDPR)",
+        "consent": "<strong>Consentimento:</strong> Para marketing, cookies não essenciais e dados opcionais",
+        "contract": "<strong>Execução de contrato:</strong> Para fornecer nossos serviços e processar pagamentos",
+        "legitimateInterest": "<strong>Interesse legítimo:</strong> Para segurança, prevenção de fraudes e melhorias do serviço",
+        "legalObligation": "<strong>Obrigação legal:</strong> Para cumprimento de leis aplicáveis"
+      },
+      "usage": {
+        "title": "3. Como Usamos Suas Informações",
+        "operation": "<strong>Operação dos Serviços:</strong> Fornecer funcionalidades do Vigil, processar transações, gerenciar contas",
+        "personalization": "<strong>Personalização:</strong> Customizar sua experiência, recomendar conteúdo relevante, ajustar configurações",
+        "communication": "<strong>Comunicação:</strong> Enviar notificações, atualizações de serviço, suporte ao cliente",
+        "security": "<strong>Segurança:</strong> Detectar fraudes, prevenir abuso, proteger a integridade da plataforma",
+        "analytics": "<strong>Análise:</strong> Entender como os usuários interagem com a plataforma, melhorar recursos",
+        "marketing": "<strong>Marketing:</strong> Enviar comunicações promocionais (apenas com consentimento)",
+        "compliance": "<strong>Conformidade Legal:</strong> Cumprir obrigações legais e regulamentares"
+      },
+      "sharing": {
+        "title": "4. Compartilhamento de Informações",
+        "noSale": {
+          "title": "4.1 Não Vendemos Seus Dados",
+          "content": "Nunca vendemos suas informações pessoais a terceiros para fins comerciais."
+        },
+        "authorized": {
+          "title": "4.2 Compartilhamento Autorizado",
+          "items": [
+            "<strong>Provedores de Serviço:</strong> Stripe (pagamentos), Supabase (banco de dados), Google (analytics)",
+            "<strong>Parceiros Publicitários:</strong> Dados agregados e anonimizados para anúncios relevantes",
+            "<strong>Autoridades:</strong> Quando exigido por lei ou para proteger direitos legais",
+            "<strong>Transferências Corporativas:</strong> Em caso de fusão, aquisição ou venda de ativos"
+          ]
+        }
+      },
+      "internationalTransfer": {
+        "title": "5. Transferências Internacionais de Dados",
+        "intro": "Seus dados podem ser transferidos e processados em países fora do Brasil/UE. Garantimos proteção adequada através de:",
+        "items": [
+          "Cláusulas contratuais padrão aprovadas pela Comissão Europeia",
+          "Certificações de adequação (Privacy Shield, etc.)",
+          "Medidas de segurança técnicas e organizacionais apropriadas"
+        ]
+      },
+      "retention": {
+        "title": "6. Retenção de Dados",
+        "account": "<strong>Dados de Conta:</strong> Mantidos enquanto sua conta estiver ativa",
+        "content": "<strong>Conteúdo Público:</strong> Mantido indefinidamente, a menos que você solicite remoção",
+        "payment": "<strong>Dados de Pagamento:</strong> Mantidos conforme exigências fiscais (até 7 anos)",
+        "security": "<strong>Logs de Segurança:</strong> Mantidos por até 2 anos para fins de segurança",
+        "marketing": "<strong>Dados de Marketing:</strong> Mantidos até você retirar o consentimento"
+      },
+      "rights": {
+        "title": "7. Seus Direitos de Privacidade",
+        "universal": {
+          "title": "7.1 Direitos Universais",
+          "items": [
+            "<strong>Acesso:</strong> Solicitar cópia dos seus dados pessoais",
+            "<strong>Retificação:</strong> Corrigir dados imprecisos ou incompletos",
+            "<strong>Exclusão:</strong> Solicitar remoção dos seus dados (\"direito ao esquecimento\")",
+            "<strong>Portabilidade:</strong> Receber seus dados em formato estruturado",
+            "<strong>Oposição:</strong> Opor-se ao processamento baseado em interesse legítimo"
+          ]
+        },
+        "specific": {
+          "title": "7.2 Direitos Específicos por Jurisdição",
+          "gdpr": "<strong>GDPR (UE):</strong> Direito à limitação do processamento, direito de não ser sujeito a decisões automatizadas",
+          "ccpa": "<strong>CCPA (Califórnia):</strong> Direito de saber, direito de deletar, direito de opt-out da venda",
+          "lgpd": "<strong>LGPD (Brasil):</strong> Direito de confirmação, acesso, correção, anonimização, portabilidade"
+        }
+      },
+      "exerciseRights": {
+        "title": "8. Como Exercer Seus Direitos",
+        "account": "<strong>Configurações da Conta:</strong> Muitas opções estão disponíveis diretamente nas configurações",
+        "email": "<strong>E-mail:</strong> Entre em contato conosco em privacy@vigil.com",
+        "form": "<strong>Formulário Online:</strong> Use nosso formulário de solicitação de privacidade (em desenvolvimento)",
+        "response": "<strong>Prazo de Resposta:</strong> Responderemos em até 30 dias (LGPD) ou 1 mês (GDPR)"
+      },
+      "cookies": {
+        "title": "9. Cookies e Tecnologias de Rastreamento",
+        "types": {
+          "title": "9.1 Tipos de Cookies",
+          "items": [
+            "<strong>Essenciais:</strong> Necessários para o funcionamento básico da plataforma",
+            "<strong>Funcionais:</strong> Lembram suas preferências e configurações",
+            "<strong>Analíticos:</strong> Ajudam-nos a entender como você usa o Vigil",
+            "<strong>Publicitários:</strong> Personalizam anúncios baseados em seus interesses"
+          ]
+        },
+        "management": {
+          "title": "9.2 Gerenciamento de Cookies",
+          "content": "Você pode gerenciar cookies através das configurações do seu navegador ou nossas configurações de privacidade."
+        }
+      },
+      "security": {
+        "title": "10. Segurança dos Dados",
+        "intro": "Implementamos medidas técnicas e organizacionais para proteger seus dados:",
+        "items": [
+          "Criptografia em trânsito (HTTPS/TLS) e em repouso",
+          "Controles de acesso rigorosos e autenticação multifator",
+          "Monitoramento contínuo de segurança e detecção de ameaças",
+          "Auditorias regulares de segurança e testes de penetração",
+          "Treinamento de funcionários em práticas de segurança"
+        ]
+      },
+      "dataBreach": {
+        "title": "11. Notificação de Violação de Dados",
+        "intro": "Em caso de violação de dados que possa resultar em risco para seus direitos e liberdades:",
+        "items": [
+          "Notificaremos as autoridades competentes em até 72 horas",
+          "Informaremos os usuários afetados sem demora desnecessária",
+          "Tomaremos medidas imediatas para conter e remediar a violação",
+          "Forneceremos orientações sobre medidas de proteção"
+        ]
+      },
+      "minors": {
+        "title": "12. Privacidade de Menores",
+        "content1": "Nossos serviços são destinados a usuários com 13 anos ou mais. Se descobrirmos que coletamos dados de menores de 13 anos sem consentimento parental adequado, tomaremos medidas para excluir essas informações.",
+        "content2": "Para usuários entre 13-18 anos, implementamos proteções adicionais conforme exigido pelas leis aplicáveis."
+      },
+      "changes": {
+        "title": "13. Alterações nesta Política",
+        "intro": "Podemos atualizar esta Política periodicamente. Quando fizermos alterações significativas:",
+        "items": [
+          "Notificaremos você através da plataforma ou por e-mail",
+          "Forneceremos um resumo das principais alterações",
+          "Solicitaremos novo consentimento quando exigido por lei",
+          "Manteremos versões anteriores disponíveis para consulta"
+        ]
+      },
+      "contact": {
+        "title": "14. Contato e Encarregado de Proteção de Dados",
+        "dpo": "<strong>Encarregado de Proteção de Dados (DPO):</strong> dpo@vigil.com",
+        "privacy": "<strong>Questões de Privacidade:</strong> privacy@vigil.com",
+        "company": "<strong>Empresa:</strong> Vigil Technologies Ltd.",
+        "address": "<strong>Endereço:</strong> [Endereço da empresa a ser definido]"
+      },
+      "authorities": {
+        "title": "15. Autoridades de Supervisão",
+        "intro": "Você tem o direito de apresentar reclamações às autoridades de proteção de dados:",
+        "brazil": "<strong>Brasil:</strong> Autoridade Nacional de Proteção de Dados (ANPD)",
+        "eu": "<strong>União Europeia:</strong> Autoridade de proteção de dados do seu país",
+        "california": "<strong>Califórnia:</strong> California Attorney General's Office"
+      }
+    },
+    "footer": "Esta Política de Privacidade foi elaborada para garantir transparência sobre nossas práticas de dados e seu cumprimento com as leis de proteção de dados aplicáveis."
+  },
+  "cookiePolicy": {
+    "title": "Política de Cookies",
+    "cardTitle": "Nossa Política de Cookies",
+    "intro": "Esta Política de Cookies explica como o Vigil utiliza cookies e tecnologias semelhantes para reconhecer você quando visita nosso aplicativo. Ela explica o que são essas tecnologias e por que as usamos, bem como seus direitos de controlar nosso uso delas.",
+    "whatAreCookies": {
+      "title": "1. O que são cookies?",
+      "content": "Cookies são pequenos arquivos de dados que são colocados em seu computador ou dispositivo móvel quando você visita um site. Os cookies são amplamente utilizados pelos proprietários de sites para fazer com que seus sites funcionem, ou para funcionar de forma mais eficiente, bem como para fornecer informações de relatórios."
+    },
+    "howWeUse": {
+      "title": "2. Como usamos cookies?",
+      "content1": "Usamos cookies para várias razões, incluindo para autenticar usuários, lembrar suas preferências, personalizar conteúdo e analisar o tráfego do site. Os tipos específicos de cookies que usamos incluem cookies essenciais, de desempenho e de funcionalidade.",
+      "content2": "Ao usar o Vigil, você concorda com o uso de cookies de acordo com esta política."
+    }
+  },
+  "disclaimer": {
+    "title": "Termos de Responsabilidade",
+    "cardTitle": "Termos de Responsabilidade do Vigil",
+    "lastUpdate": "Última atualização: 12 de dezembro de 2025",
+    "intro": "Este documento estabelece as limitações de responsabilidade e isenções aplicáveis ao uso da plataforma Vigil. Por favor, leia atentamente antes de usar nossos serviços.",
+    "sections": {
+      "nature": {
+        "title": "1. Natureza das Informações",
+        "content": "As informações fornecidas no Vigil são apenas para fins de informação geral, discussão e entretenimento. Não garantimos a precisão, integridade, atualidade ou utilidade de qualquer informação na plataforma.",
+        "important": "<strong>Importante:</strong> Qualquer confiança que você deposite em informações obtidas através do Vigil é estritamente por sua conta e risco."
+      },
+      "speculative": {
+        "title": "2. Conteúdo Teórico e Especulativo",
+        "intro": "O Vigil é uma plataforma dedicada ao compartilhamento e discussão de teorias, especulações e análises. Reconhecemos expressamente que:",
+        "items": [
+          "Teorias são por natureza especulativas e podem não refletir fatos verificados",
+          "Discussões podem incluir conteúdo controverso ou não comprovado",
+          "Diferentes usuários podem ter interpretações conflitantes dos mesmos eventos",
+          "O conteúdo pode evoluir à medida que novas informações se tornam disponíveis"
+        ]
+      },
+      "userContent": {
+        "title": "3. Responsabilidade pelo Conteúdo do Usuário",
+        "content": "As opiniões, teorias, análises e informações expressas pelos usuários são de sua exclusiva responsabilidade e não refletem necessariamente as opiniões, crenças ou posições do Vigil ou de seus operadores.",
+        "notEndorsed": "<strong>Não endossamos, verificamos ou garantimos:</strong>",
+        "items": [
+          "A veracidade de qualquer teoria ou informação postada pelos usuários",
+          "A precisão de análises ou interpretações compartilhadas",
+          "A confiabilidade de fontes citadas pelos usuários",
+          "A adequação de qualquer conteúdo para fins específicos"
+        ]
+      },
+      "library": {
+        "title": "4. Biblioteca de Conteúdo e Timeline Histórica",
+        "intro": "Nossos recursos de biblioteca e timeline histórica são fornecidos para fins educacionais e informativos:",
+        "items": [
+          "O conteúdo pode estar sujeito a direitos autorais de terceiros",
+          "Não garantimos a precisão histórica de todos os materiais",
+          "As interpretações históricas podem variar entre diferentes fontes",
+          "Alguns conteúdos podem estar desatualizados ou incompletos"
+        ]
+      },
+      "professionalAdvice": {
+        "title": "5. Isenção de Aconselhamento Profissional",
+        "intro": "As informações no Vigil <strong>NÃO</strong> se destinam a ser, e não devem ser interpretadas como:",
+        "items": [
+          "<strong>Aconselhamento Legal:</strong> Não fornecemos orientação jurídica",
+          "<strong>Aconselhamento Financeiro:</strong> Não oferecemos conselhos de investimento",
+          "<strong>Aconselhamento Médico:</strong> Não fornecemos orientação médica ou de saúde",
+          "<strong>Aconselhamento Psicológico:</strong> Não oferecemos terapia ou aconselhamento mental",
+          "<strong>Aconselhamento Técnico:</strong> Não fornecemos orientação técnica profissional"
+        ],
+        "conclusion": "<strong>Sempre procure o aconselhamento de profissionais qualificados</strong> para qualquer questão específica que possa ter."
+      },
+      "externalLinks": {
+        "title": "6. Links Externos e Conteúdo de Terceiros",
+        "intro": "O Vigil pode conter links para sites externos e referências a conteúdo de terceiros:",
+        "items": [
+          "Não controlamos nem endossamos o conteúdo de sites externos",
+          "Não somos responsáveis pela precisão ou confiabilidade de fontes externas",
+          "Links externos são fornecidos apenas para conveniência",
+          "O acesso a sites de terceiros é por sua própria conta e risco"
+        ]
+      },
+      "availability": {
+        "title": "7. Garantias de Disponibilidade do Serviço",
+        "intro": "Embora nos esforcemos para manter o Vigil disponível 24/7, não garantimos:",
+        "items": [
+          "Disponibilidade ininterrupta dos serviços",
+          "Ausência de erros técnicos ou bugs",
+          "Compatibilidade com todos os dispositivos ou navegadores",
+          "Velocidade ou desempenho específicos",
+          "Backup ou recuperação de dados do usuário"
+        ]
+      },
+      "limitations": {
+        "title": "8. Limitações de Responsabilidade",
+        "intro": "Na máxima extensão permitida por lei, o Vigil e seus operadores não serão responsáveis por:",
+        "items": [
+          "<strong>Danos Diretos:</strong> Perdas financeiras decorrentes do uso da plataforma",
+          "<strong>Danos Indiretos:</strong> Perda de lucros, oportunidades ou dados",
+          "<strong>Danos Consequenciais:</strong> Resultados de ações baseadas em conteúdo da plataforma",
+          "<strong>Danos Punitivos:</strong> Penalidades ou multas relacionadas ao uso",
+          "<strong>Danos Morais:</strong> Constrangimento ou danos à reputação"
+        ]
+      },
+      "indemnification": {
+        "title": "9. Indenização pelo Usuário",
+        "intro": "Você concorda em indenizar e isentar o Vigil, suas afiliadas, diretores, funcionários e agentes de quaisquer:",
+        "items": [
+          "Reivindicações decorrentes do seu uso da plataforma",
+          "Violações destes Termos de Responsabilidade",
+          "Violações de direitos de terceiros",
+          "Conteúdo que você publica ou compartilha",
+          "Uso inadequado dos serviços Premium"
+        ]
+      },
+      "forceMajeure": {
+        "title": "10. Força Maior",
+        "intro": "Não seremos responsáveis por falhas ou atrasos no desempenho resultantes de circunstâncias além do nosso controle razoável, incluindo:",
+        "items": [
+          "Desastres naturais, guerras, terrorismo",
+          "Falhas de infraestrutura de internet ou energia",
+          "Ações governamentais ou mudanças regulatórias",
+          "Ataques cibernéticos ou falhas de segurança de terceiros",
+          "Pandemias ou emergências de saúde pública"
+        ]
+      },
+      "modifications": {
+        "title": "11. Modificações nos Serviços",
+        "intro": "Reservamo-nos o direito de:",
+        "items": [
+          "Modificar, suspender ou descontinuar qualquer aspecto dos serviços",
+          "Alterar recursos disponíveis em diferentes planos",
+          "Implementar novas políticas ou procedimentos",
+          "Atualizar nossa infraestrutura técnica"
+        ],
+        "conclusion": "Faremos esforços razoáveis para notificar os usuários sobre mudanças significativas."
+      },
+      "jurisdiction": {
+        "title": "12. Jurisdição e Lei Aplicável",
+        "content1": "Estes Termos de Responsabilidade são regidos pelas leis do Brasil. Qualquer disputa relacionada a estes termos será submetida à jurisdição exclusiva dos tribunais brasileiros competentes.",
+        "content2": "Se alguma disposição destes termos for considerada inválida, as disposições restantes permanecerão em pleno vigor."
+      },
+      "contact": {
+        "title": "13. Contato para Questões Legais",
+        "intro": "Para questões relacionadas a estes Termos de Responsabilidade:",
+        "email": "<strong>E-mail:</strong> legal@vigil.com",
+        "company": "<strong>Empresa:</strong> Vigil Technologies Ltd.",
+        "address": "<strong>Endereço:</strong> [Endereço da empresa a ser definido]"
+      }
+    },
+    "alert": {
+      "title": "Aviso Importante",
+      "content": "Ao usar o Vigil, você reconhece que leu, compreendeu e concorda com todas as limitações de responsabilidade e isenções estabelecidas neste documento."
+    }
+  },
+  "accessibility": {
+    "title": "Política de Acessibilidade",
+    "cardTitle": "Compromisso do Vigil com a Acessibilidade",
+    "lastUpdate": "Última atualização: 12 de dezembro de 2025",
+    "intro": "No Vigil, estamos empenhados em tornar nossa plataforma acessível a todos, independentemente de suas habilidades ou deficiências. Acreditamos que todos devem ter a oportunidade de explorar teorias e se conectar com a comunidade.",
+    "sections": {
+      "commitment": {
+        "title": "1. Nosso Compromisso",
+        "content1": "O Vigil está comprometido em garantir acessibilidade digital para pessoas com deficiências. Estamos continuamente melhorando a experiência do usuário para todos e aplicando os padrões de acessibilidade relevantes.",
+        "content2": "Nosso objetivo é tornar o Vigil acessível para o maior número possível de usuários, independentemente de tecnologia ou habilidade."
+      },
+      "compliance": {
+        "title": "2. Conformidade com Padrões",
+        "intro": "Estamos trabalhando para estar em conformidade com:",
+        "items": [
+          "<strong>WCAG 2.1 Nível AA:</strong> Web Content Accessibility Guidelines",
+          "<strong>Seção 508:</strong> Padrões de acessibilidade do governo americano",
+          "<strong>EN 301 549:</strong> Padrão europeu de acessibilidade",
+          "<strong>Lei Brasileira de Inclusão (LBI):</strong> Estatuto da Pessoa com Deficiência"
+        ]
+      },
+      "features": {
+        "title": "3. Recursos de Acessibilidade Implementados",
+        "keyboard": {
+          "title": "3.1 Navegação por Teclado",
+          "items": [
+            "Todos os elementos interativos são acessíveis via teclado",
+            "Ordem lógica de navegação com Tab",
+            "Indicadores visuais claros de foco",
+            "Atalhos de teclado para funções principais"
+          ]
+        },
+        "screenReaders": {
+          "title": "3.2 Suporte a Leitores de Tela",
+          "items": [
+            "Marcação semântica adequada (HTML5)",
+            "Atributos ARIA para elementos complexos",
+            "Texto alternativo descritivo para imagens",
+            "Rótulos claros para formulários e controles",
+            "Anúncios de mudanças dinâmicas de conteúdo"
+          ]
+        },
+        "visualDesign": {
+          "title": "3.3 Design Visual Acessível",
+          "items": [
+            "Contraste de cores conforme WCAG AA (4.5:1 para texto normal)",
+            "Texto redimensionável até 200% sem perda de funcionalidade",
+            "Não dependência apenas de cor para transmitir informações",
+            "Modo escuro para reduzir fadiga visual",
+            "Fontes legíveis e espaçamento adequado"
+          ]
+        },
+        "multimedia": {
+          "title": "3.4 Conteúdo Multimídia",
+          "items": [
+            "Legendas para vídeos (quando aplicável)",
+            "Transcrições para conteúdo de áudio",
+            "Controles de reprodução acessíveis",
+            "Alternativas textuais para gráficos e infográficos"
+          ]
+        }
+      },
+      "assistiveTech": {
+        "title": "4. Tecnologias Assistivas Suportadas",
+        "intro": "O Vigil foi testado e é compatível com:",
+        "items": [
+          "<strong>Leitores de Tela:</strong> NVDA, JAWS, VoiceOver, TalkBack",
+          "<strong>Navegação por Voz:</strong> Dragon NaturallySpeaking",
+          "<strong>Magnificadores de Tela:</strong> ZoomText, MAGic",
+          "<strong>Navegadores com Alto Contraste:</strong> Modo de alto contraste do Windows",
+          "<strong>Dispositivos Móveis:</strong> Recursos de acessibilidade do iOS e Android"
+        ]
+      },
+      "specificFeatures": {
+        "title": "5. Funcionalidades Específicas do Vigil",
+        "posts": {
+          "title": "5.1 Posts e Interações",
+          "items": [
+            "Botões de like, comentar e compartilhar com rótulos descritivos",
+            "Contadores de interação anunciados por leitores de tela",
+            "Formulários de criação de posts totalmente acessíveis",
+            "Navegação clara entre posts e comentários"
+          ]
+        },
+        "communities": {
+          "title": "5.2 Comunidades e Navegação",
+          "items": [
+            "Estrutura de navegação consistente e previsível",
+            "Breadcrumbs para orientação de localização",
+            "Filtros e busca acessíveis por teclado",
+            "Indicadores claros de status de comunidade (pública/privada)"
+          ]
+        },
+        "chat": {
+          "title": "5.3 Chat e Mensagens",
+          "items": [
+            "Notificações de novas mensagens para leitores de tela",
+            "Navegação por teclado em conversas",
+            "Indicadores de status de mensagem (enviada, lida)",
+            "Campos de entrada com rótulos claros"
+          ]
+        }
+      },
+      "improvement": {
+        "title": "6. Processo de Melhoria Contínua",
+        "intro": "Nosso compromisso com a acessibilidade é contínuo:",
+        "items": [
+          "<strong>Auditorias Regulares:</strong> Avaliações trimestrais de acessibilidade",
+          "<strong>Testes com Usuários:</strong> Feedback de usuários com deficiências",
+          "<strong>Treinamento da Equipe:</strong> Capacitação contínua em acessibilidade",
+          "<strong>Atualizações Incrementais:</strong> Melhorias baseadas em feedback e novos padrões"
+        ]
+      },
+      "schedule": {
+        "title": "7. Cronograma de Melhorias",
+        "shortTerm": {
+          "title": "Curto Prazo (próximos 3 meses):",
+          "items": [
+            "Implementação completa de ARIA labels em todos os componentes",
+            "Melhoria dos indicadores de foco visual",
+            "Otimização para leitores de tela móveis"
+          ]
+        },
+        "mediumTerm": {
+          "title": "Médio Prazo (próximos 6 meses):",
+          "items": [
+            "Implementação de modo de alto contraste personalizado",
+            "Adição de atalhos de teclado avançados",
+            "Suporte aprimorado para magnificadores de tela"
+          ]
+        },
+        "longTerm": {
+          "title": "Longo Prazo (próximo ano):",
+          "items": [
+            "Certificação WCAG 2.1 AA completa",
+            "Implementação de recursos de acessibilidade cognitiva",
+            "Suporte para tecnologias assistivas emergentes"
+          ]
+        }
+      },
+      "alternatives": {
+        "title": "8. Alternativas para Conteúdo Inacessível",
+        "intro": "Quando o conteúdo não puder ser totalmente acessível, fornecemos:",
+        "items": [
+          "Descrições textuais detalhadas para elementos visuais complexos",
+          "Formatos alternativos para documentos (texto simples, áudio)",
+          "Resumos de conteúdo multimídia",
+          "Contato direto para assistência personalizada"
+        ]
+      },
+      "feedback": {
+        "title": "9. Feedback e Suporte",
+        "intro": "Valorizamos seu feedback sobre a acessibilidade do Vigil:",
+        "items": [
+          "<strong>E-mail:</strong> accessibility@vigil.com",
+          "<strong>Formulário de Feedback:</strong> Disponível nas configurações da conta",
+          "<strong>Telefone:</strong> [Número a ser definido] (horário comercial)",
+          "<strong>Chat de Suporte:</strong> Disponível 24/7 com suporte a tecnologias assistivas"
+        ],
+        "response": "Responderemos a todas as consultas de acessibilidade em até 48 horas."
+      },
+      "compliance_legal": {
+        "title": "10. Conformidade Legal",
+        "intro": "Estamos comprometidos em cumprir todas as leis de acessibilidade aplicáveis:",
+        "items": [
+          "<strong>Brasil:</strong> Lei Brasileira de Inclusão (Lei 13.146/2015)",
+          "<strong>Estados Unidos:</strong> Americans with Disabilities Act (ADA)",
+          "<strong>União Europeia:</strong> European Accessibility Act",
+          "<strong>Internacional:</strong> Convenção da ONU sobre os Direitos das Pessoas com Deficiência"
+        ]
+      },
+      "resources": {
+        "title": "11. Recursos Adicionais",
+        "intro": "Para ajudá-lo a usar o Vigil de forma mais eficaz:",
+        "items": [
+          "<strong>Guia de Acessibilidade:</strong> Tutorial detalhado sobre recursos acessíveis",
+          "<strong>Atalhos de Teclado:</strong> Lista completa disponível pressionando Ctrl+?",
+          "<strong>Configurações de Acessibilidade:</strong> Painel dedicado nas configurações da conta",
+          "<strong>Documentação Técnica:</strong> Para desenvolvedores de tecnologias assistivas"
+        ]
+      },
+      "contact": {
+        "title": "12. Contato",
+        "coordinator": "<strong>Coordenador de Acessibilidade:</strong> accessibility@vigil.com",
+        "company": "<strong>Empresa:</strong> Vigil Technologies Ltd.",
+        "address": "<strong>Endereço:</strong> [Endereço da empresa a ser definido]",
+        "phone": "<strong>Telefone:</strong> [Número a ser definido]"
+      }
+    },
+    "alert": {
+      "title": "Compromisso Contínuo",
+      "content": "A acessibilidade é uma jornada contínua. Estamos comprometidos em melhorar constantemente a experiência para todos os usuários. Se você encontrar alguma barreira ou tiver sugestões, por favor, entre em contato conosco."
+    }
+  }
+}

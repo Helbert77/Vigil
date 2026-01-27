@@ -3,6 +3,7 @@ import Avatar from '@/components/common/Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TimelineModerationQueueItem } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 interface TimelineModerationCardProps {
   item: TimelineModerationQueueItem;
@@ -11,13 +12,13 @@ interface TimelineModerationCardProps {
   onEdit: (item: TimelineModerationQueueItem) => void;
 }
 
-const CATEGORY_LABELS = {
-  politics: 'Política',
-  science: 'Ciência',
-  health: 'Saúde',
-  religion: 'Religião',
-  technology: 'Tecnologia',
-  society: 'Sociedade'
+const CATEGORY_LABELS: Record<string, string> = {
+  politics: 'politics',
+  science: 'science',
+  health: 'health',
+  religion: 'religion',
+  technology: 'technology',
+  society: 'society'
 };
 
 const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
@@ -26,6 +27,7 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
   onReject,
   onEdit
 }) => {
+  const { t } = useTranslation(['timeline', 'common']);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -45,7 +47,7 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
               <Avatar src={item.author?.avatar_url} alt={item.author?.username} size="sm" />
               <div>
                 <p className="font-bold text-gray-900 dark:text-white">
-                  {item.author?.username || 'Usuário Anônimo'}
+                  {item.author?.username || t('common:anonymousUser')}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}
@@ -59,10 +61,10 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">{item.title}</h3>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-cyan-600 dark:text-cyan-400 font-semibold">
-                    {item.year < 0 ? `${Math.abs(item.year)} AC` : `${item.year} DC`}
+                    {item.year < 0 ? `${Math.abs(item.year)} ${t('timeline:bc')}` : `${item.year} ${t('timeline:ad')}`}
                   </span>
                   <span className="px-2 py-1 text-xs font-semibold bg-gray-200 dark:bg-gray-700 rounded-full">
-                    {CATEGORY_LABELS[item.category]}
+                    {t(`timeline:categories.${CATEGORY_LABELS[item.category] || item.category}`)}
                   </span>
                   {item.country && (
                     <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -95,7 +97,7 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
 
               {(item.source_1 || item.source_2) && (
                 <div className="text-xs space-y-1">
-                  <p className="font-semibold text-gray-700 dark:text-gray-300">Fontes:</p>
+                  <p className="font-semibold text-gray-700 dark:text-gray-300">{t('timeline:sources')}</p>
                   {item.source_1 && (
                     <a
                       href={item.source_1}
@@ -127,19 +129,19 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
               onClick={() => onApprove(item.id)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium whitespace-nowrap"
             >
-              ✓ Aprovar
+              ✓ {t('common:approve')}
             </button>
             <button
               onClick={() => onEdit(item)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium whitespace-nowrap"
             >
-              ✎ Editar
+              ✎ {t('common:edit')}
             </button>
             <button
               onClick={() => setShowRejectModal(true)}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium whitespace-nowrap"
             >
-              ✕ Rejeitar
+              ✕ {t('common:reject')}
             </button>
           </div>
         </div>
@@ -150,15 +152,15 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
           <div className="bg-light-card dark:bg-dark-card rounded-2xl max-w-md w-full p-6 border border-light-border dark:border-dark-border">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Rejeitar Evento
+              {t('timeline:rejectEventTitle')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Deseja adicionar um motivo para a rejeição? (Opcional)
+              {t('timeline:rejectReasonPrompt')}
             </p>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Motivo da rejeição..."
+              placeholder={t('timeline:rejectReasonPlaceholder')}
               className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg p-3 text-gray-900 dark:text-white mb-4"
               rows={3}
             />
@@ -167,13 +169,13 @@ const TimelineModerationCard: React.FC<TimelineModerationCardProps> = ({
                 onClick={() => setShowRejectModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
-                Cancelar
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleReject}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
-                Confirmar Rejeição
+                {t('timeline:confirmRejection')}
               </button>
             </div>
           </div>

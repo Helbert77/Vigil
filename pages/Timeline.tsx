@@ -120,9 +120,9 @@ const Timeline: React.FC = () => {
 
   const formatYear = (year: number) => {
     if (year < 0) {
-      return `${Math.abs(year)} AC`;
+      return `${Math.abs(year)} ${t('timeline:bc')}`;
     }
-    return `${year} DC`;
+    return `${year} ${t('timeline:ad')}`;
   };
 
   const handleEventAdded = () => {
@@ -243,7 +243,7 @@ const Timeline: React.FC = () => {
       <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-800 dark:text-gray-200 flex items-center justify-center transition-colors duration-300">
         <div className="text-center">
           <div className="loading-spinner h-16 w-16 mx-auto mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">Carregando eventos da timeline...</p>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">{t('common:loading')}</p>
         </div>
       </div>
     );
@@ -253,12 +253,12 @@ const Timeline: React.FC = () => {
     return (
       <div className="min-h-screen bg-light-bg dark:bg-dark-bg text-gray-800 dark:text-gray-200 flex items-center justify-center transition-colors duration-300">
         <div className="text-center">
-          <p className="text-red-400 mb-4 text-lg">Erro ao carregar eventos: {error}</p>
+          <p className="text-red-400 mb-4 text-lg">{t('timeline:errorProcess')}</p>
           <button 
             onClick={() => window.location.reload()} 
             className="bg-cyan-600 hover:bg-cyan-700 px-6 py-3 rounded-lg transition-colors font-medium text-white"
           >
-            Tentar Novamente
+            {t('common:tryAgain')}
           </button>
         </div>
       </div>
@@ -307,7 +307,7 @@ const Timeline: React.FC = () => {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 w-full"
                   >
-                    <option value="all">Todas as Categorias</option>
+                    <option value="all">{t('timeline:allCategories')}</option>
                     {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
@@ -317,8 +317,8 @@ const Timeline: React.FC = () => {
                     onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
                     className="bg-white/70 dark:bg-gray-700/70 border border-light-border dark:border-dark-border rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 text-gray-800 dark:text-gray-200 w-full"
                   >
-                    <option value="newest">Mais Recente</option>
-                    <option value="oldest">Mais Antigo</option>
+                    <option value="newest">{t('timeline:newest')}</option>
+                    <option value="oldest">{t('timeline:oldest')}</option>
                   </select>
                 </div>
               </div>
@@ -506,7 +506,7 @@ const Timeline: React.FC = () => {
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-full h-64 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
-                                <span className="text-sm font-medium mt-2">Adicionar Imagem</span>
+                                <span className="text-sm font-medium mt-2">{t('timeline:addImage')}</span>
                               </button>
                             ) : (
                               <div className="w-full h-64"></div>
@@ -540,7 +540,7 @@ const Timeline: React.FC = () => {
                             {hasAdminPermissions ? (
                               <button onClick={() => handleOpenImageModal(event)} className="w-full h-64 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:border-cyan-500 hover:text-cyan-500 transition-colors">
                                 <ImageIcon />
-                                <span className="text-sm font-medium mt-2">Adicionar Imagem</span>
+                                <span className="text-sm font-medium mt-2">{t('timeline:addImage')}</span>
                               </button>
                             ) : (
                               <div className="w-full h-64"></div>
@@ -577,7 +577,7 @@ const Timeline: React.FC = () => {
             })
           ) : (
             <div className="text-center py-16">
-              <p className="text-gray-500 dark:text-slate-400 text-lg">Nenhum evento encontrado com os filtros selecionados.</p>
+              <p className="text-gray-500 dark:text-slate-400 text-lg">{t('timeline:noEventsFound')}</p>
             </div>
           )}
         </div>
@@ -585,7 +585,7 @@ const Timeline: React.FC = () => {
         {filteredEvents.length > 0 && (
           <div className="text-center mt-12">
             <p className="text-gray-500 dark:text-slate-400">
-              Mostrando {filteredEvents.length} eventos
+              {t('timeline:showingEvents', { count: filteredEvents.length })}
             </p>
           </div>
         )}
@@ -629,7 +629,7 @@ const Timeline: React.FC = () => {
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-white">
                     <InfoIcon />
-                    Descrição
+                    {t('timeline:descriptionLabel')}
                   </h3>
                   <p className="text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                     {selectedEvent.description}
@@ -654,7 +654,7 @@ const Timeline: React.FC = () => {
                         : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                     disabled={!appUser}
-                    title="Verdadeiro"
+                    title={t('timeline:true')}
                   >
                     <ChevronUpIcon />
                   </button>
@@ -674,7 +674,7 @@ const Timeline: React.FC = () => {
                         : 'hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                     disabled={!appUser}
-                    title="Falso"
+                    title={t('timeline:false')}
                   >
                     <ChevronDownIcon />
                   </button>
@@ -699,7 +699,7 @@ const Timeline: React.FC = () => {
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-white">
                     <LinkIcon />
-                    Fontes e Referências
+                    {t('timeline:sourcesAndRefs')}
                   </h3>
                   <ul className="space-y-2 text-sm text-gray-700 dark:text-slate-300 list-disc list-inside pl-2">
                     {selectedEvent.source_1 && <li><a href={selectedEvent.source_1} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 break-all">{selectedEvent.source_1}</a></li>}

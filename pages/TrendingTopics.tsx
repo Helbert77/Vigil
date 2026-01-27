@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TrendingTopic } from '../types';
 import Card from '../components/common/Card';
 import { Icon } from '../components/icons/Icon';
+import { useTranslation } from 'react-i18next';
 
 const ArrowLeftIcon = () => (
   <Icon>
@@ -41,6 +42,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
   onViewTag,
   onGoBack
 }) => {
+  const { t } = useTranslation(['common']);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'posts' | 'alphabetical'>('posts');
 
@@ -68,17 +70,17 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
             <button
               onClick={onGoBack}
               className="flex items-center space-x-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-all duration-200 mr-6 hover:scale-105"
-              aria-label="Voltar"
+              aria-label={t('common:goBack')}
             >
               <ArrowLeftIcon />
-              <span className="text-sm font-medium">Voltar</span>
+              <span className="text-sm font-medium">{t('common:goBack')}</span>
             </button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                Acontecendo Agora
+                {t('common:happeningNow')}
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {filteredAndSortedTopics.length} tópicos em alta
+                {filteredAndSortedTopics.length} {t('common:topicsTrending')}
               </p>
             </div>
           </div>
@@ -89,7 +91,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar tópicos..."
+              placeholder={t('common:searchTopics')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl transition-all duration-200 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none"
@@ -100,7 +102,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
           </div>
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Ordenar por:</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('common:sortBy')}</span>
             <div className="flex space-x-2">
               <button
                 onClick={() => setSortBy('posts')}
@@ -110,7 +112,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                Posts
+                {t('common:postsSort')}
               </button>
               <button
                 onClick={() => setSortBy('alphabetical')}
@@ -120,7 +122,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                A-Z
+                {t('common:azSort')}
               </button>
             </div>
           </div>
@@ -156,7 +158,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                                 <FireIcon />
                               </div>
                               <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
-                                Em Alta
+                                {t('common:trendingBadge')}
                               </span>
                             </div>
                           )}
@@ -167,7 +169,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                             {topic.post_count.toLocaleString()} posts
                           </span>
                           <span className="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">
-                            #{originalIndex + 1} trending
+                            #{originalIndex + 1} {t('common:trendingRank')}
                           </span>
                         </div>
                       </div>
@@ -187,10 +189,10 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
             <Card className="text-center py-12">
               <SearchIcon />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mt-4 mb-2">
-                Nenhum resultado encontrado
+                {t('common:noResults')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Tente buscar por outros termos ou verifique a ortografia
+                {t('common:tryAgain')}
               </p>
             </Card>
           ) : (
@@ -199,10 +201,10 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                 <FireIcon />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Nenhum tópico em alta no momento
+                {t('common:noTrendingFound')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
-                Seja o primeiro a usar hashtags e criar tendências!
+                {t('common:beFirstTrending')}
               </p>
             </Card>
           )}
@@ -215,11 +217,11 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
               <div className="flex items-center justify-center space-x-2 mb-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Atualização em tempo real
+                  {t('common:trendingRealTime')}
                 </span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Tópicos atualizados automaticamente baseados na atividade dos usuários
+                {t('common:trendingAutoUpdate')}
               </p>
             </div>
           </Card>
@@ -231,7 +233,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                   {filteredAndSortedTopics.reduce((sum, topic) => sum + topic.post_count, 0).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Total de Posts
+                  {t('common:totalPosts')}
                 </div>
               </Card>
               
@@ -240,7 +242,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                   {filteredAndSortedTopics.length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Tópicos Ativos
+                  {t('common:activeTopics')}
                 </div>
               </Card>
               
@@ -249,7 +251,7 @@ const TrendingTopicsPage: React.FC<TrendingTopicsPageProps> = ({
                   {Math.round(filteredAndSortedTopics.reduce((sum, topic) => sum + topic.post_count, 0) / filteredAndSortedTopics.length).toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Média por Tópico
+                  {t('common:avgPerTopic')}
                 </div>
               </Card>
             </div>

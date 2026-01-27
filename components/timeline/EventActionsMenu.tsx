@@ -4,6 +4,7 @@ import { TimelineEvent, User } from '@/types';
 import Tooltip from '@/components/common/Tooltip';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { useToast } from '@/hooks/useToast';
+import { useTranslation } from 'react-i18next';
 
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const TrashIcon = () => <Icon className="h-5 w-5 text-red-500"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></Icon>;
@@ -17,6 +18,7 @@ interface EventActionsMenuProps {
 }
 
 const EventActionsMenu: React.FC<EventActionsMenuProps> = ({ event, currentUser, onDelete, onEdit }) => {
+  const { t } = useTranslation(['timeline', 'common']);
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,13 +65,13 @@ const EventActionsMenu: React.FC<EventActionsMenuProps> = ({ event, currentUser,
   return (
     <>
       <div className="relative" ref={menuRef}>
-        <Tooltip text="Mais ações do evento" position="bottom">
+        <Tooltip text={t('timeline:eventActions')} position="bottom">
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             aria-haspopup="menu"
             aria-expanded={isOpen}
-            aria-label="Abrir menu de ações do evento"
+            aria-label={t('timeline:eventActions')}
           >
             <MoreHorizontalIcon />
           </button>
@@ -80,23 +82,23 @@ const EventActionsMenu: React.FC<EventActionsMenuProps> = ({ event, currentUser,
             <button
               onClick={handleEditClick}
               className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-              aria-label="Editar evento"
+              aria-label={t('timeline:editEvent')}
               role="menuitem"
             >
               <EditIcon />
-              <span>Editar Evento</span>
+              <span>{t('timeline:editEvent')}</span>
             </button>
 
             {/* Excluir Evento */}
-            <Tooltip text="Excluir evento permanentemente">
+            <Tooltip text={t('timeline:deleteEvent')}>
               <button
                 onClick={handleDeleteClick}
                 className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700"
-                aria-label="Excluir evento"
+                aria-label={t('timeline:deleteEvent')}
                 role="menuitem"
               >
                 <TrashIcon />
-                <span>Excluir Evento</span>
+                <span>{t('timeline:deleteEvent')}</span>
               </button>
             </Tooltip>
           </div>
@@ -108,10 +110,10 @@ const EventActionsMenu: React.FC<EventActionsMenuProps> = ({ event, currentUser,
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="Excluir Evento?"
-        message={`Tem certeza que deseja excluir o evento "${event.title}"? Esta ação não pode ser desfeita.`}
-        confirmText={isDeleting ? "Excluindo..." : "Sim, excluir"}
-        cancelText="Cancelar"
+        title={t('timeline:deleteEventTitle')}
+        message={t('timeline:deleteEventMessage', { title: event.title })}
+        confirmText={isDeleting ? t('timeline:deleting') : t('timeline:deleteConfirm')}
+        cancelText={t('common:cancel')}
         isDestructive={true}
       />
     </>

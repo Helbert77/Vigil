@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/useToast';
 import Tooltip from '../common/Tooltip';
 import MentionSuggestions from '@/src/components/common/MentionSuggestions';
 import EmojiPicker from '@/src/components/post/EmojiPicker';
+import { useTranslation } from 'react-i18next';
 
 const ImageIcon = () => <Icon><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></Icon>;
 const SmileIcon = () => <Icon><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></Icon>;
@@ -21,6 +22,7 @@ interface CreateAdCommentProps {
 }
 
 const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComment, allUsers, placeholder = "Adicione um comentário..." }) => {
+  const { t } = useTranslation(['posts', 'ads', 'common']);
   const [text, setText] = useState('');
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [isFocused, setIsFocused] = useState(false);
@@ -53,7 +55,7 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      addToast('Por favor, selecione um arquivo de imagem.', 'error');
+      addToast(t('posts:unsupportedFileTypeImageVideo'), 'error');
       return;
     }
 
@@ -64,7 +66,7 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
     const { error: uploadError } = await supabase.storage.from('posts-media').upload(filePath, file);
 
     if (uploadError) {
-      addToast('Falha ao enviar imagem. Tente novamente.', 'error');
+      addToast(t('posts:uploadFailedRetry', { type: 'image' }), 'error');
       setIsUploading(false);
       return;
     }
@@ -74,7 +76,7 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
     if (data.publicUrl) {
       setImageUrl(data.publicUrl);
     } else {
-      addToast('Não foi possível obter o URL da imagem.', 'error');
+      addToast(t('posts:couldNotGetMediaUrl'), 'error');
     }
     setIsUploading(false);
   };
@@ -172,12 +174,12 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center space-x-1 relative text-gray-500 dark:text-gray-400">
                 <input type="file" ref={imageInputRef} onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                <Tooltip text="Imagem">
+                <Tooltip text={t('posts:imageTooltip')}>
                   <button type="button" onClick={() => imageInputRef.current?.click()} disabled={!!imageUrl || isUploading} className="p-2 hover:text-blue-500 rounded-full disabled:opacity-50 disabled:cursor-not-allowed">
                     {isUploading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div> : <ImageIcon />}
                   </button>
                 </Tooltip>
-                <Tooltip text="Emoji">
+                <Tooltip text={t('posts:emojiTooltip')}>
                   <div className="relative inline-block">
                     <button 
                       ref={emojiButtonRef}
@@ -199,7 +201,7 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
               </div>
               <div className="flex items-center space-x-2">
                 <button type="submit" disabled={isSubmitDisabled} className="bg-secondary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-sm disabled:bg-gray-400 disabled:cursor-not-allowed">
-                  Reply
+                  {t('posts:reply')}
                 </button>
               </div>
             </div>
@@ -211,4 +213,3 @@ const CreateAdComment: React.FC<CreateAdCommentProps> = ({ user, adId, onAddComm
 };
 
 export default React.memo(CreateAdComment);
-

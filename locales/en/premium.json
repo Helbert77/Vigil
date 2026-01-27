@@ -1,5 +1,7 @@
 {
   "title": "Premium Plans",
+  "pageTitle": "Choose how much truth you want to see",
+  "pageSubtitle": "Each plan unlocks a new level of freedom, access, and connection. The awakening begins with a choice.",
   "chooseYourPlan": "Choose your plan",
   "paymentProcessed": "Payment processed successfully! Awaiting subscription confirmation.",
   "checkoutCanceled": "Checkout canceled. You can try again whenever you want.",
@@ -29,5 +31,106 @@
   "couponNotValidForPlan": "Coupon not valid for this plan",
   "savePromo": "Save up to 25% on monthly plans and guarantee lifetime access to promotional prices!",
   "annualBonus": "Annual bonus",
-  "monthsFree": "{{months}} months free"
+  "monthsFree": "{{months}} months free",
+  "confirmCancellation": "Confirm Cancellation",
+  "plan": "Plan",
+  "cancellationWarningTitle": "Important: Your subscription will remain active!",
+  "cancellationWarningText": "You will continue to have access to all {{plan}} features until {{date}}. After this date, your plan will automatically change to FREE.",
+  "whatHappensTitle": "What happens when you cancel?",
+  "noFutureCharges": "There will be no future charges after cancellation",
+  "dataPreserved": "Your data and content will be preserved (posts, comments, communities)",
+  "reactivateAnytime": "You can reactivate your subscription at any time before {{date}}",
+  "planDowngrade": "After {{date}}, your plan will automatically change to FREE",
+  "confirmationsTitle": "Confirmations you will receive:",
+  "confirmationEmail": "Confirmation email with all cancellation details",
+  "appNotification": "In-app notification confirming cancellation",
+  "reminder": "Reminder a few days before the active period ends",
+  "changedMindTitle": "Changed your mind?",
+  "changedMindText": "Don't worry! You can reactivate your subscription at any time before {{date}}. Just go back to the Premium page and click 'Reactivate Subscription'.",
+  "confirmationFooter": "By confirming, you will receive an email with all cancellation details.",
+  "trial": {
+    "title": "You are in a Trial Period!",
+    "enjoy": "Enjoy all features of the {{plan}} plan for free",
+    "expires": "Your trial expires in:",
+    "daysLeft": "days left"
+  },
+  "promo": {
+    "title": "Launch Promotion",
+    "subtitle": "Special prices for early Vigil community members",
+    "limitedOffer": "Limited time offer - Don't miss out!"
+  },
+  "placeholders": {
+    "enterCode": "Enter code"
+  },
+  "labels": {
+    "mostPopular": "most popular",
+    "cancelAnytime": "Cancel anytime.",
+    "noHiddenFees": "No hidden fees.",
+    "upgradeOrManage": "You can upgrade or manage your subscription at any time."
+  },
+  "errors": {
+    "loginRequired": "You need to be logged in to subscribe to a plan.",
+    "loginRequiredGeneral": "You need to be logged in.",
+    "alreadyOnPlan": "You are already on the {{plan}} plan.",
+    "useCancelOption": "To cancel your subscription, use the cancellation option below.",
+    "checkoutError": "Error starting checkout: {{message}}",
+    "redirecting": "Redirecting to checkout...",
+    "getUrlError": "Error getting checkout URL.",
+    "unexpectedCheckoutError": "An unexpected error occurred while processing checkout.",
+    "cancelError": "Error cancelling subscription. Please try again.",
+    "unexpectedCancelError": "An unexpected error occurred while cancelling subscription."
+  },
+  "messages": {
+    "subscriptionCanceled": "Subscription canceled! You can continue using it until {{date}}."
+  },
+  "features": {
+    "basic": [
+      "Unlimited access to basic features",
+      "Edit Post",
+      "Longer posts"
+    ],
+    "pro": [
+      "Everything in Basic plan",
+      "Verified badge",
+      "Priority email support",
+      "Reduced Ads",
+      "Create Private Chat Rooms"
+    ],
+    "premium": [
+      "Everything in Pro plan",
+      "No ads",
+      "Create new communities",
+      "Full access to E-Books page",
+      "Chat Support",
+      "Early access to new features",
+      "Create Private Chat Rooms"
+    ]
+  },
+  "comparison": {
+    "title": "Compare Plans",
+    "resources": "Resources",
+    "features": {
+      "charLimit": "Character limit per post",
+      "ads": "Ads",
+      "emailSupport": "Email Support",
+      "chatSupport": "Chat Support",
+      "editPosts": "Edit posts",
+      "communityAccess": "Community Access",
+      "libraryAccess": "Library Access",
+      "createCommunities": "Create Communities",
+      "verifiedBadge": "Verified Badge",
+      "earlyAccess": "Early Access",
+      "privateChatRooms": "Create Private Chat Rooms"
+    }
+  },
+  "pricingCard": {
+    "currentPlan": "Current Plan",
+    "choosePlan": "Choose {{plan}}",
+    "trialDaysBanner": "FREE TRIAL {{days}} DAYS",
+    "launchPriceBanner": "LAUNCH PRICE",
+    "bonusMonthsBanner": "+{{months}} MONTHS FREE",
+    "savePercent": "Save {{percent}}%",
+    "startTrial": "Start Free Trial",
+    "updating": "Updating..."
+  }
 }

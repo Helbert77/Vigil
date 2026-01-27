@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../../../hooks/useToast';
 import Card from '../../../components/common/Card';
 import * as api from '../../services/api';
+import { useTranslation } from 'react-i18next';
 
 interface TrialCoupon {
   id: string;
@@ -30,6 +31,7 @@ interface CouponUsage {
 
 const CouponManagement: React.FC = () => {
   const { addToast } = useToast();
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const [coupons, setCoupons] = useState<TrialCoupon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -59,7 +61,7 @@ const CouponManagement: React.FC = () => {
       setCoupons(data || []);
     } catch (error) {
       console.error('Error fetching coupons:', error);
-      addToast('Erro ao carregar cupons', 'error');
+      addToast(t('admin:coupons.errors.fetch'), 'error');
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +71,7 @@ const CouponManagement: React.FC = () => {
     try {
       const coupon = coupons.find(c => c.id === couponId);
       if (!coupon) {
-        addToast('Cupom não encontrado', 'error');
+        addToast(t('admin:coupons.errors.notFound'), 'error');
         return;
       }
       
@@ -80,7 +82,7 @@ const CouponManagement: React.FC = () => {
       setIsUsageModalOpen(true);
     } catch (error) {
       console.error('Error fetching coupon usages:', error);
-      addToast('Erro ao carregar usos do cupom', 'error');
+      addToast(t('admin:coupons.errors.fetchUsage'), 'error');
     }
   };
 
@@ -97,12 +99,12 @@ const CouponManagement: React.FC = () => {
     e.preventDefault();
     
     if (!formData.code.trim()) {
-      addToast('Código do cupom é obrigatório', 'error');
+      addToast(t('admin:coupons.errors.codeRequired'), 'error');
       return;
     }
 
     if (formData.trial_days < 1 || formData.trial_days > 30) {
-      addToast('Dias de trial deve ser entre 1 e 30', 'error');
+      addToast(t('admin:coupons.errors.invalidDays'), 'error');
       return;
     }
 
@@ -119,7 +121,7 @@ const CouponManagement: React.FC = () => {
       if (error) {
         // Extrair mensagem de erro mais específica
         const errorMessage = error.message || 
-                           (typeof error === 'string' ? error : 'Erro desconhecido');
+                           (typeof error === 'string' ? error : t('admin:coupons.errors.createUnknown'));
         throw new Error(errorMessage);
       }
 
@@ -128,7 +130,7 @@ const CouponManagement: React.FC = () => {
         throw new Error(data.error);
       }
 
-      addToast('Cupom criado com sucesso!', 'success');
+      addToast(t('admin:coupons.success.created'), 'success');
       setIsCreateModalOpen(false);
       setFormData({
         code: '',
@@ -143,7 +145,7 @@ const CouponManagement: React.FC = () => {
       console.error('Error creating coupon:', error);
       
       // Extrair mensagem de erro mais amigável
-      let errorMessage = 'Erro ao criar cupom';
+      let errorMessage = t('admin:coupons.errors.create');
       
       if (error?.message) {
         errorMessage = error.message;
@@ -160,31 +162,31 @@ const CouponManagement: React.FC = () => {
         const errorCode = error.code || error.response?.data?.code;
         switch (errorCode) {
           case 'UNAUTHORIZED':
-            errorMessage = 'Você não está autenticado. Faça login novamente.';
+            errorMessage = t('admin:coupons.errors.unauthorized');
             break;
           case 'FORBIDDEN':
-            errorMessage = 'Você não tem permissão para criar cupons.';
+            errorMessage = t('admin:coupons.errors.forbidden');
             break;
           case 'CODE_ALREADY_EXISTS':
-            errorMessage = errorMessage || 'Este código de cupom já está em uso.';
+            errorMessage = errorMessage || t('admin:coupons.errors.codeExists');
             break;
           case 'INVALID_CODE_LENGTH':
-            errorMessage = 'O código do cupom deve ter entre 3 e 20 caracteres.';
+            errorMessage = t('admin:coupons.errors.invalidCodeLength');
             break;
           case 'INVALID_PLAN':
-            errorMessage = 'Plano inválido. Escolha: basic, pro ou premium.';
+            errorMessage = t('admin:coupons.errors.invalidPlan');
             break;
           case 'INVALID_TRIAL_DAYS':
-            errorMessage = 'Dias de trial devem estar entre 1 e 30.';
+            errorMessage = t('admin:coupons.errors.invalidTrialDays');
             break;
           case 'INVALID_DATE_RANGE':
-            errorMessage = 'A data de término deve ser posterior à data de início.';
+            errorMessage = t('admin:coupons.errors.invalidDateRange');
             break;
           case 'MISSING_FIELDS':
-            errorMessage = 'Preencha todos os campos obrigatórios.';
+            errorMessage = t('admin:coupons.errors.missingFields');
             break;
           case 'DATABASE_ERROR':
-            errorMessage = errorMessage || 'Erro ao salvar no banco de dados. Tente novamente.';
+            errorMessage = errorMessage || t('admin:coupons.errors.databaseError');
             break;
         }
       }
@@ -198,11 +200,11 @@ const CouponManagement: React.FC = () => {
       const { error } = await api.toggleCouponStatus(couponId, !isActive);
       if (error) throw error;
 
-      addToast(`Cupom ${!isActive ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+      addToast(!isActive ? t('admin:coupons.success.activated') : t('admin:coupons.success.deactivated'), 'success');
       fetchCoupons();
     } catch (error: any) {
       console.error('Error toggling coupon:', error);
-      addToast(error.message || 'Erro ao alterar status do cupom', 'error');
+      addToast(error.message || t('admin:coupons.errors.toggle'), 'error');
     }
   };
 
@@ -216,13 +218,13 @@ const CouponManagement: React.FC = () => {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Sem limite';
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    if (!dateString) return t('admin:coupons.table.noLimit');
+    return new Date(dateString).toLocaleDateString(i18n.language || 'pt-BR');
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    addToast('Código copiado!', 'success');
+    addToast(t('admin:coupons.success.copied'), 'success');
   };
 
   if (isLoading) {
@@ -230,7 +232,7 @@ const CouponManagement: React.FC = () => {
       <Card>
         <div className="flex items-center justify-center p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-2">Carregando cupons...</span>
+          <span className="ml-2">{t('common:loading')}</span>
         </div>
       </Card>
     );
@@ -242,17 +244,17 @@ const CouponManagement: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Gestão de Cupons de Trial
+            {t('admin:coupons.title')}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Crie e gerencie cupons promocionais para trials gratuitos
+            {t('admin:coupons.subtitle')}
           </p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
         >
-          + Criar Cupom
+          {t('admin:coupons.createCoupon')}
         </button>
       </div>
 
@@ -261,7 +263,7 @@ const CouponManagement: React.FC = () => {
         <Card className="p-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">{coupons.length}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total de Cupons</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('admin:coupons.cards.total')}</div>
           </div>
         </Card>
         <Card className="p-4">
@@ -269,7 +271,7 @@ const CouponManagement: React.FC = () => {
             <div className="text-2xl font-bold text-green-600">
               {coupons.filter(c => c.is_active).length}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Cupons Ativos</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('admin:coupons.cards.active')}</div>
           </div>
         </Card>
         <Card className="p-4">
@@ -277,7 +279,7 @@ const CouponManagement: React.FC = () => {
             <div className="text-2xl font-bold text-purple-600">
               {coupons.reduce((sum, c) => sum + c.current_uses, 0)}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total de Usos</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('admin:coupons.cards.totalUses')}</div>
           </div>
         </Card>
         <Card className="p-4">
@@ -285,7 +287,7 @@ const CouponManagement: React.FC = () => {
             <div className="text-2xl font-bold text-orange-600">
               {coupons.filter(c => c.max_uses && c.current_uses >= c.max_uses).length}
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Cupons Esgotados</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">{t('admin:coupons.cards.depleted')}</div>
           </div>
         </Card>
       </div>
@@ -293,24 +295,24 @@ const CouponManagement: React.FC = () => {
       {/* Coupons List */}
       <Card>
         <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Cupons Criados</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('admin:coupons.table.title')}</h3>
           
           {coupons.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              Nenhum cupom criado ainda. Clique em "Criar Cupom" para começar.
+              {t('admin:coupons.table.noCoupons')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4">Código</th>
-                    <th className="text-left py-3 px-4">Plano</th>
-                    <th className="text-left py-3 px-4">Dias</th>
-                    <th className="text-left py-3 px-4">Usos</th>
-                    <th className="text-left py-3 px-4">Validade</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                    <th className="text-left py-3 px-4">Ações</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.code')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.plan')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.days')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.uses')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.validity')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.status')}</th>
+                    <th className="text-left py-3 px-4">{t('admin:coupons.table.columns.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -324,7 +326,7 @@ const CouponManagement: React.FC = () => {
                           <button
                             onClick={() => copyToClipboard(coupon.code)}
                             className="text-blue-600 hover:text-blue-800 text-sm"
-                            title="Copiar código"
+                            title={t('admin:coupons.table.copy')}
                           >
                             📋
                           </button>
@@ -335,7 +337,7 @@ const CouponManagement: React.FC = () => {
                           {coupon.plan.toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-3 px-4">{coupon.trial_days} dias</td>
+                      <td className="py-3 px-4">{coupon.trial_days} {t('common:days', { count: coupon.trial_days, defaultValue: 'dias' })}</td>
                       <td className="py-3 px-4">
                         <div className="flex items-center space-x-2">
                           <span>{coupon.current_uses}</span>
@@ -349,7 +351,7 @@ const CouponManagement: React.FC = () => {
                             <button
                               onClick={() => fetchCouponUsages(coupon.id)}
                               className="text-blue-600 hover:text-blue-800 text-sm"
-                              title="Ver detalhes de uso"
+                              title={t('admin:coupons.table.viewUsage')}
                             >
                               👁️
                             </button>
@@ -358,8 +360,8 @@ const CouponManagement: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-sm">
                         <div>
-                          <div>De: {formatDate(coupon.valid_from)}</div>
-                          <div>Até: {formatDate(coupon.valid_until)}</div>
+                          <div>{t('admin:coupons.table.from', { date: formatDate(coupon.valid_from) })}</div>
+                          <div>{t('admin:coupons.table.to', { date: formatDate(coupon.valid_until) })}</div>
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -368,7 +370,7 @@ const CouponManagement: React.FC = () => {
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
-                          {coupon.is_active ? 'Ativo' : 'Inativo'}
+                          {coupon.is_active ? t('admin:coupons.table.active') : t('admin:coupons.table.inactive')}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -381,7 +383,7 @@ const CouponManagement: React.FC = () => {
                                 : 'bg-green-100 text-green-700 hover:bg-green-200'
                             }`}
                           >
-                            {coupon.is_active ? 'Desativar' : 'Ativar'}
+                            {coupon.is_active ? t('admin:coupons.table.deactivate') : t('admin:coupons.table.activate')}
                           </button>
                         </div>
                       </td>
@@ -398,25 +400,25 @@ const CouponManagement: React.FC = () => {
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Criar Novo Cupom</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('admin:coupons.createModal.title')}</h3>
             
             <form onSubmit={handleCreateCoupon} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Código do Cupom</label>
+                <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.code')}</label>
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-                    placeholder="Ex: PROMO2026"
+                    placeholder={t('admin:coupons.createModal.codePlaceholder')}
                     maxLength={20}
                   />
                   <button
                     type="button"
                     onClick={generateRandomCode}
                     className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-md transition-colors"
-                    title="Gerar código aleatório"
+                    title={t('admin:coupons.createModal.generateRandom')}
                   >
                     🎲
                   </button>
@@ -424,7 +426,7 @@ const CouponManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Plano</label>
+                <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.plan')}</label>
                 <select
                   value={formData.plan}
                   onChange={(e) => setFormData(prev => ({ ...prev, plan: e.target.value as any }))}
@@ -437,7 +439,7 @@ const CouponManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Dias de Trial (1-30)</label>
+                <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.trialDays')}</label>
                 <input
                   type="number"
                   min="1"
@@ -449,7 +451,7 @@ const CouponManagement: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Limite de Usos (opcional)</label>
+                <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.usageLimit')}</label>
                 <input
                   type="number"
                   min="1"
@@ -459,13 +461,13 @@ const CouponManagement: React.FC = () => {
                     max_uses: e.target.value ? parseInt(e.target.value) : null 
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-                  placeholder="Deixe vazio para ilimitado"
+                  placeholder={t('admin:coupons.createModal.usageLimitPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Válido de (opcional)</label>
+                  <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.validFrom')}</label>
                   <input
                     type="date"
                     value={formData.valid_from}
@@ -474,7 +476,7 @@ const CouponManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Válido até (opcional)</label>
+                  <label className="block text-sm font-medium mb-1">{t('admin:coupons.createModal.validUntil')}</label>
                   <input
                     type="date"
                     value={formData.valid_until}
@@ -490,13 +492,13 @@ const CouponManagement: React.FC = () => {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
-                  Cancelar
+                  {t('admin:coupons.createModal.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
-                  Criar Cupom
+                  {t('admin:coupons.createModal.submit')}
                 </button>
               </div>
             </form>
@@ -509,7 +511,7 @@ const CouponManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Detalhes de Uso - {selectedCoupon.code}</h3>
+              <h3 className="text-lg font-semibold">{t('admin:coupons.usageModal.title', { code: selectedCoupon.code })}</h3>
               <button
                 onClick={() => setIsUsageModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -520,7 +522,7 @@ const CouponManagement: React.FC = () => {
             
             {couponUsages.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                Nenhum uso registrado ainda.
+                {t('admin:coupons.usageModal.noUsage')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -528,14 +530,14 @@ const CouponManagement: React.FC = () => {
                   <div key={usage.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-medium">{usage.profiles?.username || 'Usuário'}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">{usage.profiles?.email || 'Email não disponível'}</div>
+                        <div className="font-medium">{usage.profiles?.username || t('admin:coupons.usageModal.user')}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">{usage.profiles?.email || t('admin:coupons.usageModal.emailNotAvailable')}</div>
                         <div className="text-sm text-gray-500">
-                          Plano: {usage.plan_activated.toUpperCase()} • {usage.trial_days_granted} dias
+                          {t('admin:coupons.usageModal.planDetails', { plan: usage.plan_activated.toUpperCase(), days: usage.trial_days_granted })}
                         </div>
                       </div>
                       <div className="text-sm text-gray-500">
-                        {new Date(usage.used_at).toLocaleString('pt-BR')}
+                        {new Date(usage.used_at).toLocaleString(i18n.language || 'pt-BR')}
                       </div>
                     </div>
                   </div>
