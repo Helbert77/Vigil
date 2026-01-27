@@ -2412,7 +2412,7 @@ export const fetchShowSupportButton = async (userId: string): Promise<boolean> =
 /**
  * Buscar métricas agregadas de anúncios do usuário
  */
-export const fetchUserAdMetrics = async (userId: string, daysInterval: number = 7): Promise<{
+export const fetchUserAdMetrics = async (userId: string, daysInterval: number = 7, includeAllTime: boolean = true): Promise<{
   total_impressions: number;
   total_clicks: number;
   total_likes: number;
@@ -2424,11 +2424,12 @@ export const fetchUserAdMetrics = async (userId: string, daysInterval: number = 
 }> => {
   const { data, error } = await supabase.rpc('get_user_ad_metrics', {
     p_user_id: userId,
-    p_days_interval: daysInterval
+    p_days_interval: daysInterval,
+    p_include_all_time: includeAllTime
   });
 
   if (error) {
-    handleApiError(error, 'fetchUserAdMetrics', { userId, daysInterval });
+    handleApiError(error, 'fetchUserAdMetrics', { userId, daysInterval, includeAllTime });
     // Retornar valores zerados em caso de erro
     return {
       total_impressions: 0,
@@ -2457,7 +2458,7 @@ export const fetchUserAdMetrics = async (userId: string, daysInterval: number = 
 /**
  * Buscar métricas diárias para gráficos
  */
-export const fetchDailyAdMetrics = async (userId: string, daysInterval: number = 7): Promise<Array<{
+export const fetchDailyAdMetrics = async (userId: string, daysInterval: number = 7, includeAllTime: boolean = true): Promise<Array<{
   date: string;
   impressions: number;
   clicks: number;
@@ -2465,11 +2466,12 @@ export const fetchDailyAdMetrics = async (userId: string, daysInterval: number =
 }>> => {
   const { data, error } = await supabase.rpc('get_daily_ad_metrics', {
     p_user_id: userId,
-    p_days_interval: daysInterval
+    p_days_interval: daysInterval,
+    p_include_all_time: includeAllTime
   });
 
   if (error) {
-    handleApiError(error, 'fetchDailyAdMetrics', { userId, daysInterval });
+    handleApiError(error, 'fetchDailyAdMetrics', { userId, daysInterval, includeAllTime });
     return [];
   }
 
@@ -2485,9 +2487,11 @@ export const fetchDailyAdMetrics = async (userId: string, daysInterval: number =
 /**
  * Buscar performance individual de cada anúncio
  */
-export const fetchAdsPerformance = async (userId: string, daysInterval: number = 7): Promise<Array<{
+export const fetchAdsPerformance = async (userId: string, daysInterval: number = 7, includeAllTime: boolean = true): Promise<Array<{
   id: string;
   title: string;
+  imageUrl?: string;
+  status: string;
   impressions: number;
   clicks: number;
   engagement: number;
@@ -2497,17 +2501,20 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
 }>> => {
   const { data, error } = await supabase.rpc('get_ads_performance', {
     p_user_id: userId,
-    p_days_interval: daysInterval
+    p_days_interval: daysInterval,
+    p_include_all_time: includeAllTime
   });
 
   if (error) {
-    handleApiError(error, 'fetchAdsPerformance', { userId, daysInterval });
+    handleApiError(error, 'fetchAdsPerformance', { userId, daysInterval, includeAllTime });
     return [];
   }
 
   return (data || []).map((item: any) => ({
     id: item.ad_id,
     title: item.ad_title || 'Sem título',
+    imageUrl: item.ad_image_url,
+    status: item.ad_status || 'active',
     impressions: Number(item.impressions) || 0,
     clicks: Number(item.clicks) || 0,
     engagement: Number(item.engagement) || 0,

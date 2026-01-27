@@ -52,6 +52,14 @@
       "rejected": "Rejected"
     }
   },
+  "status": {
+    "active": "Active",
+    "paused": "Paused",
+    "ended": "Ended",
+    "completed": "Completed",
+    "rejected": "Rejected",
+    "pending": "Pending"
+  },
   "create": {
     "title": "Create Ad",
     "adTitle": "Ad Title",
@@ -223,13 +231,15 @@
   },
   "table": {
     "ad": "Ad",
+    "image": "Image",
     "status": "Status",
     "impressions": "Impressions",
     "clicks": "Clicks",
     "ctr": "CTR",
     "spent": "Spent",
     "actions": "Actions",
-    "viewReport": "View Report"
+    "viewReport": "View Report",
+    "noImage": "No image"
   },
   "charts": {
     "dailyPerformance": "Daily Performance",

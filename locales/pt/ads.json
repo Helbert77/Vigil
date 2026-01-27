@@ -52,6 +52,14 @@
       "rejected": "Rejeitado"
     }
   },
+  "status": {
+    "active": "Ativo",
+    "paused": "Pausado",
+    "ended": "Encerrado",
+    "completed": "Concluído",
+    "rejected": "Rejeitado",
+    "pending": "Pendente"
+  },
   "create": {
     "title": "Criar Anúncio",
     "adTitle": "Título do Anúncio",
@@ -223,13 +231,15 @@
   },
   "table": {
     "ad": "Anúncio",
+    "image": "Imagem",
     "status": "Status",
     "impressions": "Impressões",
     "clicks": "Cliques",
     "ctr": "CTR",
     "spent": "Gasto",
     "actions": "Ações",
-    "viewReport": "Ver Relatório"
+    "viewReport": "Ver Relatório",
+    "noImage": "Sem imagem"
   },
   "charts": {
     "dailyPerformance": "Performance Diária",

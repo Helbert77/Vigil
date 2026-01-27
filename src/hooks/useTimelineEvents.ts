@@ -19,9 +19,11 @@ export const useTimelineEvents = () => {
       const formattedEvents: TimelineEvent[] = data.map((event: any) => ({
         id: event.id,
         title: event.title,
+        title_en: event.title_en,
         year: event.year,
         category: event.category,
         description: event.description,
+        description_en: event.description_en,
         country: event.country,
         parent_id: event.parent_id,
         x_position: event.x_position || 0,

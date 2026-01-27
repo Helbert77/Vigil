@@ -31,10 +31,26 @@ const CATEGORY_COLORS = {
 };
 
 const Timeline: React.FC = () => {
-  const { t } = useTranslation(['timeline', 'common']);
+  const { t, i18n } = useTranslation(['timeline', 'common']);
   const { events, loading, error, refetch } = useTimelineEvents();
   const { user: appUser } = useSession();
   const { addToast } = useToast();
+  
+  // Função para obter o título traduzido
+  const getEventTitle = useCallback((event: TimelineEvent) => {
+    if (i18n.language === 'en' && event.title_en) {
+      return event.title_en;
+    }
+    return event.title;
+  }, [i18n.language]);
+  
+  // Função para obter a descrição traduzida
+  const getEventDescription = useCallback((event: TimelineEvent) => {
+    if (i18n.language === 'en' && event.description_en) {
+      return event.description_en;
+    }
+    return event.description;
+  }, [i18n.language]);
   
   const CATEGORY_LABELS = {
     politics: t('timeline:categories.politics'),
@@ -96,10 +112,12 @@ const Timeline: React.FC = () => {
     // Filtrar por busca
     if (searchQuery.trim()) {
       const lowerQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(event =>
-        event.title.toLowerCase().includes(lowerQuery) ||
-        (event.description?.toLowerCase().includes(lowerQuery) || false)
-      );
+      filtered = filtered.filter(event => {
+        const title = getEventTitle(event);
+        const description = getEventDescription(event);
+        return title.toLowerCase().includes(lowerQuery) ||
+          (description?.toLowerCase().includes(lowerQuery) || false);
+      });
     }
 
     // Ordenar por ano (year field é sempre confiável)
@@ -371,7 +389,7 @@ const Timeline: React.FC = () => {
                           >
                             <div className="w-full h-full rounded-full bg-cyan-50 dark:bg-dark-bg flex flex-col items-center justify-center text-center p-2 overflow-hidden">
                               <span className="text-lg font-bold text-cyan-400">{formatYear(event.year)}</span>
-                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-1 line-clamp-2">{event.title}</h3>
+                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-1 line-clamp-2">{getEventTitle(event)}</h3>
                             </div>
                           </div>
                         </div>
@@ -382,7 +400,7 @@ const Timeline: React.FC = () => {
                             <div className="w-32 h-32 rounded-lg overflow-hidden shadow-lg border border-light-border dark:border-dark-border cursor-pointer hover:animate-pulse-glow transition-all duration-300" onClick={() => setSelectedEvent(event)}>
                               <img
                                 src={event.image_url}
-                                alt={event.title}
+                                alt={getEventTitle(event)}
                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                               />
                             </div>
@@ -409,7 +427,7 @@ const Timeline: React.FC = () => {
                             <div className="w-32 h-32 rounded-lg overflow-hidden shadow-lg border border-light-border dark:border-dark-border cursor-pointer hover:animate-pulse-glow transition-all duration-300" onClick={() => setSelectedEvent(event)}>
                               <img
                                 src={event.image_url}
-                                alt={event.title}
+                                alt={getEventTitle(event)}
                                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                               />
                             </div>
@@ -436,7 +454,7 @@ const Timeline: React.FC = () => {
                           >
                             <div className="w-full h-full rounded-full bg-cyan-50 dark:bg-dark-bg flex flex-col items-center justify-center text-center p-2 overflow-hidden">
                               <span className="text-lg font-bold text-cyan-400">{formatYear(event.year)}</span>
-                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-1 line-clamp-2">{event.title}</h3>
+                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-1 line-clamp-2">{getEventTitle(event)}</h3>
                             </div>
                           </div>
                         </div>
@@ -469,7 +487,7 @@ const Timeline: React.FC = () => {
                           >
                             <div className="w-full h-full rounded-full bg-cyan-50 dark:bg-dark-bg flex flex-col items-center justify-center text-center p-2 overflow-hidden">
                               <span className="text-3xl font-bold text-cyan-400">{formatYear(event.year)}</span>
-                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-2 line-clamp-3">{event.title}</h3>
+                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-2 line-clamp-3">{getEventTitle(event)}</h3>
                             </div>
                           </div>
                         </div>
@@ -490,12 +508,12 @@ const Timeline: React.FC = () => {
                               <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-2xl border-2 border-light-border dark:border-dark-border">
                                 <img 
                                   src={event.image_url} 
-                                  alt={event.title} 
+                                  alt={getEventTitle(event)} 
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    <p className="text-white font-bold text-sm line-clamp-2">{event.title}</p>
+                                    <p className="text-white font-bold text-sm line-clamp-2">{getEventTitle(event)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -524,12 +542,12 @@ const Timeline: React.FC = () => {
                               <div className="relative w-full h-64 rounded-xl overflow-hidden shadow-2xl border-2 border-light-border dark:border-dark-border">
                                 <img
                                   src={event.image_url}
-                                  alt={event.title}
+                                  alt={getEventTitle(event)}
                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    <p className="text-white font-bold text-sm line-clamp-2">{event.title}</p>
+                                    <p className="text-white font-bold text-sm line-clamp-2">{getEventTitle(event)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -555,7 +573,7 @@ const Timeline: React.FC = () => {
                           >
                             <div className="w-full h-full rounded-full bg-cyan-50 dark:bg-dark-bg flex flex-col items-center justify-center text-center p-2 overflow-hidden">
                               <span className="text-3xl font-bold text-cyan-400">{formatYear(event.year)}</span>
-                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-2 line-clamp-3">{event.title}</h3>
+                              <h3 className="text-xs font-bold text-gray-800 dark:text-white mt-2 line-clamp-3">{getEventTitle(event)}</h3>
                             </div>
                           </div>
                         </div>
@@ -597,7 +615,7 @@ const Timeline: React.FC = () => {
           <div className="bg-light-card dark:bg-dark-card rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-light-border dark:border-dark-border shadow-2xl">
             <div className="sticky top-0 bg-light-card/80 dark:bg-dark-card/80 backdrop-blur-enhanced border-b border-light-border dark:border-dark-border p-6 flex items-start justify-between z-10">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{selectedEvent.title}</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{getEventTitle(selectedEvent)}</h2>
                 <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm">
                   <span className="text-cyan-400 font-semibold">{formatYear(selectedEvent.year)}</span>
                   <span className="text-gray-500 dark:text-slate-400">
@@ -616,7 +634,7 @@ const Timeline: React.FC = () => {
             <div className="p-6 space-y-6 overflow-y-auto modal-content">
               {selectedEvent.image_url && (
                 <div className="w-full h-64 rounded-lg overflow-hidden mb-4 border border-light-border dark:border-dark-border shadow-lg cursor-pointer" onClick={() => { setFullScreenImageUrl(selectedEvent.image_url!); setIsImageModalOpen(true); }}>
-                  <img src={selectedEvent.image_url} alt={selectedEvent.title} className="w-full h-full object-cover" />
+                  <img src={selectedEvent.image_url} alt={getEventTitle(selectedEvent)} className="w-full h-full object-cover" />
                 </div>
               )}
               {selectedEvent.country && (
@@ -625,14 +643,14 @@ const Timeline: React.FC = () => {
                   <span className="text-gray-700 dark:text-slate-300">{selectedEvent.country}</span>
                 </div>
               )}
-              {selectedEvent.description && (
+              {getEventDescription(selectedEvent) && (
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-white">
                     <InfoIcon />
                     {t('timeline:descriptionLabel')}
                   </h3>
                   <p className="text-gray-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    {selectedEvent.description}
+                    {getEventDescription(selectedEvent)}
                   </p>
                 </div>
               )}

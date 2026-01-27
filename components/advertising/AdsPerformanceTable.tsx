@@ -10,6 +10,8 @@ const HeartIcon = () => <Icon className="h-4 w-4"><path d="M20.84 4.61a5.5 5.5 0
 interface AdPerformance {
   id: string;
   title: string;
+  imageUrl?: string;
+  status: string;
   impressions: number;
   clicks: number;
   engagement: number;
@@ -30,6 +32,40 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
   onViewDetails 
 }) => {
   const { t } = useTranslation(['ads', 'common']);
+  
+  // Função para renderizar badge de status
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      active: {
+        label: t('ads:status.active'),
+        className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      },
+      paused: {
+        label: t('ads:status.paused'),
+        className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      },
+      ended: {
+        label: t('ads:status.ended'),
+        className: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+      },
+      completed: {
+        label: t('ads:status.completed'),
+        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+      },
+      rejected: {
+        label: t('ads:status.rejected'),
+        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
   
   if (isLoading) {
     return (
@@ -65,7 +101,13 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
           <thead>
             <tr className="border-b border-light-border dark:border-dark-border">
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('ads:table.image')}
+              </th>
+              <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('ads:create.adTitle')}
+              </th>
+              <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('ads:table.status')}
               </th>
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 <div className="flex items-center justify-center gap-1">
@@ -94,9 +136,6 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
               <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {t('ads:metrics.avgCpc')}
               </th>
-              <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {t('common:actions')}
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -106,9 +145,27 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                 className="border-b border-light-border dark:border-dark-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <td className="py-3 px-4">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                    {ad.imageUrl ? (
+                      <img 
+                        src={ad.imageUrl} 
+                        alt={ad.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">
+                        {t('ads:table.noImage')}
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-4">
                   <p className="font-medium text-gray-900 dark:text-white truncate max-w-xs">
                     {ad.title}
                   </p>
+                </td>
+                <td className="py-3 px-4 text-center">
+                  {getStatusBadge(ad.status)}
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
                   {formatNumber(ad.impressions)}
@@ -133,16 +190,6 @@ const AdsPerformanceTable: React.FC<AdsPerformanceTableProps> = ({
                 </td>
                 <td className="py-3 px-4 text-center text-gray-700 dark:text-gray-300">
                   {formatCurrency(ad.cpc)}
-                </td>
-                <td className="py-3 px-4 text-center">
-                  {onViewDetails && (
-                    <button
-                      onClick={() => onViewDetails(ad.id)}
-                      className="text-primary hover:text-secondary text-sm font-medium transition-colors"
-                    >
-                      {t('ads:table.viewReport')}
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}

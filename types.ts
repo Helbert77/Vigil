@@ -149,9 +149,11 @@ export interface Community {
 export interface TimelineEvent {
   id: string;
   title: string;
+  title_en?: string;
   year: number;
   category: 'politics' | 'science' | 'health' | 'religion' | 'technology' | 'society';
   description?: string;
+  description_en?: string;
   country?: string;
   parent_id?: string;
   x_position: number;
