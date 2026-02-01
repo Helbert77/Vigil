@@ -20,8 +20,15 @@ interface LibraryItemCardProps {
 }
 
 const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onClick }) => {
-  const { t } = useTranslation(['library']);
+  const { t, i18n } = useTranslation(['library']);
   const [imageError, setImageError] = useState(false);
+  
+  const getDescription = () => {
+    if (i18n.language === 'en' && item.description_en) {
+      return item.description_en;
+    }
+    return item.description;
+  };
   
   // Gera thumbnail para documentos se necessário
   const coverImageUrl = useMemo(() => {
@@ -132,9 +139,9 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
               </span>
             </div>
 
-            {item.description && (
+            {getDescription() && (
               <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-3">
-                {item.description}
+                {getDescription()}
               </p>
             )}
 
@@ -265,9 +272,9 @@ const LibraryItemCard: React.FC<LibraryItemCardProps> = ({ item, viewMode, onCli
       </p>
 
       {/* Description */}
-      {item.description && (
+      {getDescription() && (
         <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 mb-4">
-          {item.description}
+          {getDescription()}
         </p>
       )}
 

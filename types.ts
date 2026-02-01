@@ -210,6 +210,7 @@ export interface LibraryItem {
   title: string;
   author: string;
   description?: string;
+  description_en?: string;
   cover_url?: string;
   file_url?: string;
   date: string;

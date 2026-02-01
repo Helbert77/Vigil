@@ -80,7 +80,7 @@ const Saved: React.FC<SavedProps> = ({ posts, savedPostIds, onUpdatePost, onTogg
                   onToggleSave={toggleAdSave}
                   onHideAd={hideAd}
                   onIncrementShares={incrementAdShares}
-                  onIncrementViews={incrementAdViews}
+                  onIncrementViews={(adId) => {}}
                 />
               );
             } else {

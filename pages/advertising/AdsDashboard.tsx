@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { User } from '@/types';
 import { useToast } from '@/hooks/useToast';
 import * as api from '@/src/services/api';
@@ -33,37 +33,57 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
   const [dailyMetrics, setDailyMetrics] = useState<any[]>([]);
   const [adsPerformance, setAdsPerformance] = useState<any[]>([]);
 
+  // Ref para cancelar requisições anteriores
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   // Buscar todas as métricas
-  const fetchAllMetrics = async () => {
+  const fetchAllMetrics = useCallback(async () => {
+    // Cancelar requisição anterior se existir
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setIsLoading(true);
     try {
-      // Buscar métricas agregadas
-      const aggregated = await api.fetchUserAdMetrics(user.id, timeframe);
+      // Buscar todas as métricas em paralelo (includeAllTime = false para respeitar timeframe)
+      const [aggregated, daily, performance] = await Promise.all([
+        api.fetchUserAdMetrics(user.id, timeframe, false),
+        api.fetchDailyAdMetrics(user.id, timeframe, false),
+        api.fetchAdsPerformance(user.id, timeframe, false)
+      ]);
+
       setAggregatedMetrics(aggregated);
-
-      // Buscar métricas diárias para o gráfico
-      const daily = await api.fetchDailyAdMetrics(user.id, timeframe);
       setDailyMetrics(daily);
-
-      // Buscar performance individual dos anúncios
-      const performance = await api.fetchAdsPerformance(user.id, timeframe);
       setAdsPerformance(performance);
 
-    } catch (error) {
+    } catch (error: any) {
+      // Ignorar erro de abort
+      if (error?.name === 'AbortError') return;
       console.error('Erro ao carregar métricas:', error);
       addToast(t('common:error'), 'error');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user.id, timeframe, addToast, t]);
 
   useEffect(() => {
     fetchAllMetrics();
-  }, [timeframe, user.id]);
+    // Resetar seleção de anúncio quando timeframe muda
+    setSelectedAdId('all');
+
+    return () => {
+      // Cleanup: cancelar requisição ao desmontar
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchAllMetrics]);
 
   // Filtrar métricas baseado no anúncio selecionado
   const filteredMetrics = React.useMemo(() => {
     if (selectedAdId === 'all') {
+      // Para "todos os anúncios", usar os dados agregados corretamente
       return {
         aggregated: aggregatedMetrics,
         daily: dailyMetrics,
@@ -83,29 +103,39 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
     }
 
     // Criar métricas agregadas apenas para o anúncio selecionado
+    // Usar os dados do próprio anúncio que já foram calculados corretamente pela função SQL
+    // Agora likes, shares e saves vêm diretamente do adsPerformance
     const filteredAggregated = {
-      total_impressions: selectedAd.impressions,
-      total_clicks: selectedAd.clicks,
-      total_engagement: selectedAd.engagement,
-      total_likes: 0, // Não temos esse detalhe por anúncio nas métricas atuais
-      total_shares: 0,
-      total_saves: 0,
-      ctr: selectedAd.ctr,
+      total_impressions: selectedAd.impressions || 0,
+      total_clicks: selectedAd.clicks || 0,
+      total_engagement: selectedAd.engagement || 0,
+      total_likes: selectedAd.likes || 0,
+      total_shares: selectedAd.shares || 0,
+      total_saves: selectedAd.saves || 0,
+      ctr: selectedAd.ctr || 0,
       engagement_rate: selectedAd.impressions > 0 
-        ? ((selectedAd.engagement / selectedAd.impressions) * 100).toFixed(2)
+        ? Number(((selectedAd.engagement / selectedAd.impressions) * 100).toFixed(2))
         : 0
     };
 
     // Filtrar métricas diárias para o anúncio selecionado
     // Como não temos métricas diárias por anúncio específico da API,
     // vamos criar uma distribuição proporcional baseada nas métricas do anúncio
+    // Somente se houver dados agregados totais para calcular proporção
+    const totalImpressions = aggregatedMetrics?.total_impressions || 0;
     const filteredDaily = dailyMetrics.map(day => {
-      if (!aggregatedMetrics || aggregatedMetrics.total_impressions === 0) {
-        return day;
+      if (totalImpressions === 0 || selectedAd.impressions === 0) {
+        // Se não há métricas, retornar zeros para manter consistência do gráfico
+        return {
+          date: day.date,
+          impressions: 0,
+          clicks: 0,
+          engagement: 0
+        };
       }
       
       // Calcular proporção deste anúncio no total
-      const adProportion = selectedAd.impressions / aggregatedMetrics.total_impressions;
+      const adProportion = selectedAd.impressions / totalImpressions;
       
       return {
         date: day.date,
@@ -123,7 +153,7 @@ const AdsDashboard: React.FC<AdsDashboardProps> = ({ user }) => {
       daily: filteredDaily,
       performance: filteredPerformance
     };
-  }, [selectedAdId, aggregatedMetrics, dailyMetrics, adsPerformance]);
+  }, [selectedAdId, aggregatedMetrics, dailyMetrics, adsPerformance, timeframe]);
 
   // Calcular custo total e CPC médio baseado nas métricas filtradas
   const totalCost = filteredMetrics.performance.reduce((sum, ad) => sum + ad.cost, 0);

@@ -51,6 +51,13 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
     type: item.type
   });
 
+  const getDescription = () => {
+    if (i18n.language === 'en' && item.description_en) {
+      return item.description_en;
+    }
+    return item.description;
+  };
+
   const isAdmin = user.role === 'admin' || user.role === 'moderator';
   const isCreator = item.created_by === user.id;
   const canEdit = isAdmin || isCreator;
@@ -345,11 +352,11 @@ const LibraryItemModal: React.FC<LibraryItemModalProps> = ({
               {/* Description */}
               {!isEditing ? (
                 <>
-                  {item.description && (
+                  {getDescription() && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('library:description')}</h3>
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {item.description}
+                        {getDescription()}
                       </p>
                     </div>
                   )}

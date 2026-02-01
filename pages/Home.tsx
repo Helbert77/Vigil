@@ -102,7 +102,7 @@ const Home: React.FC<HomeProps> = ({ posts, onAddPost, onUpdatePost, savedPostId
                 onToggleSave={toggleAdSave}
                 onHideAd={hideAd}
                 onIncrementShares={incrementAdShares}
-                onIncrementViews={incrementAdViews}
+                onIncrementViews={updateAdViews}
                 onViewAd={onViewAd}
               />
             );

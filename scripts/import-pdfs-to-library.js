@@ -40,6 +40,7 @@ const bookMetadata = {
     title: '1984',
     author: 'George Orwell',
     description: 'Romance distópico sobre um regime totalitário que controla todos os aspectos da vida através da vigilância constante e manipulação da verdade.',
+    description_en: 'Dystopian novel about a totalitarian regime that controls every aspect of life through constant surveillance and manipulation of truth.',
     tags: ['distopia', 'totalitarismo', 'vigilância', 'controle social', 'ficção'],
     published_date: '1949-06-08'
   },
@@ -47,6 +48,7 @@ const bookMetadata = {
     title: 'A Escada para o Céu',
     author: 'Zecharia Sitchin',
     description: 'Segundo livro das Crônicas da Terra, explora as conexões entre os deuses antigos e as estruturas monumentais ao redor do mundo.',
+    description_en: 'Second book of The Earth Chronicles, explores the connections between ancient gods and monumental structures around the world.',
     tags: ['história alternativa', 'anunnaki', 'civilizações antigas', 'arqueologia', 'mistérios'],
     published_date: '1980-01-01'
   },
@@ -54,6 +56,7 @@ const bookMetadata = {
     title: 'A História Está Errada',
     author: 'Erich von Däniken',
     description: 'Questiona a narrativa histórica oficial apresentando evidências de tecnologias avançadas em civilizações antigas.',
+    description_en: 'Challenges the official historical narrative by presenting evidence of advanced technologies in ancient civilizations.',
     tags: ['história alternativa', 'civilizações antigas', 'tecnologia antiga', 'mistérios', 'arqueologia'],
     published_date: '2009-01-01'
   },
@@ -61,6 +64,7 @@ const bookMetadata = {
     title: 'Deuses, Espaçonaves e Terra',
     author: 'Erich von Däniken',
     description: 'Explora a teoria dos astronautas antigos e as evidências de visitação extraterrestre na antiguidade.',
+    description_en: 'Explores the ancient astronaut theory and evidence of extraterrestrial visitation in antiquity.',
     tags: ['astronautas antigos', 'extraterrestres', 'civilizações antigas', 'mistérios', 'história alternativa'],
     published_date: '1972-01-01'
   },
@@ -68,6 +72,7 @@ const bookMetadata = {
     title: 'Eram os Deuses Astronautas?',
     author: 'Erich von Däniken',
     description: 'Obra pioneira que propõe que os deuses das antigas mitologias eram na verdade visitantes extraterrestres.',
+    description_en: 'Pioneering work proposing that the gods of ancient mythologies were actually extraterrestrial visitors.',
     tags: ['astronautas antigos', 'extraterrestres', 'mitologia', 'civilizações antigas', 'história alternativa'],
     published_date: '1968-01-01'
   },
@@ -75,6 +80,7 @@ const bookMetadata = {
     title: 'Havia Gigantes na Terra',
     author: 'Zecharia Sitchin',
     description: 'Explora as evidências de seres gigantes mencionados em textos antigos e sua conexão com os Anunnaki.',
+    description_en: 'Explores evidence of giant beings mentioned in ancient texts and their connection to the Anunnaki.',
     tags: ['gigantes', 'anunnaki', 'história alternativa', 'civilizações antigas', 'mitologia'],
     published_date: '2010-01-01'
   },
@@ -82,6 +88,7 @@ const bookMetadata = {
     title: 'O 12º Planeta',
     author: 'Zecharia Sitchin',
     description: 'Primeiro livro das Crônicas da Terra, apresenta a teoria de Nibiru e os Anunnaki como criadores da humanidade.',
+    description_en: 'First book of The Earth Chronicles, introducing the theory of Nibiru and the Anunnaki as the creators of humanity.',
     tags: ['nibiru', 'anunnaki', 'história alternativa', 'civilizações antigas', 'suméria'],
     published_date: '1976-01-01'
   },
@@ -89,6 +96,7 @@ const bookMetadata = {
     title: 'O Livro Perdido de Enki',
     author: 'Zecharia Sitchin',
     description: 'Narrativa em primeira pessoa de Enki, líder Anunnaki, contando a história da criação da humanidade.',
+    description_en: 'First-person narrative by Enki, Anunnaki leader, telling the story of humanity\'s creation.',
     tags: ['enki', 'anunnaki', 'história alternativa', 'civilizações antigas', 'suméria', 'mitologia'],
     published_date: '2002-01-01'
   },
@@ -96,6 +104,7 @@ const bookMetadata = {
     title: 'Os Reinos Perdidos: As Evidências dos Gigantes',
     author: 'Zecharia Sitchin',
     description: 'Investiga as evidências arqueológicas de civilizações perdidas e a presença de gigantes na Terra.',
+    description_en: 'Investigates archaeological evidence of lost civilizations and the presence of giants on Earth.',
     tags: ['gigantes', 'civilizações perdidas', 'arqueologia', 'história alternativa', 'mistérios'],
     published_date: '1990-01-01'
   },
@@ -103,6 +112,7 @@ const bookMetadata = {
     title: 'Tartaria',
     author: 'Vários Autores',
     description: 'Compilação sobre o império perdido de Tartaria e as evidências de sua existência apagada da história oficial.',
+    description_en: 'Compilation on the lost empire of Tartaria and evidence of its existence erased from official history.',
     tags: ['tartaria', 'história alternativa', 'civilizações perdidas', 'conspiração', 'reset civilizacional'],
     published_date: '2020-01-01'
   },
@@ -110,6 +120,7 @@ const bookMetadata = {
     title: 'The 12th Planet (Book I)',
     author: 'Zecharia Sitchin',
     description: 'Original em inglês do primeiro livro das Crônicas da Terra sobre Nibiru e os Anunnaki.',
+    description_en: 'English original of the first book of The Earth Chronicles about Nibiru and the Anunnaki.',
     tags: ['nibiru', 'anunnaki', 'alternative history', 'ancient civilizations', 'sumeria'],
     published_date: '1976-01-01'
   },
@@ -117,6 +128,7 @@ const bookMetadata = {
     title: 'The Chemtrail Conspiracy Set',
     author: 'Vários Autores',
     description: 'Compilação de documentos e evidências sobre chemtrails e geoengenharia.',
+    description_en: 'Compilation of documents and evidence regarding chemtrails and geoengineering.',
     tags: ['chemtrails', 'geoengenharia', 'conspiração', 'controle climático', 'saúde'],
     published_date: '2015-01-01'
   },
@@ -124,6 +136,7 @@ const bookMetadata = {
     title: 'The End of Days - Armageddon and Prophecies of the Return',
     author: 'Zecharia Sitchin',
     description: 'Último livro das Crônicas da Terra, explora profecias antigas sobre o retorno dos Anunnaki.',
+    description_en: 'Final book of The Earth Chronicles, exploring ancient prophecies about the return of the Anunnaki.',
     tags: ['profecias', 'anunnaki', 'apocalipse', 'história alternativa', 'fim dos tempos'],
     published_date: '2007-01-01'
   },
@@ -131,6 +144,7 @@ const bookMetadata = {
     title: 'The Gods Were Astronauts - Evidence of the True Identities',
     author: 'Erich von Däniken',
     description: 'Evidências que suportam a teoria de que os deuses antigos eram astronautas extraterrestres.',
+    description_en: 'Evidence supporting the theory that ancient gods were extraterrestrial astronauts.',
     tags: ['ancient astronauts', 'extraterrestrials', 'alternative history', 'mythology', 'evidence'],
     published_date: '2001-01-01'
   },
@@ -138,6 +152,7 @@ const bookMetadata = {
     title: 'The Gold of The Gods',
     author: 'Erich von Däniken',
     description: 'Explora túneis subterrâneos na América do Sul e artefatos que desafiam a história convencional.',
+    description_en: 'Explores underground tunnels in South America and artifacts that challenge conventional history.',
     tags: ['túneis', 'ouro', 'américa do sul', 'arqueologia', 'mistérios'],
     published_date: '1973-01-01'
   },
@@ -145,6 +160,7 @@ const bookMetadata = {
     title: 'The Lost Book of Enki',
     author: 'Zecharia Sitchin',
     description: 'Versão em inglês do relato de Enki sobre a criação da humanidade e a história dos Anunnaki.',
+    description_en: 'English version of Enki\'s account of the creation of humanity and the history of the Anunnaki.',
     tags: ['enki', 'anunnaki', 'alternative history', 'ancient civilizations', 'sumeria', 'mythology'],
     published_date: '2002-01-01'
   },
@@ -152,6 +168,7 @@ const bookMetadata = {
     title: 'The Lost Empire of Tartaria',
     author: 'Various Authors',
     description: 'Investigação sobre o império perdido de Tartaria e as evidências de sua supressão histórica.',
+    description_en: 'Investigation into the lost empire of Tartaria and evidence of its historical suppression.',
     tags: ['tartaria', 'alternative history', 'lost civilizations', 'conspiracy', 'reset'],
     published_date: '2019-01-01'
   },
@@ -159,6 +176,7 @@ const bookMetadata = {
     title: 'The Stairway to Heaven - Book II of the Earth Chronicles',
     author: 'Zecharia Sitchin',
     description: 'Versão em inglês do segundo livro das Crônicas da Terra sobre estruturas monumentais antigas.',
+    description_en: 'English version of the second book of The Earth Chronicles about ancient monumental structures.',
     tags: ['earth chronicles', 'anunnaki', 'ancient structures', 'alternative history', 'pyramids'],
     published_date: '1980-01-01'
   }
@@ -224,6 +242,7 @@ async function insertLibraryItem(fileName, fileUrl) {
       title: metadata.title,
       author: metadata.author,
       description: metadata.description,
+      description_en: metadata.description_en,
       file_url: fileUrl,
       date: new Date().toISOString(),
       published_date: metadata.published_date,

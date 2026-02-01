@@ -2021,13 +2021,14 @@ export const trackAdMetric = async (params: {
   feedType: 'main' | 'community';
   communityId?: string;
 }) => {
-  return await supabase.from('ad_metrics').insert({
-    ad_id: params.adId,
-    user_id: params.userId,
-    event_type: params.eventType,
-    user_plan: params.userPlan,
-    feed_type: params.feedType,
-    community_id: params.communityId || null,
+  // Usar RPC function que roda com privilégios elevados
+  return await supabase.rpc('track_ad_metric', {
+    p_ad_id: params.adId,
+    p_user_id: params.userId,
+    p_event_type: params.eventType,
+    p_user_plan: params.userPlan,
+    p_feed_type: params.feedType,
+    p_community_id: params.communityId || null,
   });
 };
 
@@ -2485,6 +2486,24 @@ export const fetchDailyAdMetrics = async (userId: string, daysInterval: number =
 };
 
 /**
+ * Buscar engagement (likes, shares, saves) de um anúncio específico
+ */
+export const fetchAdEngagementMetrics = async (adId: string, daysInterval: number = 7, includeAllTime: boolean = false) => {
+  const { data, error } = await supabase.rpc('get_ad_engagement_metrics', {
+    p_ad_id: adId,
+    p_days_interval: daysInterval,
+    p_include_all_time: includeAllTime
+  });
+
+  if (error) {
+    handleApiError(error, 'fetchAdEngagementMetrics', { adId, daysInterval, includeAllTime });
+    return { total_likes: 0, total_shares: 0, total_saves: 0 };
+  }
+
+  return data || { total_likes: 0, total_shares: 0, total_saves: 0 };
+};
+
+/**
  * Buscar performance individual de cada anúncio
  */
 export const fetchAdsPerformance = async (userId: string, daysInterval: number = 7, includeAllTime: boolean = true): Promise<Array<{
@@ -2495,6 +2514,9 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
   impressions: number;
   clicks: number;
   engagement: number;
+  likes: number;
+  shares: number;
+  saves: number;
   ctr: number;
   cost: number;
   cpc: number;
@@ -2518,6 +2540,9 @@ export const fetchAdsPerformance = async (userId: string, daysInterval: number =
     impressions: Number(item.impressions) || 0,
     clicks: Number(item.clicks) || 0,
     engagement: Number(item.engagement) || 0,
+    likes: Number(item.likes) || 0,
+    shares: Number(item.shares) || 0,
+    saves: Number(item.saves) || 0,
     ctr: Number(item.ctr) || 0,
     cost: Number(item.cost) || 0,
     cpc: Number(item.cpc) || 0
@@ -2743,7 +2768,15 @@ export const approveTimelineEvent = async (queueItemId: string, moderatorId: str
     return { data: null, error: fetchError || new Error('Item não encontrado') };
   }
 
-  // 2. Inserir na timeline_events
+  // 2. Preparar event_date (converter se necessário)
+  let eventDate = queueItem.event_date;
+  
+  // Se event_date for apenas o ano (ex: "2026"), converter para formato DATE válido
+  if (eventDate && /^\d{4}$/.test(eventDate)) {
+    eventDate = `${eventDate}-01-01`; // Usa 1º de janeiro
+  }
+  
+  // 3. Inserir na timeline_events
   const { data: newEvent, error: insertError } = await supabase
     .from('timeline_events')
     .insert({
@@ -2754,7 +2787,7 @@ export const approveTimelineEvent = async (queueItemId: string, moderatorId: str
       country: queueItem.country,
       source_1: queueItem.source_1,
       source_2: queueItem.source_2,
-      event_date: queueItem.event_date,
+      event_date: eventDate,
       image_url: queueItem.image_url,
       x_position: 0,
       y_position: 0,
@@ -2767,7 +2800,7 @@ export const approveTimelineEvent = async (queueItemId: string, moderatorId: str
     return { data: null, error: insertError };
   }
 
-  // 3. Atualizar status na fila
+  // 4. Atualizar status na fila
   const { error: updateError } = await supabase
     .from('timeline_moderation_queue')
     .update({
@@ -2781,7 +2814,7 @@ export const approveTimelineEvent = async (queueItemId: string, moderatorId: str
     return { data: null, error: updateError };
   }
 
-  // 4. Criar notificação para o autor
+  // 5. Criar notificação para o autor
   try {
     await supabase.from('notifications').insert({
       recipient_id: queueItem.author_id,

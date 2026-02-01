@@ -27,6 +27,7 @@ export const useLibrary = (appUser: User | null) => {
         title: item.title,
         author: item.author,
         description: item.description,
+        description_en: item.description_en,
         cover_url: item.cover_url,
         file_url: item.file_url,
         date: item.date,

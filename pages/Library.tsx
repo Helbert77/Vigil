@@ -75,6 +75,7 @@ const Library: React.FC<LibraryProps> = ({
         item.title.toLowerCase().includes(query) ||
         item.author.toLowerCase().includes(query) ||
         item.description?.toLowerCase().includes(query) ||
+        item.description_en?.toLowerCase().includes(query) ||
         item.tags?.some(tag => tag.toLowerCase().includes(query))
       );
     }

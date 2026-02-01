@@ -40,6 +40,7 @@
     "react-pdf": "^10.2.0",
     "react-router-dom": "^7.9.5",
     "recharts": "^3.2.1",
+    "stripe": "^20.3.0",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1"
   },

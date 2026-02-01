@@ -164,8 +164,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onClose, onEventAdded, ed
 
       const { media, event_date, image_url: _, ...submitData } = formData;
 
-      // Usar o ano como event_date (formato: "YYYY-01-01" para anos positivos, ou string do ano para AC)
-      const eventDateValue = formData.year.toString();
+      // Converter ano para formato DATE válido (YYYY-MM-DD)
+      const eventDateValue = `${formData.year}-01-01`;
 
       // NOVO: Se está editando item da fila de moderação
       if (isModerationEdit && queueItemId) {

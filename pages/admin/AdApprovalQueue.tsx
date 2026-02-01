@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { approveAd, rejectAd } from '@/src/services/adApprovalService';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/src/contexts/LanguageContext';
 
 interface AdApprovalQueueProps {
   user: User;
@@ -35,6 +36,7 @@ interface PendingAd {
 const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }) => {
   const { addToast } = useToast();
   const { t } = useTranslation(['ads', 'admin']);
+  const { language } = useLanguage();
   const [ads, setAds] = useState<PendingAd[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAd, setSelectedAd] = useState<PendingAd | null>(null);
@@ -268,7 +270,7 @@ const AdApprovalQueue: React.FC<AdApprovalQueueProps> = ({ user, onAdProcessed }
                       {ad.advertiser_name}
                     </p>
                     <p className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(ad.created_at).toLocaleDateString(t('common:localeCode') || 'pt-BR', {
+                      {new Date(ad.created_at).toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US', {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',

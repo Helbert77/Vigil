@@ -48,7 +48,7 @@
   "enterDescription": "Digite uma descrição",
   "selectFile": "Selecione o arquivo",
   "fileUploaded": "Arquivo enviado",
-  "tags": "Tags (separadas por vírgula)",
+  "tags": "Tags",
   "tagsPlaceholder": "Ex: romance, aventura, suspense",
   "onlineReadingLink": "Link de Leitura Online",
   "titleAuthorRequired": "Título e autor são obrigatórios",

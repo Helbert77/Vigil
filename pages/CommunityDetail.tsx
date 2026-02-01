@@ -227,7 +227,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
                       onToggleSave={toggleAdSave}
                       onHideAd={hideAd}
                       onIncrementShares={incrementAdShares}
-                      onIncrementViews={incrementAdViews}
+                      onIncrementViews={updateAdViews}
                     />
                   );
                 } else {

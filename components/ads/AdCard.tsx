@@ -87,14 +87,44 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
   const hasTrackedImpression = useRef(false);
   const shareContainerRef = useRef<HTMLDivElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Rastrear impressão e incrementar visualizações automaticamente
+  // Rastrear impressão APENAS quando o anúncio está visível no viewport
+  // Usa Intersection Observer para garantir que só conta quando realmente visível
   useEffect(() => {
-    if (!hasTrackedImpression.current) {
-      onTrackMetric(ad.id, 'impression');
-      onIncrementViews(ad.id);
-      hasTrackedImpression.current = true;
+    if (hasTrackedImpression.current || !cardRef.current) {
+      return;
     }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+      entries.forEach((entry) => {
+        // Só rastreia se o anúncio estiver pelo menos 50% visível
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5 && !hasTrackedImpression.current) {
+          // Rastrear impressão (automaticamente incrementa views_count na tabela anuncios via RPC)
+          // A função track_ad_metric agora faz AMBOS: insere em ad_metrics E incrementa views_count
+          onTrackMetric(ad.id, 'impression');
+          
+          // Incrementar views localmente no frontend para feedback visual imediato
+          onIncrementViews(ad.id);
+          
+          hasTrackedImpression.current = true;
+          // Desconectar observer após rastrear
+          observer.disconnect();
+        }
+      });
+      },
+      {
+        threshold: 0.5, // 50% visível
+        rootMargin: '0px'
+      }
+    );
+
+    observer.observe(cardRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
   }, [ad.id, onTrackMetric, onIncrementViews]);
 
   // Fechar menus ao clicar fora
@@ -306,20 +336,21 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
 
   return (
     <>
-      <Card 
-        className="mb-3 md:mb-4 relative cursor-pointer"
-        onClick={handleCardClick}
-        role="link"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            if (onViewAd) {
-              onViewAd(ad.id);
+      <div ref={cardRef}>
+        <Card 
+          className="mb-3 md:mb-4 relative cursor-pointer"
+          onClick={handleCardClick}
+          role="link"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (onViewAd) {
+                onViewAd(ad.id);
+              }
             }
-          }
-        }}
-      >
+          }}
+        >
         {/* Cabeçalho do anúncio - Seguindo estrutura do PostCard */}
         <div className="flex items-start space-x-3 md:space-x-4">
           <div className="flex-shrink-0">
@@ -547,6 +578,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, user, onTrackMetric, shareableUsers
             </Tooltip>
         </div>
       </Card>
+      </div>
 
       {showDmModal && onSendMessage && (
         <ShareDmModal

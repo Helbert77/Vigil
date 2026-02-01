@@ -506,19 +506,27 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
 
   const handleIncrementView = useCallback(async (type: 'post' | 'comment', id: string) => {
     if (type === 'post') {
+      // Verificar se é um ID temporário (posts criados mas ainda não salvos)
+      const isTemporaryId = id.startsWith('temp_');
+      
       // 1. Atualiza otimisticamente no frontend
       setPosts(prev => prev.map(p => 
         p.id === id ? { ...p, views: p.views + 1 } : p
       ));
       
-      // 2. Salva no banco de dados de forma assíncrona usando RPC
-      try {
-        await supabase.rpc('increment_post_views', { post_id: id });
-      } catch (error) {
-        // Silenciosamente ignora erros - o incremento local já foi feito
+      // 2. Salva no banco de dados apenas se não for ID temporário
+      if (!isTemporaryId) {
+        try {
+          await supabase.rpc('increment_post_views', { post_id: id });
+        } catch (error) {
+          // Silenciosamente ignora erros - o incremento local já foi feito
+        }
       }
     } else {
       // Para comentários
+      // Verificar se é um ID temporário
+      const isTemporaryId = id.startsWith('temp_');
+      
       // 1. Atualiza otimisticamente no frontend
       setPosts(prev => prev.map(p => {
         const updateCommentsViews = (comments: Comment[]): Comment[] => {
@@ -538,11 +546,13 @@ export const usePosts = (appUser: User | null, allUsers: User[], setCommunities:
         };
       }));
       
-      // 2. Salva no banco de dados de forma assíncrona usando RPC
-      try {
-        await supabase.rpc('increment_comment_views', { comment_id: id });
-      } catch (error) {
-        // Silenciosamente ignora erros - o incremento local já foi feito
+      // 2. Salva no banco de dados apenas se não for ID temporário
+      if (!isTemporaryId) {
+        try {
+          await supabase.rpc('increment_comment_views', { comment_id: id });
+        } catch (error) {
+          // Silenciosamente ignora erros - o incremento local já foi feito
+        }
       }
     }
   }, [setPosts]);

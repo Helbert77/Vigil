@@ -48,7 +48,7 @@
   "enterDescription": "Enter a description",
   "selectFile": "Select file",
   "fileUploaded": "File uploaded",
-  "tags": "Tags (comma separated)",
+  "tags": "Tags",
   "tagsPlaceholder": "Ex: romance, adventure, suspense",
   "onlineReadingLink": "Online Reading Link",
   "titleAuthorRequired": "Title and author are required",
