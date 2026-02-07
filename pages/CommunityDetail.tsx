@@ -10,6 +10,7 @@ import { VerifiedBadgeIcon } from '@/src/components/icons/VerifiedBadgeIcon';
 import { ModeratorBadgeIcon } from '@/src/components/icons/ModeratorBadgeIcon';
 import EditCommunityPlanModal from '@/components/communities/EditCommunityPlanModal';
 import { getRequiredPlanLabel, getRequiredPlanColor, getRequiredPlanLabelKey } from '@/src/utils/communityAccess';
+import { getCommunityTranslation } from '@/src/utils/communityUtils';
 import { useAdsWithState, useAdTracking } from '../src/hooks/useAdsWithState';
 import { useAdInteractions } from '../src/hooks/useAdInteractions';
 import { injectAdsIntoPosts } from '../src/utils/adFrequency';
@@ -57,6 +58,7 @@ interface CommunityDetailProps {
 
 const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, activeMembers, onUpdatePost, savedPostIds, onToggleSave, onNavigateBack, onViewProfile, user, isJoined, onJoinCommunityToggle, onToggleLike, onIncrementView, onViewPost, onDeletePost, onBlockToggle, blockedUserIds, shareableUsers, onSendMessage, followedUserIds, onFollowToggle, onOpenFollowModal, onAddPost, communities, joinedCommunityIds, onVoteOnPoll, allUsers, setCurrentPage, onUpdateCommunityPlan }) => {
   const { t } = useTranslation(['communities', 'posts', 'common']);
+  const { name: translatedName, description: translatedDescription } = getCommunityTranslation(community, t);
   const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
   
   // Buscar anúncios ativos para esta comunidade com estado local
@@ -134,7 +136,7 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
 
       <Card className="mb-6 overflow-hidden p-0 sm:p-0">
         <div className="relative">
-          <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-32 sm:h-48 w-full object-cover" />
+          <img src={community.bannerUrl} alt={`${translatedName} banner`} className="h-32 sm:h-48 w-full object-cover" />
           {community.requiredPlan && community.requiredPlan !== 'all' && (
             <div className={`absolute top-2 right-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg`}>
               {t(getRequiredPlanLabelKey(community.requiredPlan))}
@@ -144,8 +146,8 @@ const CommunityDetail: React.FC<CommunityDetailProps> = ({ community, posts, act
         <div className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{community.name}</h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">{community.description}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{translatedName}</h2>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">{translatedDescription}</p>
             </div>
             {canEditCommunity && onUpdateCommunityPlan && (
               <button

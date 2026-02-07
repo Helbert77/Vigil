@@ -66,5 +66,39 @@
     "proPlus": "Esta comunidade requer plano Pro ou superior.",
     "premium": "Esta comunidade é exclusiva para usuários Premium.",
     "default": "Você não tem acesso a esta comunidade."
+  },
+  "db_communities": {
+    "tartria": {
+      "name": "Tartária",
+      "description": "Explore a teoria do Império perdido da Tartária, sua arquitetura avançada, tecnologia de energia livre e a suposta reescrita da história mundial."
+    },
+    "chemtrail": {
+      "name": "Chemtrail",
+      "description": "Discussões e evidências sobre a teoria dos rastros químicos, geoengenharia, modificação climática e seus supostos impactos na saúde e no meio ambiente."
+    },
+    "terra-plana": {
+      "name": "Terra Plana",
+      "description": "Comunidade dedicada ao debate e investigação sobre a cosmologia da Terra Plana, questionando o modelo heliocêntrico e analisando evidências alternativas."
+    },
+    "o-grande-reset": {
+      "name": "O grande Reset",
+      "description": "Análise crítica sobre a agenda atual do Fórum Econômico Mundial e investigações profundas sobre o Último Grande Reset (c. 1700). Debates sobre ciclos de reinicialização da humanidade, apagamento histórico e reconstrução civilizacional."
+    },
+    "projeto-blue-beam": {
+      "name": "Projeto Blue Beam",
+      "description": "Investigação sobre a teoria do Projeto Blue Beam da NASA, envolvendo hologramas, nova ordem mundial e simulações de invasões alienígenas ou eventos religiosos."
+    },
+    "clones": {
+      "name": "Clones",
+      "description": "Teorias e debates sobre clonagem humana, substituição de figuras públicas, biotecnologia avançada e as implicações éticas e sociais ocultas."
+    },
+    "mistrios-ocultos": {
+      "name": "Mistérios Ocultos",
+      "description": "Um espaço para desvendar segredos da história, sociedades secretas, simbologia, paranormalidade e tudo aquilo que a ciência convencional não explica."
+    },
+    "as-terras-alm-da-muralha-de-gelo": {
+      "name": "As Terras Além da Muralha de Gelo",
+      "description": "Exploração das teorias sobre o que existe além da Antártida, continentes ocultos, civilizações perdidas e a verdadeira geografia do nosso mundo."
+    }
   }
 }

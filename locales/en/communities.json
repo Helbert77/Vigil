@@ -66,5 +66,39 @@
     "proPlus": "This community requires Pro plan or higher.",
     "premium": "This community is exclusive to Premium users.",
     "default": "You don't have access to this community."
+  },
+  "db_communities": {
+    "tartria": {
+      "name": "Tartaria",
+      "description": "Explore the theory of the lost Empire of Tartaria, its advanced architecture, free energy technology, and the alleged rewriting of world history."
+    },
+    "chemtrail": {
+      "name": "Chemtrails",
+      "description": "Discussions and evidence on the theory of chemical trails, geoengineering, climate modification, and their alleged impacts on health and the environment."
+    },
+    "terra-plana": {
+      "name": "Flat Earth",
+      "description": "Community dedicated to the debate and investigation of Flat Earth cosmology, questioning the heliocentric model and analyzing alternative evidence."
+    },
+    "o-grande-reset": {
+      "name": "The Great Reset",
+      "description": "Critical analysis of the current World Economic Forum agenda and deep investigations into the Last Great Reset (c. 1700). Debates on humanity's reset cycles, historical erasure, and civilizational reconstruction."
+    },
+    "projeto-blue-beam": {
+      "name": "Project Blue Beam",
+      "description": "Investigation into NASA's Project Blue Beam theory, involving holograms, new world order, and simulations of alien invasions or religious events."
+    },
+    "clones": {
+      "name": "Clones",
+      "description": "Theories and debates on human cloning, replacement of public figures, advanced biotechnology, and hidden ethical and social implications."
+    },
+    "mistrios-ocultos": {
+      "name": "Occult Mysteries",
+      "description": "A space to unravel secrets of history, secret societies, symbology, paranormal, and everything that conventional science does not explain."
+    },
+    "as-terras-alm-da-muralha-de-gelo": {
+      "name": "Lands Beyond the Ice Wall",
+      "description": "Exploration of theories about what lies beyond Antarctica, hidden continents, lost civilizations, and the true geography of our world."
+    }
   }
 }

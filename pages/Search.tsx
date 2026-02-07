@@ -5,6 +5,7 @@ import PostCard from '../components/post/PostCard';
 import Avatar from '../components/common/Avatar';
 import { Icon } from '../components/icons/Icon';
 import { useTranslation } from 'react-i18next';
+import { getCommunityTranslation } from '@/src/utils/communityUtils';
 
 const SearchIcon = () => <Icon><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 
@@ -159,9 +160,10 @@ const Search: React.FC<SearchProps> = ({
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-light-border dark:border-dark-border focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-light-bg dark:bg-dark-bg"
             >
               <option value="all">{t('search:allCommunities')}</option>
-              {userJoinedCommunities.map(community => (
-                <option key={community.id} value={community.id}>{community.name}</option>
-              ))}
+              {userJoinedCommunities.map(community => {
+                const { name } = getCommunityTranslation(community, t);
+                return <option key={community.id} value={community.id}>{name}</option>;
+              })}
             </select>
           </div>
 

@@ -64,18 +64,92 @@ export class EncryptionService {
         }
     }
 
-    // Store private key securely (localStorage with user password - simplified for now)
-    static storePrivateKey(privateKey: string, userId: string) {
-        localStorage.setItem(`pk_${userId}`, privateKey);
+    // Helper for IndexedDB
+    private static async getDB(): Promise<IDBDatabase> {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('vigil-secure-storage', 1);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                if (!db.objectStoreNames.contains('keys')) {
+                    db.createObjectStore('keys');
+                }
+            };
+        });
     }
 
-    // Retrieve private key
-    static getPrivateKey(userId: string): string | null {
-        return localStorage.getItem(`pk_${userId}`);
+    // Store private key securely in IndexedDB
+    static async storePrivateKey(privateKey: string, userId: string): Promise<void> {
+        try {
+            const db = await this.getDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction('keys', 'readwrite');
+                const store = transaction.objectStore('keys');
+                const request = store.put(privateKey, `pk_${userId}`);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            console.error('Error storing private key:', error);
+            throw error;
+        }
+    }
+
+    // Retrieve private key (with migration from localStorage)
+    static async getPrivateKey(userId: string): Promise<string | null> {
+        try {
+            // 1. Try to get from IndexedDB first
+            const db = await this.getDB();
+            const keyFromDB = await new Promise<string | undefined>((resolve, reject) => {
+                const transaction = db.transaction('keys', 'readonly');
+                const store = transaction.objectStore('keys');
+                const request = store.get(`pk_${userId}`);
+                
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+
+            if (keyFromDB) {
+                return keyFromDB;
+            }
+
+            // 2. Migration: Check localStorage (legacy)
+            const legacyKey = localStorage.getItem(`pk_${userId}`);
+            if (legacyKey) {
+                console.log('Migrating private key to secure storage...');
+                // Move to IndexedDB
+                await this.storePrivateKey(legacyKey, userId);
+                // Remove from localStorage
+                localStorage.removeItem(`pk_${userId}`);
+                return legacyKey;
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error retrieving private key:', error);
+            return null;
+        }
     }
 
     // Clear private key on logout
-    static clearPrivateKey(userId: string) {
-        localStorage.removeItem(`pk_${userId}`);
+    static async clearPrivateKey(userId: string): Promise<void> {
+        try {
+            const db = await this.getDB();
+            await new Promise<void>((resolve, reject) => {
+                const transaction = db.transaction('keys', 'readwrite');
+                const store = transaction.objectStore('keys');
+                const request = store.delete(`pk_${userId}`);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+            
+            // Also clear legacy
+            localStorage.removeItem(`pk_${userId}`);
+        } catch (error) {
+            console.error('Error clearing private key:', error);
+        }
     }
 }

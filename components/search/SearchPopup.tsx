@@ -2,6 +2,8 @@ import React from 'react';
 import { User, Community, TrendingTopic } from '@/types';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
+import { useTranslation } from 'react-i18next';
+import { getCommunityTranslation } from '@/src/utils/communityUtils';
 
 const SearchIcon = () => <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
 const UsersIcon = () => <Icon className="h-5 w-5 text-gray-500 dark:text-gray-400"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></Icon>;
@@ -22,6 +24,7 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
   query, users, communities, topics,
   onNavigateToUser, onNavigateToCommunity, onNavigateToTopic, onGoToAdvancedSearch
 }) => {
+  const { t } = useTranslation(['communities']);
   const lowercasedQuery = query.toLowerCase();
 
   const filteredUsers = users.filter(u =>
@@ -29,9 +32,10 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
     u.username.toLowerCase().includes(lowercasedQuery)
   ).slice(0, 3);
 
-  const filteredCommunities = communities.filter(c =>
-    c.name.toLowerCase().includes(lowercasedQuery)
-  ).slice(0, 2);
+  const filteredCommunities = communities.filter(c => {
+    const { name } = getCommunityTranslation(c, t);
+    return name.toLowerCase().includes(lowercasedQuery);
+  }).slice(0, 2);
 
   const filteredTopics = topics.filter(t =>
     t.tag.toLowerCase().includes(lowercasedQuery)
@@ -71,18 +75,21 @@ const SearchPopup: React.FC<SearchPopupProps> = ({
         <>
           <div className="border-t border-light-border dark:border-dark-border my-1"></div>
           <h3 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Comunidades</h3>
-          {filteredCommunities.map(community => (
+          {filteredCommunities.map(community => {
+            const { name } = getCommunityTranslation(community, t);
+            return (
             <div
               key={community.id}
               onClick={() => onNavigateToCommunity(community.id)}
               className="flex items-center space-x-3 p-3 md:p-3 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer"
             >
               <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
-                <img src={community.bannerUrl} alt={community.name} className="w-full h-full object-cover" />
+                <img src={community.bannerUrl} alt={name} className="w-full h-full object-cover" />
               </div>
-              <p className="font-bold text-sm md:text-sm text-gray-900 dark:text-white">{community.name}</p>
+              <p className="font-bold text-sm md:text-sm text-gray-900 dark:text-white">{name}</p>
             </div>
-          ))}
+            );
+          })}
         </>
       )}
 

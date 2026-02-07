@@ -3,6 +3,7 @@ import { Community, User } from '../../types';
 import Card from '../common/Card';
 import { Icon } from '../icons/Icon';
 import { getRequiredPlanLabel, getRequiredPlanColor, getRequiredPlanLabelKey } from '@/src/utils/communityAccess';
+import { getCommunityTranslation } from '@/src/utils/communityUtils';
 import CommunityActionsMenu from './CommunityActionsMenu';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +21,7 @@ interface CommunityCardProps {
 
 const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunity, isJoined, onJoinToggle, currentUser, onEdit }) => {
   const { t } = useTranslation('communities');
+  const { name: translatedName, description: translatedDescription } = getCommunityTranslation(community, t);
   // Removed local useState for isJoined, now controlled by props
 
   const handleJoinToggle = (e: React.MouseEvent) => {
@@ -31,7 +33,7 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunit
     <div onClick={() => onViewCommunity(community.id)} className="cursor-pointer h-full">
         <Card className="p-0 sm:p-0 overflow-hidden flex flex-col h-full hover:border-primary dark:hover:border-primary transition-colors">
         <div className="relative">
-          <img src={community.bannerUrl} alt={`${community.name} banner`} className="h-20 md:h-24 w-full object-cover" />
+          <img src={community.bannerUrl} alt={`${translatedName} banner`} className="h-20 md:h-24 w-full object-cover" />
           {community.requiredPlan && community.requiredPlan !== 'all' && (
             <div className={`absolute top-2 left-2 ${getRequiredPlanColor(community.requiredPlan)} text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg`}>
               {t(getRequiredPlanLabelKey(community.requiredPlan))}
@@ -46,8 +48,8 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ community, onViewCommunit
           </div>
         </div>
         <div className="p-3 md:p-4 flex-grow flex flex-col">
-            <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{community.name}</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1 flex-grow line-clamp-2">{community.description}</p>
+            <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white truncate">{translatedName}</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-1 flex-grow line-clamp-2">{translatedDescription}</p>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-3 md:mt-4 space-y-2 sm:space-y-0">
             <div className="flex items-center text-xs md:text-sm text-gray-500 dark:text-gray-400 space-x-3 md:space-x-4">
                 <div className="flex items-center min-w-0">
