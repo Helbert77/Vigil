@@ -70,6 +70,7 @@ import Appeals from '@/pages/admin/Appeals';
 import AdApprovalQueue from '@/pages/admin/AdApprovalQueue';
 import TrendingTopicsPage from '@/pages/TrendingTopics';
 import ExploreUsers from '@/components/ExploreUsers';
+import ExplorePage from '@/pages/Explore';
 import MobileBottomNav from '@/src/components/layout/MobileBottomNav';
 import {
   buildPathFromSnapshot,
@@ -1096,6 +1097,25 @@ const App: React.FC = () => {
         return <PremiumPage user={appUser} onUpdateUser={handleUpdateUser} />;
       case 'Chat':
         return <ChatPage user={appUser} onUpdateUser={handleUpdateUser} onNavigateToMessages={() => handleNavigation('Messages')} />;
+      case 'Explore':
+        return <ExplorePage
+          trendingTopics={trendingTopics}
+          usersToFollow={filteredContent.filteredUsersToFollow}
+          followedUserIds={followedUserIds}
+          currentUser={appUser}
+          allUsers={filteredContent.filteredAllUsers}
+          communities={communities}
+          onFollowToggle={handleFollowToggle}
+          onViewProfile={handleViewProfile}
+          onViewTag={handleViewTag}
+          onOpenFollowModal={handleOpenFollowModal}
+          onNavigateTrendingTopics={() => handleNavigation('TrendingTopics')}
+          onNavigateExploreUsers={() => handleNavigation('ExploreUsers')}
+          onNavigateToAdvancedSearch={handleNavigateToAdvancedSearch}
+          onNavigateToUser={(id) => { handleViewProfile(id); }}
+          onNavigateToCommunity={(id) => { handleViewCommunity(id); }}
+          onGoBack={() => handleNavigation('Home')}
+        />;
       case 'TrendingTopics':
         return <TrendingTopicsPage trendingTopics={trendingTopics} onViewTag={handleViewTag} onGoBack={() => handleNavigation('Home')} />;
       case 'ExploreUsers':
@@ -1166,6 +1186,8 @@ const App: React.FC = () => {
           onToggleMobileSidebar={handleToggleMobileSidebar}
           isMobileSidebarOpen={isMobileSidebarOpen}
           onLogout={handleLogout}
+          unreadNotificationsCount={unreadNotificationsCount}
+          onNavigateNotifications={() => handleNavigation('Notifications')}
         />
 
         {/* Mobile Sidebar Overlay */}
@@ -1290,12 +1312,11 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* Mobile Bottom Navigation - Apenas na página Home/Feed e quando sidebar não estiver aberto */}
-        {currentPage === 'Home' && !isMobileSidebarOpen && (
+        {/* Mobile Bottom Navigation - Home e Explore */}
+        {(currentPage === 'Home' || currentPage === 'Explore') && !isMobileSidebarOpen && (
           <MobileBottomNav
             currentPage={currentPage}
             onNavigate={(p) => handleNavigation(p)}
-            unreadNotificationsCount={unreadNotificationsCount}
             unreadMessagesCount={unreadMessagesCount}
           />
         )}

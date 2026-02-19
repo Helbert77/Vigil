@@ -430,7 +430,7 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
         } />
 
         {/* Explore Users */}
-        <Route path="/explore" element={
+        <Route path="/explore-users" element={
           <LazyExploreUsers 
             usersToFollow={props.usersToFollow}
             onFollowToggle={props.handleFollowToggle}

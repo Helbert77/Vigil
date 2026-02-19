@@ -34,6 +34,7 @@ export type Page =
   | 'Premium'
   | 'TrendingTopics'
   | 'ExploreUsers'
+  | 'Explore'
   | 'UpdatePassword';
 
 export interface NavigationSnapshot {
@@ -119,6 +120,8 @@ export function buildPathFromSnapshot(state: NavigationSnapshot): string {
     case 'TrendingTopics':
       return '/trending';
     case 'ExploreUsers':
+      return '/explore-users';
+    case 'Explore':
       return '/explore';
     case 'UpdatePassword':
       return '/update-password';
@@ -197,7 +200,8 @@ export function parseLocationToSnapshot(pathname: string, search: string): Navig
     '/ad-approval-queue': 'AdApprovalQueue',
     '/premium': 'Premium',
     '/trending': 'TrendingTopics',
-    '/explore': 'ExploreUsers',
+    '/explore-users': 'ExploreUsers',
+    '/explore': 'Explore',
     '/update-password': 'UpdatePassword',
   };
 

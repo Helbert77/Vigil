@@ -5,15 +5,14 @@ import type { Page } from '@/src/utils/history';
 interface Props {
   currentPage: Page;
   onNavigate: (page: Page) => void;
-  unreadNotificationsCount?: number;
   unreadMessagesCount?: number;
 }
 
 const HomeIcon = () => (
   <Icon><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>
 );
-const BellIcon = () => (
-  <Icon><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></Icon>
+const ExploreIcon = () => (
+  <Icon><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>
 );
 const MailIcon = () => (
   <Icon><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></Icon>
@@ -28,7 +27,7 @@ const TimelineIcon = () => (
   <Icon><path d="M3 3v18h18" /><path d="M7 12h10" /><path d="M7 8h7" /><path d="M7 16h4" /></Icon>
 );
 
-const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadNotificationsCount = 0, unreadMessagesCount = 0 }) => {
+const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadMessagesCount = 0 }) => {
   const [hidden, setHidden] = useState(false);
   const lastY = useRef<number>(0);
 
@@ -68,7 +67,7 @@ const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadNotif
         <div className="m-3 rounded-2xl border bg-light-card dark:bg-dark-card border-light-border dark:border-dark-border shadow-lg">
           <div className="flex items-center justify-between px-2 py-2">
             <Item label="Home" active={currentPage === 'Home'} onClick={() => onNavigate('Home')}><HomeIcon /></Item>
-            <Item label="Notifications" active={currentPage === 'Notifications'} onClick={() => onNavigate('Notifications')} badge={unreadNotificationsCount}><BellIcon /></Item>
+            <Item label="Explore" active={currentPage === 'Explore'} onClick={() => onNavigate('Explore')}><ExploreIcon /></Item>
             <Item label="Messages" active={currentPage === 'Messages'} onClick={() => onNavigate('Messages')} badge={unreadMessagesCount}><MailIcon /></Item>
             <Item label="Communities" active={currentPage === 'Communities'} onClick={() => onNavigate('Communities')}><UsersIcon /></Item>
             <Item label="Biblioteca" active={currentPage === 'Library'} onClick={() => onNavigate('Library')}><LibraryIcon /></Item>

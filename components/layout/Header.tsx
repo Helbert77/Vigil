@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from '../../hooks/useTheme';
 import Avatar from '../common/Avatar';
 import { Icon } from '../icons/Icon';
 import { LogoIcon } from '../icons/LogoIcon';
@@ -7,9 +6,8 @@ import { User, Community, TrendingTopic } from '@/types';
 import SearchPopup from '../search/SearchPopup';
 import { useTranslation } from 'react-i18next';
 
-const SunIcon = () => <Icon><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></Icon>;
-const MoonIcon = () => <Icon><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></Icon>;
 const SearchIcon = () => <Icon className="h-5 w-5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></Icon>;
+const BellIcon = () => <Icon className="h-5 w-5"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></Icon>;
 const MoreHorizontalIcon = () => <Icon><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></Icon>;
 const MenuIcon = () => <Icon className="h-6 w-6"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></Icon>;
 const XIcon = () => <Icon className="h-6 w-6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></Icon>;
@@ -31,21 +29,21 @@ interface HeaderProps {
     onToggleMobileSidebar?: () => void;
     isMobileSidebarOpen?: boolean;
     onLogout: () => void;
+    unreadNotificationsCount?: number;
+    onNavigateNotifications?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
     onNavigateProfile, user, onSearch, onNavigateHome, onNavigateToAdvancedSearch, query,
     allUsers, communities, trendingTopics, onNavigateToUser, onNavigateToCommunity, onNavigateToTopic,
-    onToggleMobileSidebar, isMobileSidebarOpen = false, onLogout
+    onToggleMobileSidebar, isMobileSidebarOpen = false, onLogout,
+    unreadNotificationsCount = 0, onNavigateNotifications
 }) => {
-  const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation(['common', 'navigation']);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isAdvancedSearchMenuOpen, setIsAdvancedSearchMenuOpen] = useState(false);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const advancedMenuRef = useRef<HTMLDivElement>(null);
-  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
@@ -58,7 +56,6 @@ const Header: React.FC<HeaderProps> = ({
       e.preventDefault();
       onNavigateToAdvancedSearch(query);
       setIsPopupOpen(false);
-      setIsMobileSearchOpen(false);
     }
   };
 
@@ -76,9 +73,6 @@ const Header: React.FC<HeaderProps> = ({
       if (advancedMenuRef.current && !advancedMenuRef.current.contains(event.target as Node)) {
         setIsAdvancedSearchMenuOpen(false);
       }
-      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)) {
-        setIsMobileSearchOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -88,14 +82,6 @@ const Header: React.FC<HeaderProps> = ({
     onNavigateToAdvancedSearch(query);
     setIsPopupOpen(false);
     setIsAdvancedSearchMenuOpen(false);
-    setIsMobileSearchOpen(false);
-  };
-
-  const handleMobileSearchToggle = () => {
-    setIsMobileSearchOpen(!isMobileSearchOpen);
-    if (!isMobileSearchOpen && query) {
-      setIsPopupOpen(true);
-    }
   };
 
   return (
@@ -175,23 +161,21 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Mobile Search Button */}
-            <button 
-              onClick={handleMobileSearchToggle}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label={t('common:search')}
-            >
-              <SearchIcon />
-            </button>
-            
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme} 
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary" 
-              aria-label="Alternar tema"
-            >
-              {theme === 'light' ? <MoonIcon /> : <SunIcon />}
-            </button>
+            {/* Mobile Notifications Button */}
+            {onNavigateNotifications && (
+              <button 
+                onClick={onNavigateNotifications}
+                className="md:hidden relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label={t('navigation:notifications')}
+              >
+                <BellIcon />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-0.5 rounded-full text-[9px] bg-secondary text-white flex items-center justify-center font-bold">
+                    {unreadNotificationsCount > 99 ? '99+' : unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+            )}
             
             {/* User Avatar */}
             <div className="cursor-pointer" onClick={onNavigateProfile}>
@@ -208,52 +192,6 @@ const Header: React.FC<HeaderProps> = ({
         </div>
       </header>
 
-      {/* Mobile Search Overlay */}
-      {isMobileSearchOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsMobileSearchOpen(false)}>
-          <div 
-            className="absolute top-14 left-0 right-0 bg-light-card dark:bg-dark-card border-b border-light-border dark:border-dark-border p-4"
-            onClick={(e) => e.stopPropagation()}
-            ref={mobileSearchRef}
-          >
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder={t('common:search')} 
-                value={query}
-                onChange={handleSearchChange}
-                onFocus={() => setIsPopupOpen(!!query)}
-                onKeyDown={handleKeyDown}
-                className="w-full bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-full py-3 pl-12 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                autoFocus
-              />
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <SearchIcon />
-              </div>
-              <button 
-                onClick={() => setIsMobileSearchOpen(false)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center"
-              >
-                <XIcon />
-              </button>
-              {isPopupOpen && (
-                <div className="mt-2">
-                  <SearchPopup
-                    query={query}
-                    users={allUsers}
-                    communities={communities}
-                    topics={trendingTopics}
-                    onNavigateToUser={onNavigateToUser}
-                    onNavigateToCommunity={onNavigateToCommunity}
-                    onNavigateToTopic={onNavigateToTopic}
-                    onGoToAdvancedSearch={handleAdvancedSearchClick}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
