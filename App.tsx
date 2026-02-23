@@ -100,6 +100,7 @@ const App: React.FC = () => {
   const [followModalData, setFollowModalData] = useState<{ user: User; initialFollowers: User[]; initialFollowing: User[]; initialTab: 'followers' | 'following'; } | null>(null);
   const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([]);
   const mainContentRef = useRef<HTMLElement>(null);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
   const [showSplashScreen, setShowSplashScreen] = useState(() => {
     // Verificar se deve mostrar splash screen após logout
     const shouldShowSplash = sessionStorage.getItem('vigil_show_splash_on_load');
@@ -159,6 +160,7 @@ const App: React.FC = () => {
 
   const scrollToTop = () => {
     window.scrollTo(0, 0);
+    mobileScrollRef.current?.scrollTo(0, 0);
   };
 
   const handleToggleMobileSidebar = () => {
@@ -168,6 +170,7 @@ const App: React.FC = () => {
   const handleNavigation = (page: Page) => {
     if (page === 'Home' && currentPage === 'Home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      mobileScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -1168,7 +1171,7 @@ const App: React.FC = () => {
   };
   return (
     <UsersProvider users={allUsers}>
-      <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300">
+      <div className="min-h-screen text-gray-800 dark:text-gray-200 transition-colors duration-300 h-screen md:h-auto flex flex-col md:block overflow-hidden md:overflow-visible">
         <ToastContainer />
         <Header
           user={appUser}
@@ -1216,76 +1219,79 @@ const App: React.FC = () => {
           />
         </aside>
 
-        {/*
-          ============================================================================
-          TESTE: Renderização em tela cheia para SelectAdPlan, Premium e Chat
-          ============================================================================
-          Esta seção renderiza as páginas SelectAdPlan, Premium e Chat em tela cheia, 
-          sem sidebars. Para reverter ao comportamento original, comente este bloco 
-          e descomente o bloco "LAYOUT ORIGINAL" abaixo.
-          ============================================================================
-        */}
-        {(currentPage === 'SelectAdPlan' || currentPage === 'Premium' || currentPage === 'Chat') ? (
-          <div className="pt-16 sm:pt-20">
-            {renderPage()}
-          </div>
-        ) : (
-          /* 
+        {/* Container scrollável no mobile - conteúdo rola acima do MobileBottomNav */}
+        <div ref={mobileScrollRef} className="flex-1 overflow-y-auto md:flex-none md:overflow-visible">
+          {/*
             ============================================================================
-            LAYOUT ORIGINAL (mantido para fácil reversão)
+            TESTE: Renderização em tela cheia para SelectAdPlan, Premium e Chat
             ============================================================================
-          */
-          <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
-            {/* Desktop Sidebar */}
-            <aside className={`hidden md:block relative transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-1' : 'md:col-span-3 lg:col-span-2'}`}>
-              <Sidebar
-                user={appUser}
-                currentPage={currentPage}
-                setCurrentPage={handleNavigation}
-                unreadNotificationsCount={unreadNotificationsCount}
-                unreadMessagesCount={unreadMessagesCount}
-                isCollapsed={isSidebarCollapsed}
-                pendingModerationCount={pendingModerationCount}
-                pendingAppealsCount={pendingAppealsCount}
-                pendingAdsCount={pendingAdsCount}
-              />
-              <button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
-              >
-                <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
-              </button>
-            </aside>
-
-            <main ref={mainContentRef} id="main-content" className={`transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-11 lg:col-span-8' : 'md:col-span-9 lg:col-span-7'}`}>
+            Esta seção renderiza as páginas SelectAdPlan, Premium e Chat em tela cheia, 
+            sem sidebars. Para reverter ao comportamento original, comente este bloco 
+            e descomente o bloco "LAYOUT ORIGINAL" abaixo.
+            ============================================================================
+          */}
+          {(currentPage === 'SelectAdPlan' || currentPage === 'Premium' || currentPage === 'Chat') ? (
+            <div className="pt-16 sm:pt-20">
               {renderPage()}
-            </main>
+            </div>
+          ) : (
+            /* 
+              ============================================================================
+              LAYOUT ORIGINAL (mantido para fácil reversão)
+              ============================================================================
+            */
+            <div className="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 lg:gap-8 pt-16 sm:pt-20">
+              {/* Desktop Sidebar */}
+              <aside className={`hidden md:block relative transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-1' : 'md:col-span-3 lg:col-span-2'}`}>
+                <Sidebar
+                  user={appUser}
+                  currentPage={currentPage}
+                  setCurrentPage={handleNavigation}
+                  unreadNotificationsCount={unreadNotificationsCount}
+                  unreadMessagesCount={unreadMessagesCount}
+                  isCollapsed={isSidebarCollapsed}
+                  pendingModerationCount={pendingModerationCount}
+                  pendingAppealsCount={pendingAppealsCount}
+                  pendingAdsCount={pendingAdsCount}
+                />
+                <button
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  className="absolute top-5 -right-4 z-10 bg-light-card dark:bg-dark-card p-1.5 rounded-full shadow-lg border border-light-border dark:border-dark-border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
+                >
+                  <ChevronLeftIcon className={`h-5 w-5 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+                </button>
+              </aside>
 
-            <aside className="hidden lg:block lg:col-span-3">
-              <Rightbar
-                trendingTopics={trendingTopics}
-                usersToFollow={filteredContent.filteredUsersToFollow}
-                onViewTag={handleViewTag}
-                onViewProfile={handleViewProfile}
-                followedUserIds={followedUserIds}
-                onFollowToggle={handleFollowToggle}
-                onNavigateAbout={() => handleNavigation('About')}
-                onNavigateTerms={() => handleNavigation('TermsOfService')}
-                onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')}
-                onNavigateCookies={() => handleNavigation('CookiePolicy')}
-                onNavigateHelp={() => handleNavigation('Help')}
-                onNavigateDisclaimer={() => handleNavigation('Disclaimer')}
-                onNavigateAccessibility={() => handleNavigation('Accessibility')}
-                onOpenFollowModal={handleOpenFollowModal}
-                currentUser={appUser!}
-                onNavigatePremium={() => handleNavigation('Premium')}
-                onNavigateTrendingTopics={() => handleNavigation('TrendingTopics')}
-                onNavigateExploreUsers={() => handleNavigation('ExploreUsers')}
-              />
-            </aside>
-          </div>
-        )}
+              <main ref={mainContentRef} id="main-content" className={`transition-all duration-300 ${isSidebarCollapsed ? 'md:col-span-11 lg:col-span-8' : 'md:col-span-9 lg:col-span-7'}`}>
+                {renderPage()}
+              </main>
+
+              <aside className="hidden lg:block lg:col-span-3">
+                <Rightbar
+                  trendingTopics={trendingTopics}
+                  usersToFollow={filteredContent.filteredUsersToFollow}
+                  onViewTag={handleViewTag}
+                  onViewProfile={handleViewProfile}
+                  followedUserIds={followedUserIds}
+                  onFollowToggle={handleFollowToggle}
+                  onNavigateAbout={() => handleNavigation('About')}
+                  onNavigateTerms={() => handleNavigation('TermsOfService')}
+                  onNavigatePrivacy={() => handleNavigation('PrivacyPolicy')}
+                  onNavigateCookies={() => handleNavigation('CookiePolicy')}
+                  onNavigateHelp={() => handleNavigation('Help')}
+                  onNavigateDisclaimer={() => handleNavigation('Disclaimer')}
+                  onNavigateAccessibility={() => handleNavigation('Accessibility')}
+                  onOpenFollowModal={handleOpenFollowModal}
+                  currentUser={appUser!}
+                  onNavigatePremium={() => handleNavigation('Premium')}
+                  onNavigateTrendingTopics={() => handleNavigation('TrendingTopics')}
+                  onNavigateExploreUsers={() => handleNavigation('ExploreUsers')}
+                />
+              </aside>
+            </div>
+          )}
+        </div>
 
         {isFollowModalOpen && followModalData && (
           <FollowListModal
@@ -1318,6 +1324,7 @@ const App: React.FC = () => {
             currentPage={currentPage}
             onNavigate={(p) => handleNavigation(p)}
             unreadMessagesCount={unreadMessagesCount}
+            scrollContainerRef={mobileScrollRef}
           />
         )}
       </div>

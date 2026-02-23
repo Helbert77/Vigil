@@ -6,6 +6,7 @@ interface Props {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   unreadMessagesCount?: number;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const HomeIcon = () => (
@@ -27,23 +28,26 @@ const TimelineIcon = () => (
   <Icon><path d="M3 3v18h18" /><path d="M7 12h10" /><path d="M7 8h7" /><path d="M7 16h4" /></Icon>
 );
 
-const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadMessagesCount = 0 }) => {
+const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadMessagesCount = 0, scrollContainerRef }) => {
   const [hidden, setHidden] = useState(false);
   const lastY = useRef<number>(0);
 
   useEffect(() => {
-    lastY.current = window.scrollY || window.pageYOffset || 0;
+    const container = scrollContainerRef?.current;
+    if (!container) return;
+
+    lastY.current = container.scrollTop || 0;
     const onScroll = () => {
-      const y = window.scrollY || window.pageYOffset || 0;
+      const y = container.scrollTop || 0;
       const diff = y - lastY.current;
       if (Math.abs(diff) > 4) {
         if (diff > 0 && y > 48) setHidden(true); else setHidden(false);
         lastY.current = y;
       }
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, [scrollContainerRef]);
 
   const Item: React.FC<{label: string; active: boolean; onClick: () => void; badge?: number; children: React.ReactNode}> = ({ label, active, onClick, badge = 0, children }) => (
     <button
@@ -60,11 +64,11 @@ const MobileBottomNav: React.FC<Props> = ({ currentPage, onNavigate, unreadMessa
   return (
     <div
       role="navigation"
-      className={`md:hidden fixed left-0 right-0 bottom-0 z-50 transition-transform duration-200 ${hidden ? 'translate-y-full' : 'translate-y-0'}`}
+      className={`md:hidden flex-shrink-0 z-50 transition-all duration-200 overflow-hidden ${hidden ? 'max-h-0' : 'max-h-24'}`}
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="mx-auto max-w-screen-sm">
-        <div className="m-3 rounded-2xl border bg-light-card dark:bg-dark-card border-light-border dark:border-dark-border shadow-lg">
+        <div className="m-3 mt-0 rounded-2xl border bg-light-card dark:bg-dark-card border-light-border dark:border-dark-border shadow-lg">
           <div className="flex items-center justify-between px-2 py-2">
             <Item label="Home" active={currentPage === 'Home'} onClick={() => onNavigate('Home')}><HomeIcon /></Item>
             <Item label="Explore" active={currentPage === 'Explore'} onClick={() => onNavigate('Explore')}><ExploreIcon /></Item>
