@@ -174,8 +174,8 @@ const Rightbar: React.FC<RightbarProps> = ({
         </div>
       </Card>
 
-      {/* Footer */}
-      <footer className="px-2 text-xs text-gray-500 dark:text-gray-400">
+      {/* Footer — visível apenas para admin */}
+      {currentUser?.role === 'admin' && <footer className="px-2 text-xs text-gray-500 dark:text-gray-400">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 leading-relaxed">
           <a onClick={onNavigateTerms} className="hover:underline cursor-pointer transition-colors">
             {t('navigation:terms')}
@@ -206,7 +206,7 @@ const Rightbar: React.FC<RightbarProps> = ({
           </a>
         </div>
         <p className="mt-2 text-center md:text-left">{t('rightsReserved', { year: new Date().getFullYear() })}</p>
-      </footer>
+      </footer>}
     </div>
   );
 };
