@@ -205,7 +205,20 @@ const Rightbar: React.FC<RightbarProps> = ({
             {t('navigation:about')}
           </a>
         </div>
-        <p className="mt-2 text-center md:text-left">{t('rightsReserved', { year: new Date().getFullYear() })}</p>
+        <div className="mt-2 flex items-center gap-1.5">
+          <a
+            href="https://x.com/myvigil_"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.912-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            @myvigil_
+          </a>
+        </div>
+        <p className="mt-1 text-center md:text-left">{t('rightsReserved', { year: new Date().getFullYear() })}</p>
       </footer>}
     </div>
   );
